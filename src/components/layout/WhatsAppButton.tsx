@@ -1,5 +1,6 @@
 import React from 'react';
 import { MessageCircle } from 'lucide-react';
+import { analyticsEvents } from '../../utils/analytics';
 
 export function WhatsAppButton() {
   const phoneNumber = '553196101939';
@@ -7,11 +8,17 @@ export function WhatsAppButton() {
   
   const whatsappUrl = `https://wa.me/${phoneNumber}?text=${encodeURIComponent(message)}`;
 
+  const handleClick = () => {
+    analyticsEvents.externalLink('whatsapp');
+    analyticsEvents.buttonClick('whatsapp_button', 'landing');
+  };
+
   return (
     <a
       href={whatsappUrl}
       target="_blank"
       rel="noopener noreferrer"
+      onClick={handleClick}
       className="fixed bottom-6 right-6 bg-green-500 hover:bg-green-600 text-white p-4 rounded-full shadow-lg transform hover:scale-105 transition-all duration-200 z-50 group"
       aria-label="Falar no WhatsApp"
     >

@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
-import { Mail, Phone, MapPin, Send, CheckCircle } from 'lucide-react';
+import { Mail, Phone, Send } from 'lucide-react';
+import { analyticsEvents } from '../../utils/analytics';
 
 export function Contact() {
   const [formData, setFormData] = useState({
@@ -8,16 +9,28 @@ export function Contact() {
     subject: '',
     message: ''
   });
-  const [isSubmitted, setIsSubmitted] = useState(false);
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-    // Simulate form submission
-    setTimeout(() => {
-      setIsSubmitted(true);
+
+      // Rastrear tentativa de envio do formulário
+      analyticsEvents.contactFormSubmit('contact');
+
+    // Criar link mailto com os dados do formulário
+    const emailBody = encodeURIComponent(
+      `Olá,\n\nMeu nome é ${formData.name}.\n\n${formData.message}\n\nAtenciosamente,\n${formData.name}\n${formData.email}`
+    );
+    const emailSubject = encodeURIComponent(formData.subject);
+    const mailtoLink = `mailto:contato@todaarte.com.br?subject=${emailSubject}&body=${emailBody}`;
+    
+    // Abrir cliente de email
+    window.location.href = mailtoLink;
+
+      // Rastrear envio bem-sucedido
+      analyticsEvents.buttonClick('contact_form_submit', 'contact');
+      
+    // Limpar formulário
       setFormData({ name: '', email: '', subject: '', message: '' });
-      setTimeout(() => setIsSubmitted(false), 3000);
-    }, 1000);
   };
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
@@ -122,13 +135,6 @@ export function Contact() {
           <div className="bg-gradient-to-br from-logo to-logo-light border border-logo rounded-2xl p-8 shadow-2xl">
             <h3 className="text-2xl font-bold text-white mb-6">Envie sua Mensagem</h3>
             
-            {isSubmitted ? (
-              <div className="text-center py-8">
-                <CheckCircle className="h-16 w-16 text-green-400 mx-auto mb-4" />
-                <h4 className="text-xl font-semibold text-white mb-2">Mensagem Enviada!</h4>
-                <p className="text-gray-300">Entraremos em contato em breve.</p>
-              </div>
-            ) : (
               <form onSubmit={handleSubmit} className="space-y-6">
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
                   <div>
@@ -203,7 +209,6 @@ export function Contact() {
                   <span>Enviar Mensagem</span>
                 </button>
               </form>
-            )}
           </div>
         </div>
       </div>
