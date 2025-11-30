@@ -4,19 +4,19 @@ import { ArrowRight } from 'lucide-react';
 
 export function Hero() {
   
-  // Valores padrão
+  // Valores padrão - baseados no layout correto local
   const defaultPositions = {
-    negocio: { top: '30%', left: '50%' },
-    conecte: { top: '40%', left: '50%' },
-    botao: { top: '65%', left: '50%' },
-    thaty: { top: '70%', left: '50%' } // Posição ajustada
+    negocio: { top: '25%', left: '25%' }, // Topo esquerdo
+    conecte: { top: '45%', left: '35%' }, // Meio esquerdo, grande
+    botao: { top: '60%', left: '30%' }, // Abaixo do conecte
+    thaty: { top: '50%', left: '75%' } // Direita, centralizado verticalmente
   };
 
   const defaultSizes = {
     negocio: { fontSize: 'clamp(1.5rem, 3vw, 2.5rem)' },
     conecte: { fontSize: 'clamp(4rem, 15vw, 12rem)' },
     botao: { fontSize: '1.125rem' },
-    thaty: { width: '300px', height: 'auto' }
+    thaty: { width: '500px', height: 'auto' } // Tamanho maior para a imagem
   };
 
   const [positions, setPositions] = useState(defaultPositions);
@@ -28,51 +28,21 @@ export function Hero() {
     thaty: 13
   });
 
-  // Carregar do localStorage
+  // Sempre usar valores padrão - não carregar do localStorage para garantir consistência
   useEffect(() => {
-    const savedPositions = localStorage.getItem('heroPositions');
-    const savedSizes = localStorage.getItem('heroSizes');
-    const savedZIndexes = localStorage.getItem('heroZIndexes');
-    
-    if (savedPositions) {
-      try {
-        const parsed = JSON.parse(savedPositions);
-        setPositions({ ...defaultPositions, ...parsed });
-      } catch (e) {
-        console.error('Erro ao carregar posições:', e);
-        setPositions(defaultPositions);
-      }
-    } else {
-      setPositions(defaultPositions);
-    }
-    
-    if (savedSizes) {
-      try {
-        setSizes({ ...defaultSizes, ...JSON.parse(savedSizes) });
-      } catch (e) {
-        console.error('Erro ao carregar tamanhos:', e);
-      }
-    }
-    
-    if (savedZIndexes) {
-      try {
-        setZIndexes({ ...zIndexes, ...JSON.parse(savedZIndexes) });
-      } catch (e) {
-        console.error('Erro ao carregar z-indexes:', e);
-      }
-    }
+    // Forçar valores padrão sempre
+    setPositions(defaultPositions);
+    setSizes(defaultSizes);
+    setZIndexes({
+      negocio: 10,
+      conecte: 11,
+      botao: 12,
+      thaty: 13
+    });
   }, []);
 
 
-  // Salvar automaticamente quando houver mudanças
-  useEffect(() => {
-    if (positions && sizes) {
-      // Salvar as posições atuais automaticamente
-      localStorage.setItem('heroPositions', JSON.stringify(positions));
-      localStorage.setItem('heroSizes', JSON.stringify(sizes));
-      localStorage.setItem('heroZIndexes', JSON.stringify(zIndexes));
-    }
-  }, [positions, sizes, zIndexes]);
+  // Removido salvamento automático - layout fixo com valores padrão
 
 
   // Funções de edição removidas - layout fixo
