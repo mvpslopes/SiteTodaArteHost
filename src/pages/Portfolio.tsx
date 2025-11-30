@@ -1,14 +1,19 @@
-import React from 'react';
+import React, { useEffect } from 'react';
 import { Header } from '../components/layout/Header';
-import { Portfolio } from '../components/landing/Portfolio';
+import { QuemSomos } from '../components/landing/QuemSomos';
 import { WhatsAppButton } from '../components/layout/WhatsAppButton';
 
 export function PortfolioPage() {
+  useEffect(() => {
+    // Scroll para o topo quando a página carregar
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+  }, []);
+
   return (
     <div className="min-h-screen">
       <Header />
       <main>
-        <Portfolio />
+        <QuemSomos />
       </main>
       <WhatsAppButton />
     </div>

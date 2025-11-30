@@ -9,10 +9,10 @@ export function Header() {
 
   const navItems = [
     { label: 'Início', path: '/' },
-    { label: 'Quem Somos', path: '/portfolio' },
+    { label: 'Quem Somos', path: '/quem-somos' },
     { label: 'Nossos Serviços', path: '/servicos' },
     { label: 'Desenvolvimento de Sites', path: '/desenvolvimento-de-sites' },
-    { label: 'Seja Digital', path: '/equipe' },
+    { label: 'Seja Digital', path: '/seja-digital' },
     { label: 'Contato', path: '/contato' }
   ];
 

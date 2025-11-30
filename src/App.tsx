@@ -16,10 +16,10 @@ function App() {
       <div className="min-h-screen">
         <Routes>
           <Route path="/" element={<Home />} />
-          <Route path="/portfolio" element={<PortfolioPage />} />
+          <Route path="/quem-somos" element={<PortfolioPage />} />
           <Route path="/servicos" element={<ServicesPage />} />
           <Route path="/desenvolvimento-de-sites" element={<WebDevelopment />} />
-          <Route path="/equipe" element={<TeamPage />} />
+          <Route path="/seja-digital" element={<TeamPage />} />
           <Route path="/contato" element={<ContactPage />} />
         </Routes>
         <Footer />

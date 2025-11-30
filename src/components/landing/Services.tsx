@@ -1,139 +1,184 @@
 import React from 'react';
-import { Heart, Building, Cake, GraduationCap, Users, Camera, ArrowRight } from 'lucide-react';
-import { images } from '../../assets/images/imageConfig';
-
-const iconMap = {
-  Heart,
-  Building,
-  Cake,
-  GraduationCap,
-  Users,
-  Camera
-};
-
-type Service = {
-  id: string;
-  icon: keyof typeof iconMap;
-  name: string;
-  description: string;
-  price?: string;
-  image: string;
-};
 
 export function Services() {
-  const services: Service[] = [
-    {
-      id: '1',
-      icon: 'Heart',
-      name: 'Identidade Visual',
-      description: 'Desenvolvemos identidades visuais completas, incluindo logo, manual de marca e aplicações gráficas.',
-      price: 'A partir de R$ 2.500',
-      image: images.services.weddings
-    },
-    {
-      id: '2',
-      icon: 'Building',
-      name: 'Material Corporativo',
-      description: 'Criação de material gráfico corporativo: cartões, papelaria, apresentações e documentos institucionais.',
-      price: 'A partir de R$ 1.200',
-      image: images.services.corporate
-    },
-    {
-      id: '3',
-      icon: 'Cake',
-      name: 'Design de Embalagem',
-      description: 'Desenvolvimento de embalagens atrativas e funcionais que destacam seu produto no mercado.',
-      price: 'A partir de R$ 1.800',
-      image: images.services.birthday
-    },
-    {
-      id: '4',
-      icon: 'GraduationCap',
-      name: 'Design Editorial',
-      description: 'Criação de revistas, livros, catálogos e materiais editoriais com layout profissional.',
-      price: 'A partir de R$ 2.000',
-      image: images.services.graduation
-    },
-    {
-      id: '5',
-      icon: 'Users',
-      name: 'Sinalização',
-      description: 'Projetos de sinalização ambiental para empresas, eventos e espaços públicos.',
-      price: 'A partir de R$ 3.500',
-      image: images.services.conferences
-    },
-    {
-      id: '6',
-      icon: 'Camera',
-      name: 'Design Digital',
-      description: 'Criação de interfaces digitais, sites, aplicativos e materiais para mídias sociais.',
-      price: 'A partir de R$ 2.800',
-      image: images.services.exhibitions
-    }
-  ];
-
   return (
-    <section id="services" className="py-20">
+    <section id="services" className="py-20 bg-gray-50 min-h-screen">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-        <div className="text-center mb-16">
-          <h2 className="text-4xl sm:text-5xl font-bold text-white mb-4">
-            Nossos Serviços
-          </h2>
-          <p className="text-xl text-white max-w-3xl mx-auto">
-            Oferecemos soluções completas em design gráfico para fortalecer sua comunicação visual
-          </p>
-        </div>
+        <div className="max-w-4xl mx-auto">
+          {/* Título e Introdução */}
+          <div className="text-center mb-20">
+            <h1 className="text-4xl sm:text-5xl font-bold text-gray-900 mb-4">
+              Nossos Serviços
+            </h1>
+            <div className="w-20 h-0.5 bg-gradient-to-r from-logo to-logo-light mx-auto mb-6"></div>
+            <p className="text-xl sm:text-2xl text-gray-700 leading-relaxed max-w-3xl mx-auto">
+              Nosso objetivo é oferecer uma visão especializada para posicionar sua empresa onde ela merece estar.
+            </p>
+          </div>
 
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
-          {services.map((service) => {
-            const IconComponent = iconMap[service.icon as keyof typeof iconMap];
-            
-            return (
-              <div
-                key={service.id}
-                className="group bg-white rounded-2xl overflow-hidden shadow-lg hover:shadow-2xl transition-all duration-300 transform hover:-translate-y-2"
-              >
-                <div className="relative overflow-hidden">
-                  <img
-                    src={service.image}
-                    alt={service.name}
-                    className="w-full h-48 object-cover group-hover:scale-110 transition-transform duration-500"
-                  />
-                  <div className="absolute inset-0 bg-gradient-to-t from-black/70 via-black/20 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300">
-                    <div className="absolute bottom-4 left-4 right-4">
-                      <div className="w-12 h-12 bg-white/20 backdrop-blur-sm rounded-xl flex items-center justify-center mb-2">
-                        <IconComponent className="h-6 w-6 text-white" />
-                      </div>
-                    </div>
-                  </div>
-                </div>
-
-                <div className="p-6">
-                  <h3 className="text-xl font-bold text-gray-900 mb-3">{service.name}</h3>
-                  <p className="text-gray-600 leading-relaxed mb-4">{service.description}</p>
-                  
-                  <div className="flex justify-between items-center">
-                    {service.price && (
-                      <span className="text-logo font-semibold text-lg">{service.price}</span>
-                    )}
-                    <button className="flex items-center space-x-1 text-logo hover:text-logo-light transition-colors group-hover:translate-x-1">
-                      <span className="font-medium">Saiba mais</span>
-                      <ArrowRight className="h-4 w-4" />
-                    </button>
-                  </div>
-                </div>
+          {/* Seções de Serviços */}
+          <div className="space-y-12">
+            {/* Identidade Visual */}
+            <div className="bg-white rounded-lg shadow-sm p-8 hover:shadow-md transition-shadow duration-300">
+              <h2 className="text-2xl sm:text-3xl font-bold text-gray-900 mb-6 pb-3 border-b border-gray-200">
+                Identidade Visual
+              </h2>
+              <div className="space-y-4">
+                <p className="text-lg text-gray-800 font-semibold mb-3">
+                  Criação de marca
+                </p>
+                <ul className="space-y-3 text-gray-700 ml-4">
+                  <li className="flex items-start">
+                    <span className="text-logo mr-3 mt-1">•</span>
+                    <span>Logotipo e variações</span>
+                  </li>
+                  <li className="flex items-start">
+                    <span className="text-logo mr-3 mt-1">•</span>
+                    <span>Manual de identidade visual (brandbook)</span>
+                  </li>
+                  <li className="flex items-start">
+                    <span className="text-logo mr-3 mt-1">•</span>
+                    <span>Aplicações da marca (cartão de visita, assinatura de e-mail, capas para redes sociais)</span>
+                  </li>
+                </ul>
               </div>
-            );
-          })}
-        </div>
+            </div>
 
-        <div className="mt-16 text-center">
-          <p className="text-lg text-white mb-8">
-            Não encontrou o que procura? Vamos conversar sobre seu projeto!
-          </p>
-          <button className="bg-gradient-to-r from-logo to-logo-light text-white px-8 py-4 rounded-full font-semibold text-lg transition-all duration-300 transform hover:scale-105 shadow-lg hover:shadow-xl">
-            Solicitar Orçamento Personalizado
-          </button>
+            {/* Estratégia e Planejamento */}
+            <div className="bg-white rounded-lg shadow-sm p-8 hover:shadow-md transition-shadow duration-300">
+              <h2 className="text-2xl sm:text-3xl font-bold text-gray-900 mb-6 pb-3 border-b border-gray-200">
+                Estratégia e Planejamento
+              </h2>
+              <ul className="space-y-3 text-gray-700 ml-4">
+                <li className="flex items-start">
+                  <span className="text-logo mr-3 mt-1">•</span>
+                  <span>Diagnóstico de marca e mercado</span>
+                </li>
+                <li className="flex items-start">
+                  <span className="text-logo mr-3 mt-1">•</span>
+                  <span>Planejamento de marketing estratégico</span>
+                </li>
+                <li className="flex items-start">
+                  <span className="text-logo mr-3 mt-1">•</span>
+                  <span>Definição de persona e jornada do cliente</span>
+                </li>
+                <li className="flex items-start">
+                  <span className="text-logo mr-3 mt-1">•</span>
+                  <span>Posicionamento e branding</span>
+                </li>
+                <li className="flex items-start">
+                  <span className="text-logo mr-3 mt-1">•</span>
+                  <span>Plano de marketing de conteúdo</span>
+                </li>
+                <li className="flex items-start">
+                  <span className="text-logo mr-3 mt-1">•</span>
+                  <span>Criação de funil de vendas</span>
+                </li>
+              </ul>
+            </div>
+
+            {/* Marketing Digital */}
+            <div className="bg-white rounded-lg shadow-sm p-8 hover:shadow-md transition-shadow duration-300">
+              <h2 className="text-2xl sm:text-3xl font-bold text-gray-900 mb-6 pb-3 border-b border-gray-200">
+                Marketing Digital
+              </h2>
+              <ul className="space-y-3 text-gray-700 ml-4">
+                <li className="flex items-start">
+                  <span className="text-logo mr-3 mt-1">•</span>
+                  <span>Gestão de redes sociais (Instagram, Facebook, TikTok, etc.)</span>
+                </li>
+                <li className="flex items-start">
+                  <span className="text-logo mr-3 mt-1">•</span>
+                  <span>Criação de conteúdo (posts, stories, reels, vídeos, carrosséis)</span>
+                </li>
+                <li className="flex items-start">
+                  <span className="text-logo mr-3 mt-1">•</span>
+                  <span>Planejamento de calendário editorial</span>
+                </li>
+                <li className="flex items-start">
+                  <span className="text-logo mr-3 mt-1">•</span>
+                  <span>Análise de métricas e relatórios</span>
+                </li>
+              </ul>
+            </div>
+
+            {/* Produção de Conteúdo Visual */}
+            <div className="bg-white rounded-lg shadow-sm p-8 hover:shadow-md transition-shadow duration-300">
+              <h2 className="text-2xl sm:text-3xl font-bold text-gray-900 mb-6 pb-3 border-b border-gray-200">
+                Produção de Conteúdo Visual
+              </h2>
+              <div className="space-y-4">
+                <p className="text-lg text-gray-800 font-semibold mb-3">
+                  Produção de fotos e vídeos profissionais
+                </p>
+                <ul className="space-y-3 text-gray-700 ml-4">
+                  <li className="flex items-start">
+                    <span className="text-logo mr-3 mt-1">•</span>
+                    <span>Vídeos para anúncios, institucionais e reels</span>
+                  </li>
+                  <li className="flex items-start">
+                    <span className="text-logo mr-3 mt-1">•</span>
+                    <span>Captação e edição de conteúdo para campanhas</span>
+                  </li>
+                  <li className="flex items-start">
+                    <span className="text-logo mr-3 mt-1">•</span>
+                    <span>Motion design e edições profissionais</span>
+                  </li>
+                </ul>
+              </div>
+            </div>
+
+            {/* Marketing para Vendas & Performance */}
+            <div className="bg-white rounded-lg shadow-sm p-8 hover:shadow-md transition-shadow duration-300">
+              <h2 className="text-2xl sm:text-3xl font-bold text-gray-900 mb-6 pb-3 border-b border-gray-200">
+                Marketing para Vendas & Performance
+              </h2>
+              <div className="space-y-4">
+                <p className="text-lg text-gray-800 font-semibold mb-3">
+                  Criação e gestão de campanhas promocionais
+                </p>
+                <ul className="space-y-3 text-gray-700 ml-4">
+                  <li className="flex items-start">
+                    <span className="text-logo mr-3 mt-1">•</span>
+                    <span>Estratégias para lançamentos de produtos e/ou serviços</span>
+                  </li>
+                  <li className="flex items-start">
+                    <span className="text-logo mr-3 mt-1">•</span>
+                    <span>Consultoria para vendas online (WhatsApp, e-commerce, etc)</span>
+                  </li>
+                  <li className="flex items-start">
+                    <span className="text-logo mr-3 mt-1">•</span>
+                    <span>Gestão de eventos comerciais</span>
+                  </li>
+                </ul>
+              </div>
+            </div>
+
+            {/* Tráfego Pago | Mídia Paga */}
+            <div className="bg-white rounded-lg shadow-sm p-8 hover:shadow-md transition-shadow duration-300">
+              <h2 className="text-2xl sm:text-3xl font-bold text-gray-900 mb-6 pb-3 border-b border-gray-200">
+                Tráfego Pago | Mídia Paga
+              </h2>
+              <ul className="space-y-3 text-gray-700 ml-4">
+                <li className="flex items-start">
+                  <span className="text-logo mr-3 mt-1">•</span>
+                  <span>Gestão de anúncios no Meta Ads e Google Ads</span>
+                </li>
+                <li className="flex items-start">
+                  <span className="text-logo mr-3 mt-1">•</span>
+                  <span>Segmentação e otimização de campanhas</span>
+                </li>
+                <li className="flex items-start">
+                  <span className="text-logo mr-3 mt-1">•</span>
+                  <span>Remarketing e funil de conversão</span>
+                </li>
+                <li className="flex items-start">
+                  <span className="text-logo mr-3 mt-1">•</span>
+                  <span>Relatórios e performance de ROI</span>
+                </li>
+              </ul>
+            </div>
+          </div>
         </div>
       </div>
     </section>
