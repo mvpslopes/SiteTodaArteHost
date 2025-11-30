@@ -19,7 +19,7 @@ export function WhatsAppButton() {
       target="_blank"
       rel="noopener noreferrer"
       onClick={handleClick}
-      className="fixed bottom-6 right-6 bg-green-500 hover:bg-green-600 text-white p-4 rounded-full shadow-lg transform hover:scale-105 transition-all duration-200 z-50 group"
+      className="fixed bottom-6 right-6 bg-green-500 hover:bg-green-600 text-white p-4 rounded-full shadow-lg transform hover:scale-105 transition-all duration-200 z-[9999] group"
       aria-label="Falar no WhatsApp"
     >
       <MessageCircle className="h-6 w-6" />
