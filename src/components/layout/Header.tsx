@@ -38,9 +38,10 @@ export function Header() {
                 <Link
                   key={item.path}
                   to={item.path}
-                  className={`text-gray-700 hover:text-black transition-colors font-medium ${
+                  className={`hover:opacity-80 transition-colors font-medium ${
                     isActive(item.path) ? 'text-logo font-semibold' : ''
                   }`}
+                  style={{ color: '#070709' }}
                 >
                   {item.label}
                 </Link>
@@ -51,7 +52,8 @@ export function Header() {
           {/* Mobile menu button */}
           <button
             onClick={() => setIsMenuOpen(!isMenuOpen)}
-            className="md:hidden text-gray-700"
+            className="md:hidden"
+            style={{ color: '#070709' }}
           >
             {isMenuOpen ? <X className="h-6 w-6" /> : <Menu className="h-6 w-6" />}
           </button>
@@ -68,8 +70,9 @@ export function Header() {
                 className={`block w-full text-left py-2 transition-colors ${
                   isActive(item.path)
                     ? 'text-logo font-semibold'
-                    : 'text-gray-700 hover:text-black'
+                    : 'hover:opacity-80'
                 }`}
+                style={!isActive(item.path) ? { color: '#070709' } : {}}
               >
                 {item.label}
               </Link>
