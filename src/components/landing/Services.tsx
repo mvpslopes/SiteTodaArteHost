@@ -75,17 +75,17 @@ export function Services() {
   return (
     <>
       {/* Hero Section */}
-      <section className="relative bg-gradient-to-b from-black via-neutral-900 to-neutral-800 text-white py-24 overflow-hidden">
+      <section className="relative bg-gradient-to-b from-black via-neutral-900 to-neutral-800 text-white py-12 sm:py-16 md:py-20 lg:py-24 overflow-hidden">
         <div className="absolute inset-0 bg-black/40"></div>
         <div className="relative z-10 max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 text-center">
           <FadeIn delay={0} duration={0.8}>
-            <div className="space-y-8">
-              <h1 className="text-5xl sm:text-6xl md:text-7xl font-extrabold">
+            <div className="space-y-4 sm:space-y-6 md:space-y-8">
+              <h1 className="text-3xl sm:text-4xl md:text-5xl lg:text-6xl xl:text-7xl font-extrabold px-2">
                 <span className="text-white">Nossos</span>
                 <br />
                 <span className="text-logo">Serviços</span>
               </h1>
-              <p className="text-xl sm:text-2xl text-gray-200 max-w-3xl mx-auto leading-relaxed">
+              <p className="text-base sm:text-lg md:text-xl lg:text-2xl text-gray-200 max-w-3xl mx-auto leading-relaxed px-2">
                 Nosso objetivo é oferecer uma visão especializada para posicionar sua empresa onde ela merece estar.
               </p>
             </div>
@@ -94,37 +94,37 @@ export function Services() {
       </section>
 
       {/* Services Section */}
-      <section className="py-20 bg-gray-50">
+      <section className="py-12 sm:py-16 md:py-20 bg-gray-50">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <FadeIn delay={0} duration={0.6}>
-            <div className="text-center mb-16">
-              <h2 className="text-4xl sm:text-5xl font-bold text-gray-900 mb-4">
+            <div className="text-center mb-8 sm:mb-12 md:mb-16">
+              <h2 className="text-2xl sm:text-3xl md:text-4xl lg:text-5xl font-bold text-gray-900 mb-3 sm:mb-4 px-2">
                 Nossos Serviços
               </h2>
-              <p className="text-xl text-gray-600 max-w-3xl mx-auto">
+              <p className="text-base sm:text-lg md:text-xl text-gray-600 max-w-3xl mx-auto px-2">
                 Oferecemos soluções completas em marketing digital para atender todas as suas necessidades
               </p>
             </div>
           </FadeIn>
 
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 sm:gap-6 md:gap-8">
             {services.map((service, index) => {
               const IconComponent = service.icon;
               return (
                 <FadeIn key={index} delay={index * 100} duration={0.6}>
                   <div
-                    className="bg-white rounded-2xl p-8 shadow-lg hover:shadow-2xl transition-all duration-300 transform hover:-translate-y-2 card-hover"
+                    className="bg-white rounded-xl sm:rounded-2xl p-4 sm:p-6 md:p-8 shadow-lg hover:shadow-2xl transition-all duration-300 transform hover:-translate-y-2 card-hover"
                   >
-                  <div className="bg-gradient-to-br from-logo to-logo-light p-4 rounded-xl w-16 h-16 flex items-center justify-center mb-6">
-                    <IconComponent className="h-8 w-8 text-white" />
+                  <div className="bg-gradient-to-br from-logo to-logo-light p-3 sm:p-4 rounded-xl w-12 h-12 sm:w-14 sm:h-14 md:w-16 md:h-16 flex items-center justify-center mb-4 sm:mb-6">
+                    <IconComponent className="h-6 w-6 sm:h-7 sm:w-7 md:h-8 md:w-8 text-white" />
                   </div>
-                  <h3 className="text-2xl font-bold text-gray-900 mb-3">{service.title}</h3>
-                  <p className="text-gray-600 mb-6 leading-relaxed">{service.description}</p>
-                  <ul className="space-y-2">
+                  <h3 className="text-lg sm:text-xl md:text-2xl font-bold text-gray-900 mb-2 sm:mb-3">{service.title}</h3>
+                  <p className="text-sm sm:text-base text-gray-600 mb-4 sm:mb-6 leading-relaxed">{service.description}</p>
+                  <ul className="space-y-1 sm:space-y-2">
                     {service.features.map((feature, idx) => (
-                      <li key={idx} className="flex items-center text-gray-700">
-                        <span className="text-logo mr-2">✓</span>
-                        <span className="text-sm">{feature}</span>
+                      <li key={idx} className="flex items-start text-gray-700">
+                        <span className="text-logo mr-2 mt-0.5 flex-shrink-0">✓</span>
+                        <span className="text-xs sm:text-sm">{feature}</span>
                       </li>
                     ))}
                   </ul>
@@ -137,21 +137,21 @@ export function Services() {
       </section>
 
       {/* CTA Section */}
-      <section className="py-20 bg-gradient-to-r from-logo to-logo-light">
+      <section className="py-12 sm:py-16 md:py-20 bg-gradient-to-r from-logo to-logo-light">
         <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 text-center">
           <FadeIn delay={0} duration={0.6}>
-            <h2 className="text-4xl sm:text-5xl font-bold text-white mb-6">
+            <h2 className="text-2xl sm:text-3xl md:text-4xl lg:text-5xl font-bold text-white mb-4 sm:mb-6 px-2">
               Pronto para impulsionar seu negócio?
             </h2>
-            <p className="text-xl text-white/90 mb-8">
+            <p className="text-base sm:text-lg md:text-xl text-white/90 mb-6 sm:mb-8 px-2">
               Entre em contato e vamos criar estratégias personalizadas para o seu sucesso
             </p>
             <Link
               to="/contato"
-              className="inline-flex items-center space-x-2 bg-white text-logo px-8 py-4 rounded-lg font-semibold text-lg transition-all duration-300 shadow-lg hover:shadow-xl hover:scale-105"
+              className="inline-flex items-center space-x-2 bg-white text-logo px-6 sm:px-8 py-3 sm:py-4 rounded-lg font-semibold text-sm sm:text-base md:text-lg transition-all duration-300 shadow-lg hover:shadow-xl hover:scale-105"
             >
               <span>Solicitar Orçamento</span>
-              <ArrowRight className="h-5 w-5" />
+              <ArrowRight className="h-4 w-4 sm:h-5 sm:w-5" />
             </Link>
           </FadeIn>
         </div>

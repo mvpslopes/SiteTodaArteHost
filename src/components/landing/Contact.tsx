@@ -127,17 +127,17 @@ export function Contact() {
   return (
     <>
       {/* Hero Section */}
-      <section className="relative bg-gradient-to-b from-black via-neutral-900 to-neutral-800 text-white py-24 overflow-hidden">
+      <section className="relative bg-gradient-to-b from-black via-neutral-900 to-neutral-800 text-white py-12 sm:py-16 md:py-20 lg:py-24 overflow-hidden">
         <div className="absolute inset-0 bg-black/40"></div>
         <div className="relative z-10 max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 text-center">
           <FadeIn delay={0} duration={0.8}>
-            <div className="space-y-8">
-              <h1 className="text-5xl sm:text-6xl md:text-7xl font-extrabold">
+            <div className="space-y-4 sm:space-y-6 md:space-y-8">
+              <h1 className="text-3xl sm:text-4xl md:text-5xl lg:text-6xl xl:text-7xl font-extrabold px-2">
                 <span className="text-white">Vamos</span>
                 <br />
                 <span className="text-logo">Conversar?</span>
               </h1>
-              <p className="text-xl sm:text-2xl text-gray-200 max-w-3xl mx-auto leading-relaxed">
+              <p className="text-base sm:text-lg md:text-xl lg:text-2xl text-gray-200 max-w-3xl mx-auto leading-relaxed px-2">
                 Estamos prontos para transformar suas ideias em realidade. Entre em contato conosco!
               </p>
             </div>
@@ -146,14 +146,14 @@ export function Contact() {
       </section>
 
       {/* Contact Section */}
-      <section className="py-20 bg-gray-50">
+      <section className="py-12 sm:py-16 md:py-20 bg-gray-50">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="grid grid-cols-1 lg:grid-cols-2 gap-12">
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 sm:gap-10 lg:gap-12">
             {/* Contact Info */}
             <FadeIn delay={0} duration={0.6} direction="left">
-              <div className="space-y-8">
+              <div className="space-y-6 sm:space-y-8">
                 <div>
-                  <h3 className="text-3xl font-bold text-gray-900 mb-6">Informações de Contato</h3>
+                  <h3 className="text-2xl sm:text-3xl font-bold text-gray-900 mb-4 sm:mb-6">Informações de Contato</h3>
                   <div className="space-y-4">
                     {contactInfo.map((item, index) => (
                       <FadeIn key={index} delay={index * 50} duration={0.4}>
@@ -161,17 +161,17 @@ export function Contact() {
                           href={item.link}
                           target="_blank"
                           rel="noopener noreferrer"
-                          className="flex items-start space-x-4 p-4 bg-white rounded-xl shadow-md hover:shadow-lg transition-all duration-300 group card-hover"
+                          className="flex items-start space-x-3 sm:space-x-4 p-3 sm:p-4 bg-white rounded-xl shadow-md hover:shadow-lg transition-all duration-300 group card-hover"
                           onClick={() => {
                             analyticsEvents.externalLink(item.title.toLowerCase());
                           }}
                         >
-                      <div className="bg-gradient-to-br from-logo to-logo-light p-3 rounded-lg group-hover:scale-110 transition-transform duration-300">
-                        {React.createElement(item.icon, { className: `h-6 w-6 text-white ${item.iconColor}` })}
+                      <div className="bg-gradient-to-br from-logo to-logo-light p-2 sm:p-3 rounded-lg group-hover:scale-110 transition-transform duration-300 flex-shrink-0">
+                        {React.createElement(item.icon, { className: `h-5 w-5 sm:h-6 sm:w-6 text-white ${item.iconColor}` })}
                       </div>
-                      <div className="flex-1">
-                        <h4 className="text-gray-900 font-semibold mb-1 group-hover:text-logo transition-colors">{item.title}</h4>
-                        <p className="text-gray-600 group-hover:text-gray-900 transition-colors">{item.content}</p>
+                      <div className="flex-1 min-w-0">
+                        <h4 className="text-sm sm:text-base text-gray-900 font-semibold mb-1 group-hover:text-logo transition-colors">{item.title}</h4>
+                        <p className="text-xs sm:text-sm text-gray-600 group-hover:text-gray-900 transition-colors break-words">{item.content}</p>
                       </div>
                         </a>
                       </FadeIn>
@@ -180,9 +180,9 @@ export function Contact() {
                 </div>
 
                 <FadeIn delay={200} duration={0.6}>
-                  <div className="bg-white rounded-2xl p-6 shadow-lg">
-                    <h4 className="text-xl font-bold text-gray-900 mb-4">Horário de Atendimento</h4>
-                    <div className="space-y-2 text-gray-600">
+                  <div className="bg-white rounded-xl sm:rounded-2xl p-4 sm:p-6 shadow-lg">
+                    <h4 className="text-lg sm:text-xl font-bold text-gray-900 mb-3 sm:mb-4">Horário de Atendimento</h4>
+                    <div className="space-y-2 text-sm sm:text-base text-gray-600">
                       <div className="flex justify-between">
                         <span>Domingo:</span>
                         <span className="italic">Fechada</span>
@@ -219,13 +219,13 @@ export function Contact() {
 
             {/* Contact Form */}
             <FadeIn delay={100} duration={0.6} direction="right">
-              <div className="bg-white rounded-2xl p-8 shadow-lg">
-                <h3 className="text-3xl font-bold text-gray-900 mb-6">Envie sua Mensagem</h3>
+              <div className="bg-white rounded-xl sm:rounded-2xl p-4 sm:p-6 md:p-8 shadow-lg">
+                <h3 className="text-2xl sm:text-3xl font-bold text-gray-900 mb-4 sm:mb-6">Envie sua Mensagem</h3>
               
-              <form onSubmit={handleSubmit} className="space-y-6">
-                <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
+              <form onSubmit={handleSubmit} className="space-y-4 sm:space-y-6">
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 sm:gap-6">
                   <div>
-                    <label htmlFor="name" className="block text-gray-900 font-medium mb-2">
+                    <label htmlFor="name" className="block text-sm sm:text-base text-gray-900 font-medium mb-1 sm:mb-2">
                       Nome *
                     </label>
                     <input
@@ -235,12 +235,12 @@ export function Contact() {
                       required
                       value={formData.name}
                       onChange={handleChange}
-                      className="w-full px-4 py-3 bg-gray-50 border border-gray-300 rounded-lg text-gray-900 placeholder-gray-500 focus:outline-none focus:border-logo focus:ring-2 focus:ring-logo-light/20 transition-all"
+                      className="w-full px-3 sm:px-4 py-2 sm:py-3 text-sm sm:text-base bg-gray-50 border border-gray-300 rounded-lg text-gray-900 placeholder-gray-500 focus:outline-none focus:border-logo focus:ring-2 focus:ring-logo-light/20 transition-all"
                       placeholder="Seu nome"
                     />
                   </div>
                   <div>
-                    <label htmlFor="contact-email" className="block text-gray-900 font-medium mb-2">
+                    <label htmlFor="contact-email" className="block text-sm sm:text-base text-gray-900 font-medium mb-1 sm:mb-2">
                       E-mail *
                     </label>
                     <input
@@ -250,14 +250,14 @@ export function Contact() {
                       required
                       value={formData.email}
                       onChange={handleChange}
-                      className="w-full px-4 py-3 bg-gray-50 border border-gray-300 rounded-lg text-gray-900 placeholder-gray-500 focus:outline-none focus:border-logo focus:ring-2 focus:ring-logo-light/20 transition-all"
+                      className="w-full px-3 sm:px-4 py-2 sm:py-3 text-sm sm:text-base bg-gray-50 border border-gray-300 rounded-lg text-gray-900 placeholder-gray-500 focus:outline-none focus:border-logo focus:ring-2 focus:ring-logo-light/20 transition-all"
                       placeholder="seu@email.com"
                     />
                   </div>
                 </div>
 
                 <div>
-                  <label htmlFor="subject" className="block text-gray-900 font-medium mb-2">
+                  <label htmlFor="subject" className="block text-sm sm:text-base text-gray-900 font-medium mb-1 sm:mb-2">
                     Assunto *
                   </label>
                   <input
@@ -267,23 +267,23 @@ export function Contact() {
                     required
                     value={formData.subject}
                     onChange={handleChange}
-                    className="w-full px-4 py-3 bg-gray-50 border border-gray-300 rounded-lg text-gray-900 placeholder-gray-500 focus:outline-none focus:border-logo focus:ring-2 focus:ring-logo-light/20 transition-all"
+                    className="w-full px-3 sm:px-4 py-2 sm:py-3 text-sm sm:text-base bg-gray-50 border border-gray-300 rounded-lg text-gray-900 placeholder-gray-500 focus:outline-none focus:border-logo focus:ring-2 focus:ring-logo-light/20 transition-all"
                     placeholder="Como podemos ajudar?"
                   />
                 </div>
 
                 <div>
-                  <label htmlFor="message" className="block text-gray-900 font-medium mb-2">
+                  <label htmlFor="message" className="block text-sm sm:text-base text-gray-900 font-medium mb-1 sm:mb-2">
                     Mensagem *
                   </label>
                   <textarea
                     id="message"
                     name="message"
                     required
-                    rows={5}
+                    rows={4}
                     value={formData.message}
                     onChange={handleChange}
-                    className="w-full px-4 py-3 bg-gray-50 border border-gray-300 rounded-lg text-gray-900 placeholder-gray-500 focus:outline-none focus:border-logo focus:ring-2 focus:ring-logo-light/20 transition-all resize-none"
+                    className="w-full px-3 sm:px-4 py-2 sm:py-3 text-sm sm:text-base bg-gray-50 border border-gray-300 rounded-lg text-gray-900 placeholder-gray-500 focus:outline-none focus:border-logo focus:ring-2 focus:ring-logo-light/20 transition-all resize-none"
                     placeholder="Conte-nos sobre seu projeto..."
                   />
                 </div>
@@ -303,7 +303,7 @@ export function Contact() {
                 <button
                   type="submit"
                   disabled={isSubmitting}
-                  className="w-full bg-gradient-to-r from-logo to-logo-light text-white px-8 py-4 rounded-lg font-semibold transition-all duration-300 transform hover:scale-105 shadow-lg hover:shadow-xl flex items-center justify-center space-x-2 disabled:opacity-50 disabled:cursor-not-allowed disabled:transform-none"
+                  className="w-full bg-gradient-to-r from-logo to-logo-light text-white px-6 sm:px-8 py-3 sm:py-4 rounded-lg font-semibold text-sm sm:text-base transition-all duration-300 transform hover:scale-105 shadow-lg hover:shadow-xl flex items-center justify-center space-x-2 disabled:opacity-50 disabled:cursor-not-allowed disabled:transform-none"
                 >
                   {isSubmitting ? (
                     <>
