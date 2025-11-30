@@ -39,6 +39,8 @@ html {
   -ms-overflow-style: none; /* IE and Edge */
 }
 
+/* Header navigation - fonte aplicada via estilo inline no componente */
+
 .input-focus-custom:focus {
   border-color: #AC8869 !important;
   box-shadow: 0 0 0 2px #D4B89699 !important;

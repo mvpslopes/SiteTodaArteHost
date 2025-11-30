@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import { useState } from 'react';
 import { Link, useLocation } from 'react-router-dom';
 import { Menu, X } from 'lucide-react';
 import logo from '../../assets/logo.png';
@@ -9,10 +9,10 @@ export function Header() {
 
   const navItems = [
     { label: 'Início', path: '/' },
-    { label: 'Portfólio', path: '/portfolio' },
-    { label: 'Serviços', path: '/servicos' },
+    { label: 'Quem Somos', path: '/portfolio' },
+    { label: 'Nossos Serviços', path: '/servicos' },
     { label: 'Desenvolvimento de Sites', path: '/desenvolvimento-de-sites' },
-    { label: 'Equipe', path: '/equipe' },
+    { label: 'Seja Digital', path: '/equipe' },
     { label: 'Contato', path: '/contato' }
   ];
 
@@ -38,10 +38,13 @@ export function Header() {
                 <Link
                   key={item.path}
                   to={item.path}
-                  className={`hover:opacity-80 transition-colors font-medium ${
-                    isActive(item.path) ? 'text-logo font-semibold' : ''
+                  className={`header-nav-link hover:opacity-80 transition-colors font-medium ${
+                    isActive(item.path) ? 'font-semibold' : ''
                   }`}
-                  style={{ color: '#070709' }}
+                  style={{ 
+                    color: isActive(item.path) ? '#AC8869' : '#070709',
+                    fontFamily: 'inherit'
+                  }}
                 >
                   {item.label}
                 </Link>
@@ -67,12 +70,15 @@ export function Header() {
                 key={item.path}
                 to={item.path}
                 onClick={() => setIsMenuOpen(false)}
-                className={`block w-full text-left py-2 transition-colors ${
+                className={`header-nav-link block w-full text-left py-2 transition-colors ${
                   isActive(item.path)
-                    ? 'text-logo font-semibold'
+                    ? 'font-semibold'
                     : 'hover:opacity-80'
                 }`}
-                style={!isActive(item.path) ? { color: '#070709' } : {}}
+                style={{ 
+                  color: isActive(item.path) ? '#AC8869' : '#070709',
+                  fontFamily: 'inherit'
+                }}
               >
                 {item.label}
               </Link>
