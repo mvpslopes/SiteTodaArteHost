@@ -79,14 +79,15 @@ export function Hero() {
 
   return (
     <section 
-      className="relative text-white min-h-[calc(100vh-5rem)] overflow-hidden hero-container"
+      className="relative text-white min-h-[calc(100vh-5rem)] hero-container"
       style={{
-        background: 'linear-gradient(135deg, #f5f1eb 0%, #e8ddd4 25%, #d4c4b0 50%, #c9b8a3 75%, #b8a690 100%)'
+        background: 'linear-gradient(135deg, #f5f1eb 0%, #e8ddd4 25%, #d4c4b0 50%, #c9b8a3 75%, #b8a690 100%)',
+        overflow: 'visible'
       }}
     >
 
-      <div className="relative z-10 w-full" style={{ height: 'calc(100vh - 5rem)', minHeight: 'calc(100vh - 5rem)' }}>
-        <div className="relative w-full" style={{ height: '100%' }}>
+      <div className="relative z-10 w-full" style={{ height: 'calc(100vh - 5rem)', minHeight: 'calc(100vh - 5rem)', overflow: 'visible' }}>
+        <div className="relative w-full" style={{ height: '100%', overflow: 'visible' }}>
           {/* SEU NEGÓCIO SEU SUCESSO */}
           <h1 
             className="absolute font-light uppercase tracking-wide leading-tight"
@@ -103,27 +104,35 @@ export function Hero() {
               pointerEvents: 'none'
             }}
           >
-            <div>Seu Negócio</div>
-            <div>Seu Sucesso</div>
+            <div className="text-shine" style={{ display: 'block', width: '100%', textAlign: 'center' }}>Seu Negócio</div>
+            <div className="text-shine" style={{ display: 'block', width: '100%', textAlign: 'center' }}>Seu Sucesso</div>
           </h1>
 
           {/* Conecte */}
           <div 
-            className="absolute font-normal italic leading-none"
+            className="absolute"
             style={{ 
-              fontFamily: "'Andrea Bellarosa', cursive", 
-              color: '#4c2e13',
-              fontSize: sizes.conecte.fontSize,
               top: positions.conecte.top,
               left: positions.conecte.left,
               transform: 'translate(-50%, -50%)',
-              whiteSpace: 'nowrap',
-              userSelect: 'none',
               zIndex: zIndexes.conecte,
-              pointerEvents: 'none'
+              pointerEvents: 'none',
+              overflow: 'visible'
             }}
           >
-            <span>Conecte</span>
+            <span 
+              className="text-shine-safe font-normal italic"
+              style={{ 
+                fontFamily: "'Andrea Bellarosa', cursive", 
+                color: '#4c2e13',
+                fontSize: sizes.conecte.fontSize,
+                display: 'inline-block',
+                whiteSpace: 'nowrap',
+                userSelect: 'none'
+              }}
+            >
+              Conecte
+            </span>
           </div>
           
           {/* Botão */}
