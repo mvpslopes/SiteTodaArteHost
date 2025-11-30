@@ -1,6 +1,8 @@
 import React, { useState } from 'react';
-import { Mail, MessageCircle, Send } from 'lucide-react';
+import { Mail, MessageCircle, Send, ArrowRight } from 'lucide-react';
+import { Link } from 'react-router-dom';
 import { analyticsEvents } from '../../utils/analytics';
+import { FadeIn } from '../common/FadeIn';
 
 // Componentes SVG para Instagram e Facebook
 const InstagramIcon = ({ className }: { className?: string }) => (
@@ -22,28 +24,66 @@ export function Contact() {
     subject: '',
     message: ''
   });
+  const [isSubmitting, setIsSubmitting] = useState(false);
+  const [submitStatus, setSubmitStatus] = useState<{
+    type: 'success' | 'error' | null;
+    message: string;
+  }>({ type: null, message: '' });
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    setIsSubmitting(true);
+    setSubmitStatus({ type: null, message: '' });
 
-      // Rastrear tentativa de envio do formulário
-      analyticsEvents.contactFormSubmit('contact');
+    // Rastrear tentativa de envio do formulário
+    analyticsEvents.contactFormSubmit('contact');
 
-    // Criar link mailto com os dados do formulário
-    const emailBody = encodeURIComponent(
-      `Olá,\n\nMeu nome é ${formData.name}.\n\n${formData.message}\n\nAtenciosamente,\n${formData.name}\n${formData.email}`
-    );
-    const emailSubject = encodeURIComponent(formData.subject);
-    const mailtoLink = `mailto:todaarte.arte@gmail.com?subject=${emailSubject}&body=${emailBody}`;
-    
-    // Abrir cliente de email
-    window.location.href = mailtoLink;
+    try {
+      // Enviar dados para o endpoint PHP na Hostinger
+      const response = await fetch('/contact-form.php', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          name: formData.name,
+          email: formData.email,
+          subject: formData.subject,
+          message: formData.message
+        })
+      });
 
-      // Rastrear envio bem-sucedido
-      analyticsEvents.buttonClick('contact_form_submit', 'contact');
-      
-    // Limpar formulário
-      setFormData({ name: '', email: '', subject: '', message: '' });
+      const result = await response.json();
+
+      if (result.success) {
+        // Sucesso
+        setSubmitStatus({
+          type: 'success',
+          message: result.message || 'Mensagem enviada com sucesso! Entraremos em contato em breve.'
+        });
+
+        // Rastrear envio bem-sucedido
+        analyticsEvents.buttonClick('contact_form_submit', 'contact');
+
+        // Limpar formulário
+        setFormData({ name: '', email: '', subject: '', message: '' });
+
+        // Limpar mensagem de sucesso após 5 segundos
+        setTimeout(() => {
+          setSubmitStatus({ type: null, message: '' });
+        }, 5000);
+      } else {
+        throw new Error(result.message || 'Erro ao enviar mensagem');
+      }
+    } catch (error) {
+      console.error('Erro ao enviar email:', error);
+      setSubmitStatus({
+        type: 'error',
+        message: error instanceof Error ? error.message : 'Erro ao enviar mensagem. Por favor, tente novamente ou entre em contato diretamente pelo email.'
+      });
+    } finally {
+      setIsSubmitting(false);
+    }
   };
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
@@ -53,121 +93,139 @@ export function Contact() {
     }));
   };
 
+  const contactInfo = [
+    {
+      icon: MessageCircle,
+      title: 'WhatsApp',
+      content: '(31) 9 9610-1939',
+      link: 'https://wa.me/553196101939?text=Olá!%20Gostaria%20de%20saber%20mais%20sobre%20os%20serviços.',
+      iconColor: 'text-green-500'
+    },
+    {
+      icon: InstagramIcon,
+      title: 'Instagram',
+      content: '@todaart.e',
+      link: 'https://www.instagram.com/todaart.e',
+      iconColor: 'text-pink-500'
+    },
+    {
+      icon: Mail,
+      title: 'E-mail',
+      content: 'contato@todaarte.com.br',
+      link: 'mailto:contato@todaarte.com.br',
+      iconColor: 'text-blue-500'
+    },
+    {
+      icon: FacebookIcon,
+      title: 'Facebook',
+      content: 'Toda Arte Marketing',
+      link: 'https://www.facebook.com/todaartemarketing',
+      iconColor: 'text-blue-600'
+    }
+  ];
+
   return (
-    <section id="contact" className="py-20">
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-        <div className="text-center mb-16">
-          <h2 className="text-4xl sm:text-5xl font-bold text-white mb-4">
-            Vamos Conversar?
-          </h2>
-          <p className="text-xl text-gray-300 max-w-3xl mx-auto">
-            Estamos prontos para transformar suas ideias em realidade. Entre em contato conosco!
-          </p>
+    <>
+      {/* Hero Section */}
+      <section className="relative bg-gradient-to-b from-black via-neutral-900 to-neutral-800 text-white py-24 overflow-hidden">
+        <div className="absolute inset-0 bg-black/40"></div>
+        <div className="relative z-10 max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 text-center">
+          <FadeIn delay={0} duration={0.8}>
+            <div className="space-y-8">
+              <h1 className="text-5xl sm:text-6xl md:text-7xl font-extrabold">
+                <span className="text-white">Vamos</span>
+                <br />
+                <span className="text-logo">Conversar?</span>
+              </h1>
+              <p className="text-xl sm:text-2xl text-gray-200 max-w-3xl mx-auto leading-relaxed">
+                Estamos prontos para transformar suas ideias em realidade. Entre em contato conosco!
+              </p>
+            </div>
+          </FadeIn>
         </div>
+      </section>
 
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-12">
-          {/* Contact Info */}
-          <div className="space-y-8">
-            <div>
-              <h3 className="text-2xl font-bold text-white mb-6">Informações de Contato</h3>
-              <div className="space-y-6">
-                {[
-                  {
-                    icon: MessageCircle,
-                    title: 'WhatsApp',
-                    content: '(31) 9 9610-1939',
-                    link: 'https://wa.me/553196101939?text=Olá!%20Gostaria%20de%20saber%20mais%20sobre%20os%20serviços.',
-                    iconColor: 'text-green-500'
-                  },
-                  {
-                    icon: InstagramIcon,
-                    title: 'Instagram',
-                    content: '@todaart.e',
-                    link: 'https://www.instagram.com/todaart.e',
-                    iconColor: 'text-pink-500'
-                  },
-                  {
-                    icon: Mail,
-                    title: 'E-mail',
-                    content: 'todaarte.arte@gmail.com',
-                    link: 'mailto:todaarte.arte@gmail.com',
-                    iconColor: 'text-blue-500'
-                  },
-                  {
-                    icon: FacebookIcon,
-                    title: 'Facebook',
-                    content: 'Toda Arte Marketing',
-                    link: 'https://www.facebook.com/todaartemarketing',
-                    iconColor: 'text-blue-600'
-                  }
-                ].map((item, index) => (
-                  <a
-                    key={index}
-                    href={item.link}
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    className="flex items-start space-x-4 p-4 rounded-lg hover:bg-white/10 transition-all duration-300 group"
-                    onClick={() => {
-                      analyticsEvents.externalLink(item.title.toLowerCase());
-                    }}
-                  >
-                    <div className="bg-gradient-to-br from-logo to-logo-light p-3 rounded-lg group-hover:scale-110 transition-transform duration-300">
-                      {React.createElement(item.icon, { className: `h-6 w-6 text-white ${item.iconColor}` })}
+      {/* Contact Section */}
+      <section className="py-20 bg-gray-50">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-12">
+            {/* Contact Info */}
+            <FadeIn delay={0} duration={0.6} direction="left">
+              <div className="space-y-8">
+                <div>
+                  <h3 className="text-3xl font-bold text-gray-900 mb-6">Informações de Contato</h3>
+                  <div className="space-y-4">
+                    {contactInfo.map((item, index) => (
+                      <FadeIn key={index} delay={index * 50} duration={0.4}>
+                        <a
+                          href={item.link}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className="flex items-start space-x-4 p-4 bg-white rounded-xl shadow-md hover:shadow-lg transition-all duration-300 group card-hover"
+                          onClick={() => {
+                            analyticsEvents.externalLink(item.title.toLowerCase());
+                          }}
+                        >
+                      <div className="bg-gradient-to-br from-logo to-logo-light p-3 rounded-lg group-hover:scale-110 transition-transform duration-300">
+                        {React.createElement(item.icon, { className: `h-6 w-6 text-white ${item.iconColor}` })}
+                      </div>
+                      <div className="flex-1">
+                        <h4 className="text-gray-900 font-semibold mb-1 group-hover:text-logo transition-colors">{item.title}</h4>
+                        <p className="text-gray-600 group-hover:text-gray-900 transition-colors">{item.content}</p>
+                      </div>
+                        </a>
+                      </FadeIn>
+                    ))}
+                  </div>
+                </div>
+
+                <FadeIn delay={200} duration={0.6}>
+                  <div className="bg-white rounded-2xl p-6 shadow-lg">
+                    <h4 className="text-xl font-bold text-gray-900 mb-4">Horário de Atendimento</h4>
+                    <div className="space-y-2 text-gray-600">
+                      <div className="flex justify-between">
+                        <span>Domingo:</span>
+                        <span className="italic">Fechada</span>
+                      </div>
+                      <div className="flex justify-between">
+                        <span>Segunda-feira:</span>
+                        <span>14:00 – 19:00</span>
+                      </div>
+                      <div className="flex justify-between">
+                        <span>Terça-feira:</span>
+                        <span>14:00 – 19:00</span>
+                      </div>
+                      <div className="flex justify-between">
+                        <span>Quarta-feira:</span>
+                        <span>14:00 – 19:00</span>
+                      </div>
+                      <div className="flex justify-between">
+                        <span>Quinta-feira:</span>
+                        <span>14:00 – 19:00</span>
+                      </div>
+                      <div className="flex justify-between">
+                        <span>Sexta-feira:</span>
+                        <span>14:00 – 17:00</span>
+                      </div>
+                      <div className="flex justify-between">
+                        <span>Sábado:</span>
+                        <span className="italic">Fechada</span>
+                      </div>
                     </div>
-                    <div className="flex-1">
-                      <h4 className="text-white font-semibold mb-1 group-hover:text-logo-light transition-colors">{item.title}</h4>
-                      <p className="text-gray-300 group-hover:text-white transition-colors">{item.content}</p>
-                    </div>
-                  </a>
-                ))}
+                  </div>
+                </FadeIn>
               </div>
-            </div>
+            </FadeIn>
 
-            <div className="bg-gradient-to-br from-logo/10 to-logo-light/10 backdrop-blur-sm border border-logo/20 rounded-2xl p-6">
-              <h4 className="text-white font-semibold mb-3">Horário de Atendimento</h4>
-              <table className="w-full text-gray-300">
-                <tbody>
-                  <tr>
-                    <td className="pr-4">Domingo:</td>
-                    <td className="italic">Fechada</td>
-                  </tr>
-                  <tr>
-                    <td className="pr-4">Segunda-feira:</td>
-                    <td>14:00 – 19:00</td>
-                  </tr>
-                  <tr>
-                    <td className="pr-4">Terça-feira:</td>
-                    <td>14:00 – 19:00</td>
-                  </tr>
-                  <tr>
-                    <td className="pr-4">Quarta-feira:</td>
-                    <td>14:00 – 19:00</td>
-                  </tr>
-                  <tr>
-                    <td className="pr-4">Quinta-feira:</td>
-                    <td>14:00 – 19:00</td>
-                  </tr>
-                  <tr>
-                    <td className="pr-4">Sexta-feira:</td>
-                    <td>14:00 – 17:00</td>
-                  </tr>
-                  <tr>
-                    <td className="pr-4">Sábado:</td>
-                    <td className="italic">Fechada</td>
-                  </tr>
-                </tbody>
-              </table>
-            </div>
-          </div>
-
-          {/* Contact Form */}
-          <div className="bg-gradient-to-br from-logo to-logo-light border border-logo rounded-2xl p-8 shadow-2xl">
-            <h3 className="text-2xl font-bold text-white mb-6">Envie sua Mensagem</h3>
-            
+            {/* Contact Form */}
+            <FadeIn delay={100} duration={0.6} direction="right">
+              <div className="bg-white rounded-2xl p-8 shadow-lg">
+                <h3 className="text-3xl font-bold text-gray-900 mb-6">Envie sua Mensagem</h3>
+              
               <form onSubmit={handleSubmit} className="space-y-6">
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
                   <div>
-                    <label htmlFor="name" className="block text-white font-medium mb-2">
+                    <label htmlFor="name" className="block text-gray-900 font-medium mb-2">
                       Nome *
                     </label>
                     <input
@@ -177,12 +235,12 @@ export function Contact() {
                       required
                       value={formData.name}
                       onChange={handleChange}
-                      className="w-full px-4 py-3 bg-white/30 border border-logo-light rounded-lg text-black placeholder-gray-700 focus:outline-none focus:border-logo focus:ring-2 focus:ring-logo-light/20 transition-all"
+                      className="w-full px-4 py-3 bg-gray-50 border border-gray-300 rounded-lg text-gray-900 placeholder-gray-500 focus:outline-none focus:border-logo focus:ring-2 focus:ring-logo-light/20 transition-all"
                       placeholder="Seu nome"
                     />
                   </div>
                   <div>
-                    <label htmlFor="contact-email" className="block text-white font-medium mb-2">
+                    <label htmlFor="contact-email" className="block text-gray-900 font-medium mb-2">
                       E-mail *
                     </label>
                     <input
@@ -192,14 +250,14 @@ export function Contact() {
                       required
                       value={formData.email}
                       onChange={handleChange}
-                      className="w-full px-4 py-3 bg-white/30 border border-logo-light rounded-lg text-black placeholder-gray-700 focus:outline-none focus:border-logo focus:ring-2 focus:ring-logo-light/20 transition-all"
+                      className="w-full px-4 py-3 bg-gray-50 border border-gray-300 rounded-lg text-gray-900 placeholder-gray-500 focus:outline-none focus:border-logo focus:ring-2 focus:ring-logo-light/20 transition-all"
                       placeholder="seu@email.com"
                     />
                   </div>
                 </div>
 
                 <div>
-                  <label htmlFor="subject" className="block text-white font-medium mb-2">
+                  <label htmlFor="subject" className="block text-gray-900 font-medium mb-2">
                     Assunto *
                   </label>
                   <input
@@ -209,13 +267,13 @@ export function Contact() {
                     required
                     value={formData.subject}
                     onChange={handleChange}
-                    className="w-full px-4 py-3 bg-white/30 border border-logo-light rounded-lg text-black placeholder-gray-700 focus:outline-none focus:border-logo focus:ring-2 focus:ring-logo-light/20 transition-all"
+                    className="w-full px-4 py-3 bg-gray-50 border border-gray-300 rounded-lg text-gray-900 placeholder-gray-500 focus:outline-none focus:border-logo focus:ring-2 focus:ring-logo-light/20 transition-all"
                     placeholder="Como podemos ajudar?"
                   />
                 </div>
 
                 <div>
-                  <label htmlFor="message" className="block text-white font-medium mb-2">
+                  <label htmlFor="message" className="block text-gray-900 font-medium mb-2">
                     Mensagem *
                   </label>
                   <textarea
@@ -225,22 +283,46 @@ export function Contact() {
                     rows={5}
                     value={formData.message}
                     onChange={handleChange}
-                    className="w-full px-4 py-3 bg-white/30 border border-logo-light rounded-lg text-black placeholder-gray-700 focus:outline-none focus:border-logo focus:ring-2 focus:ring-logo-light/20 transition-all resize-none"
+                    className="w-full px-4 py-3 bg-gray-50 border border-gray-300 rounded-lg text-gray-900 placeholder-gray-500 focus:outline-none focus:border-logo focus:ring-2 focus:ring-logo-light/20 transition-all resize-none"
                     placeholder="Conte-nos sobre seu projeto..."
                   />
                 </div>
 
+                {submitStatus.type && (
+                  <div
+                    className={`p-4 rounded-lg ${
+                      submitStatus.type === 'success'
+                        ? 'bg-green-50 text-green-800 border border-green-200'
+                        : 'bg-red-50 text-red-800 border border-red-200'
+                    }`}
+                  >
+                    <p className="text-sm font-medium">{submitStatus.message}</p>
+                  </div>
+                )}
+
                 <button
                   type="submit"
-                  className="w-full bg-black text-white px-8 py-4 rounded-lg font-semibold transition-all duration-300 transform hover:scale-105 shadow-lg hover:shadow-xl flex items-center justify-center space-x-2 border border-black hover:border-yellow-400 hover:text-yellow-300"
+                  disabled={isSubmitting}
+                  className="w-full bg-gradient-to-r from-logo to-logo-light text-white px-8 py-4 rounded-lg font-semibold transition-all duration-300 transform hover:scale-105 shadow-lg hover:shadow-xl flex items-center justify-center space-x-2 disabled:opacity-50 disabled:cursor-not-allowed disabled:transform-none"
                 >
-                  <Send className="h-5 w-5" />
-                  <span>Enviar Mensagem</span>
+                  {isSubmitting ? (
+                    <>
+                      <div className="animate-spin rounded-full h-5 w-5 border-b-2 border-white"></div>
+                      <span>Enviando...</span>
+                    </>
+                  ) : (
+                    <>
+                      <Send className="h-5 w-5" />
+                      <span>Enviar Mensagem</span>
+                    </>
+                  )}
                 </button>
               </form>
+              </div>
+            </FadeIn>
           </div>
         </div>
-      </div>
-    </section>
+      </section>
+    </>
   );
 }

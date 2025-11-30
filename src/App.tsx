@@ -8,11 +8,13 @@ import { TeamPage } from './pages/Team';
 import { ContactPage } from './pages/Contact';
 import { Footer } from './components/layout/Footer';
 import { GoogleAnalytics } from './components/analytics/GoogleAnalytics';
+import { ScrollToTop } from './components/common/ScrollToTop';
 
 function App() {
   return (
     <Router>
       <GoogleAnalytics />
+      <ScrollToTop />
       <div className="min-h-screen">
         <Routes>
           <Route path="/" element={<Home />} />

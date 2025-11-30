@@ -1,18 +1,19 @@
-import React from 'react';
 import { Header } from '../components/layout/Header';
 import { Code, Globe, Smartphone, Zap, Shield, Search, ArrowRight } from 'lucide-react';
 import { WhatsAppButton } from '../components/layout/WhatsAppButton';
+import { FadeIn } from '../components/common/FadeIn';
 
 export function WebDevelopment() {
   // Empresas parceiras - Adicione aqui os nomes e logos das empresas
   // Coloque os logos na pasta: public/partners/
   // Dimensões recomendadas: 200-300px de largura, PNG com fundo transparente
   const partners = [
-    { name: 'Real Driver', logo: '/partners/LogoRealDriver.png', website: '#' },
-    { name: 'Ariane Andrade', logo: '/partners/LogoArianeAndrade.png', website: '#' },
-    { name: 'Grupo Raça', logo: '/partners/LogoGrupoRaca.png', website: '#' }
-    // Adicione mais empresas aqui conforme necessário
-    // Exemplo: { name: 'Hostinger', logo: '/partners/logo-hostinger.png', website: 'https://hostinger.com.br' }
+    { name: 'Real Driver', logo: '/partners/LogoRealDriver.png', website: '#', bgColor: '#cfd7d5' },
+    { name: 'Grupo Raça', logo: '/partners/LogoGrupoRaca.png', website: '#', bgColor: '#000000' },
+    { name: 'Ariane Andrade', logo: '/partners/LogoArianeAndrade.png', website: '#', bgColor: '#f9f9f9' },
+    { name: 'Enxovais Maciel', logo: '/partners/LogoEnxovais_Maciel.png', website: '#', bgColor: '#124234' },
+    { name: 'Jato Minas', logo: '/partners/LogoJatoMinas.png', website: '#', bgColor: '#f5f5f5' },
+    { name: 'JM Soluções', logo: '/partners/LogoJM.png', website: '#', bgColor: '#0a6899' }
   ];
 
   const services = [
@@ -55,8 +56,7 @@ export function WebDevelopment() {
   ];
 
   const technologies = [
-    'React', 'TypeScript', 'Node.js', 'PHP', 'WordPress', 'Laravel',
-    'MySQL', 'MongoDB', 'AWS', 'Docker', 'Git', 'API REST'
+    'React', 'TypeScript', 'Node.js', 'PHP', 'WordPress', 'MySQL', 'Git'
   ];
 
   return (
@@ -67,17 +67,19 @@ export function WebDevelopment() {
         <section className="relative bg-gradient-to-b from-black via-neutral-900 to-neutral-800 text-white py-24 overflow-hidden">
           <div className="absolute inset-0 bg-black/40"></div>
           <div className="relative z-10 max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 text-center">
-            <div className="space-y-8">
-              <h1 className="text-5xl sm:text-6xl md:text-7xl font-extrabold">
-                <span className="text-white">Desenvolvimento</span>
-                <br />
-                <span className="text-logo">de Sites</span>
-              </h1>
-              <p className="text-xl sm:text-2xl text-gray-200 max-w-3xl mx-auto leading-relaxed">
-                Criamos sites modernos, rápidos e otimizados que impulsionam seu negócio na internet.
-                Do design à programação, entregamos soluções completas e profissionais.
-              </p>
-            </div>
+            <FadeIn delay={0} duration={0.8}>
+              <div className="space-y-8">
+                <h1 className="text-5xl sm:text-6xl md:text-7xl font-extrabold">
+                  <span className="text-white">Desenvolvimento</span>
+                  <br />
+                  <span className="text-logo">de Sites</span>
+                </h1>
+                <p className="text-xl sm:text-2xl text-gray-200 max-w-3xl mx-auto leading-relaxed">
+                  Criamos sites modernos, rápidos e otimizados que impulsionam seu negócio na internet.
+                  Do design à programação, entregamos soluções completas e profissionais.
+                </p>
+              </div>
+            </FadeIn>
           </div>
         </section>
 
@@ -97,10 +99,10 @@ export function WebDevelopment() {
               {services.map((service, index) => {
                 const IconComponent = service.icon;
                 return (
-                  <div
-                    key={index}
-                    className="bg-white rounded-2xl p-8 shadow-lg hover:shadow-2xl transition-all duration-300 transform hover:-translate-y-2"
-                  >
+                  <FadeIn key={index} delay={index * 100} duration={0.6}>
+                    <div
+                      className="bg-white rounded-2xl p-8 shadow-lg hover:shadow-2xl transition-all duration-300 transform hover:-translate-y-2 card-hover"
+                    >
                     <div className="bg-gradient-to-br from-logo to-logo-light p-4 rounded-xl w-16 h-16 flex items-center justify-center mb-6">
                       <IconComponent className="h-8 w-8 text-white" />
                     </div>
@@ -114,34 +116,10 @@ export function WebDevelopment() {
                         </li>
                       ))}
                     </ul>
-                  </div>
+                    </div>
+                  </FadeIn>
                 );
               })}
-            </div>
-          </div>
-        </section>
-
-        {/* Technologies Section */}
-        <section className="py-20 bg-gradient-to-b from-black to-neutral-800">
-          <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-            <div className="text-center mb-16">
-              <h2 className="text-4xl sm:text-5xl font-bold text-white mb-4">
-                Tecnologias que Utilizamos
-              </h2>
-              <p className="text-xl text-gray-300 max-w-3xl mx-auto">
-                Trabalhamos com as melhores tecnologias do mercado para garantir qualidade e performance
-              </p>
-            </div>
-
-            <div className="flex flex-wrap justify-center gap-4">
-              {technologies.map((tech, index) => (
-                <div
-                  key={index}
-                  className="bg-white/10 backdrop-blur-sm border border-white/20 rounded-lg px-6 py-3 text-white font-medium hover:bg-white/20 transition-colors"
-                >
-                  {tech}
-                </div>
-              ))}
             </div>
           </div>
         </section>
@@ -149,24 +127,27 @@ export function WebDevelopment() {
         {/* Partners Section */}
         <section className="py-20 bg-white">
           <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-            <div className="text-center mb-16">
-              <h2 className="text-4xl sm:text-5xl font-bold text-gray-900 mb-4">
-                Nossos Parceiros
-              </h2>
-              <p className="text-xl text-gray-600 max-w-3xl mx-auto">
-                Trabalhamos em parceria com empresas líderes para oferecer as melhores soluções
-              </p>
-            </div>
+            <FadeIn delay={0} duration={0.6}>
+              <div className="text-center mb-16">
+                <h2 className="text-4xl sm:text-5xl font-bold text-gray-900 mb-4">
+                  Nossos Parceiros
+                </h2>
+                <p className="text-xl text-gray-600 max-w-3xl mx-auto">
+                  Trabalhamos em parceria com empresas líderes para oferecer as melhores soluções
+                </p>
+              </div>
+            </FadeIn>
 
             <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-8 items-center">
               {partners.map((partner, index) => (
-                <a
-                  key={index}
-                  href={partner.website}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="flex items-center justify-center p-6 bg-gray-50 rounded-xl hover:bg-gray-100 transition-all duration-300 border border-gray-200 hover:border-logo hover:shadow-lg transform hover:-translate-y-1"
-                >
+                <FadeIn key={index} delay={index * 50} duration={0.5}>
+                  <div
+                    className="flex items-center justify-center p-6 rounded-xl transition-all duration-300 border border-gray-200 hover:border-logo hover:shadow-lg transform hover:-translate-y-1"
+                    style={{ 
+                      backgroundColor: partner.bgColor || '#f9fafb',
+                      minHeight: '120px'
+                    }}
+                  >
                   {partner.logo ? (
                     <img
                       src={partner.logo}
@@ -178,7 +159,34 @@ export function WebDevelopment() {
                       {partner.name}
                     </span>
                   )}
-                </a>
+                  </div>
+                </FadeIn>
+              ))}
+            </div>
+          </div>
+        </section>
+
+        {/* Technologies Section */}
+        <section className="py-20 bg-gradient-to-b from-black to-neutral-800">
+          <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+            <FadeIn delay={0} duration={0.6}>
+              <div className="text-center mb-16">
+                <h2 className="text-4xl sm:text-5xl font-bold text-white mb-4">
+                  Tecnologias que Utilizamos
+                </h2>
+                <p className="text-xl text-gray-300 max-w-3xl mx-auto">
+                  Trabalhamos com as melhores tecnologias do mercado para garantir qualidade e performance
+                </p>
+              </div>
+            </FadeIn>
+
+            <div className="flex flex-wrap justify-center gap-4">
+              {technologies.map((tech, index) => (
+                <FadeIn key={index} delay={index * 80} duration={0.4}>
+                  <div className="bg-white/10 backdrop-blur-sm border border-white/20 rounded-lg px-6 py-3 text-white font-medium hover:bg-white/20 transition-all duration-300 hover:scale-105">
+                    {tech}
+                  </div>
+                </FadeIn>
               ))}
             </div>
           </div>

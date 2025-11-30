@@ -12,8 +12,8 @@ export function Header() {
     { label: 'Quem Somos', path: '/quem-somos' },
     { label: 'Nossos Serviços', path: '/servicos' },
     { label: 'Desenvolvimento de Sites', path: '/desenvolvimento-de-sites' },
-    { label: 'Seja Digital', path: '/seja-digital' },
-    { label: 'Contato', path: '/contato' }
+    { label: 'Contato', path: '/contato' },
+    { label: 'Seja Digital', path: '/seja-digital' }
   ];
 
   const isActive = (path: string) => {
@@ -33,22 +33,38 @@ export function Header() {
 
           {/* Desktop Navigation */}
           <nav className="hidden md:flex items-center space-x-8">
-            <div className="flex-1 flex justify-center space-x-6">
-              {navItems.map((item) => (
-                <Link
-                  key={item.path}
-                  to={item.path}
-                  className={`header-nav-link hover:opacity-80 transition-colors font-medium ${
-                    isActive(item.path) ? 'font-semibold' : ''
-                  }`}
-                  style={{ 
-                    color: isActive(item.path) ? '#AC8869' : '#070709',
-                    fontFamily: 'inherit'
-                  }}
-                >
-                  {item.label}
-                </Link>
-              ))}
+            <div className="flex-1 flex justify-center items-center space-x-6">
+              {navItems.map((item) => {
+                // Seja Digital como botão de ação
+                if (item.path === '/seja-digital') {
+                  return (
+                    <Link
+                      key={item.path}
+                      to={item.path}
+                      className="bg-gradient-to-r from-logo to-logo-light text-white px-6 py-2 rounded-lg font-semibold transition-all duration-300 shadow-md hover:shadow-lg hover:scale-105"
+                      style={{ fontFamily: 'inherit' }}
+                    >
+                      {item.label}
+                    </Link>
+                  );
+                }
+                // Outros itens do menu
+                return (
+                  <Link
+                    key={item.path}
+                    to={item.path}
+                    className={`header-nav-link hover:opacity-80 transition-colors font-medium ${
+                      isActive(item.path) ? 'font-semibold' : ''
+                    }`}
+                    style={{ 
+                      color: isActive(item.path) ? '#AC8869' : '#070709',
+                      fontFamily: 'inherit'
+                    }}
+                  >
+                    {item.label}
+                  </Link>
+                );
+              })}
             </div>
           </nav>
 
@@ -65,24 +81,41 @@ export function Header() {
         {/* Mobile Navigation */}
         {isMenuOpen && (
           <nav className="md:hidden pb-3 border-t border-gray-200 mt-3 pt-3">
-            {navItems.map((item) => (
-              <Link
-                key={item.path}
-                to={item.path}
-                onClick={() => setIsMenuOpen(false)}
-                className={`header-nav-link block w-full text-left py-2 transition-colors ${
-                  isActive(item.path)
-                    ? 'font-semibold'
-                    : 'hover:opacity-80'
-                }`}
-                style={{ 
-                  color: isActive(item.path) ? '#AC8869' : '#070709',
-                  fontFamily: 'inherit'
-                }}
-              >
-                {item.label}
-              </Link>
-            ))}
+            {navItems.map((item) => {
+              // Seja Digital como botão de ação no mobile
+              if (item.path === '/seja-digital') {
+                return (
+                  <Link
+                    key={item.path}
+                    to={item.path}
+                    onClick={() => setIsMenuOpen(false)}
+                    className="bg-gradient-to-r from-logo to-logo-light text-white px-6 py-3 rounded-lg font-semibold transition-all duration-300 shadow-md hover:shadow-lg text-center block w-full mb-2"
+                    style={{ fontFamily: 'inherit' }}
+                  >
+                    {item.label}
+                  </Link>
+                );
+              }
+              // Outros itens do menu
+              return (
+                <Link
+                  key={item.path}
+                  to={item.path}
+                  onClick={() => setIsMenuOpen(false)}
+                  className={`header-nav-link block w-full text-left py-2 transition-colors ${
+                    isActive(item.path)
+                      ? 'font-semibold'
+                      : 'hover:opacity-80'
+                  }`}
+                  style={{ 
+                    color: isActive(item.path) ? '#AC8869' : '#070709',
+                    fontFamily: 'inherit'
+                  }}
+                >
+                  {item.label}
+                </Link>
+              );
+            })}
           </nav>
         )}
       </div>
