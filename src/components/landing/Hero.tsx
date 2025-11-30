@@ -24,9 +24,11 @@ export function Hero() {
       {/* Botão - elemento separado para ser clicável */}
       <FadeIn delay={300} duration={0.8} direction="none">
         <div 
-          className="absolute z-20 left-1/2 transform -translate-x-1/2"
+          className="absolute z-20"
           style={{
             top: '65%',
+            left: '30%',
+            transform: 'translate(-50%, -50%)',
             pointerEvents: 'auto'
           }}
         >

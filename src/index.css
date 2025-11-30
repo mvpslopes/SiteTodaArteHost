@@ -426,18 +426,18 @@ html {
   position: absolute;
   top: 0;
   left: 0;
-  width: 50%;
+  width: 60%;
   height: 100%;
   background: linear-gradient(
     90deg,
     transparent 0%,
-    rgba(255, 255, 255, 0.1) 20%,
-    rgba(255, 255, 255, 0.3) 50%,
-    rgba(255, 255, 255, 0.1) 80%,
+    rgba(255, 255, 255, 0.15) 25%,
+    rgba(255, 255, 255, 0.4) 50%,
+    rgba(255, 255, 255, 0.15) 75%,
     transparent 100%
   );
   transform: translateX(-100%) skewX(-25deg);
-  animation: shine-sweep 4s ease-in-out infinite;
-  animation-delay: 1s;
+  animation: shine-sweep 5s ease-in-out infinite;
+  animation-delay: 0.5s;
 }
 
