@@ -186,7 +186,7 @@ html {
   -webkit-background-clip: text;
   background-clip: text;
   -webkit-text-fill-color: transparent;
-  animation: shine 3s linear infinite;
+  animation: shine 6s linear infinite;
   white-space: nowrap;
   width: max-content;
   min-width: max-content;
@@ -222,7 +222,7 @@ html {
   -webkit-background-clip: text;
   background-clip: text;
   -webkit-text-fill-color: transparent;
-  animation: shine 3s linear infinite;
+  animation: shine 6s linear infinite;
   line-height: 1.2;
 }
 
