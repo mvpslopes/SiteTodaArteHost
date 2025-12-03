@@ -27,7 +27,7 @@ export const heroConfigMobile = {
   textoConecte: {
     top: '20%',        // Posição vertical
     left: '48%',       // Posição horizontal (centralizado)
-    fontSize: 'clamp(5.5rem, 20vw, 8rem)', // Tamanho responsivo menor
+    fontSize: 'clamp(3.5rem, 15vw, 6rem)', // Tamanho responsivo mais equilibrado
     fontFamily: "'Andrea Bellarosa', cursive",
     color: '#4c2e13',
     zIndex: 11
@@ -37,7 +37,7 @@ export const heroConfigMobile = {
   botao: {
     top: '43%',        // Posição vertical
     left: '50%',       // Posição horizontal (centralizado)
-    fontSize: '0.5rem',  // Tamanho menor
+    fontSize: '0.75rem',  // Tamanho mais legível
     zIndex: 12
   },
 

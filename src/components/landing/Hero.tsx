@@ -27,6 +27,64 @@ export function Hero() {
   // Usa a configuração apropriada baseado no tamanho da tela
   const config = isMobile ? heroConfigMobile : heroConfigDesktop;
 
+  // 👉 Layout MOBILE: usa imagem única (hero-mobile.png) que já contém todos os elementos
+  if (isMobile) {
+    return (
+      <section 
+        className="relative text-white min-h-[calc(100vh-5rem)] hero-container animate-fade-in"
+        style={{
+          background: 'transparent', // Sem gradiente - a imagem já tem o fundo
+          overflow: 'hidden',
+          position: 'relative',
+          minHeight: 'calc(100vh - 5rem)',
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'center'
+        }}
+      >
+        <div className="relative z-10 w-full h-full flex flex-col items-center justify-center">
+          {/* Imagem única do hero para mobile - ocupa toda a altura disponível */}
+          <img
+            src="/hero-mobile.png"
+            alt="Toda Arte - Seu Negócio Seu Sucesso - Conecte"
+            style={{
+              width: '100%',
+              height: 'auto',
+              minHeight: 'calc(100vh - 5rem)',
+              objectFit: 'cover',
+              display: 'block',
+              pointerEvents: 'none',
+              userSelect: 'none'
+            }}
+          />
+
+          {/* Botão real, separado da imagem, posicionado absolutamente sobre a imagem */}
+          <FadeIn delay={300} duration={0.8} direction="none">
+            <div 
+              className="absolute"
+              style={{
+                bottom: '10%',
+                left: '50%',
+                transform: 'translateX(-50%)',
+                zIndex: 20
+              }}
+            >
+              <Link 
+                to="/servicos"
+                className="bg-gradient-to-r from-logo to-logo-light text-white px-6 py-3 rounded-lg font-semibold transition-all duration-300 shadow-md hover:shadow-lg hover:scale-105 flex items-center space-x-2 animate-float text-sm whitespace-nowrap"
+                style={{ fontSize: config.botao.fontSize }}
+              >
+                <span>Conheça nosso trabalho</span>
+                <ArrowRight className="h-4 w-4 ml-2" />
+              </Link>
+            </div>
+          </FadeIn>
+        </div>
+      </section>
+    );
+  }
+
+  // 👉 Layout DESKTOP: mantém o layout absoluto existente com configurações específicas
   return (
     <section 
       className="relative text-white min-h-[calc(100vh-5rem)] hero-container animate-fade-in"
