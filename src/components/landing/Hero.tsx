@@ -1,10 +1,31 @@
+import { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import { ArrowRight } from 'lucide-react';
 import { FadeIn } from '../common/FadeIn';
-import { heroConfig } from '../../config/hero.config';
+import { heroConfigDesktop } from '../../config/hero.config.desktop';
+import { heroConfigMobile } from '../../config/hero.config.mobile';
 
 export function Hero() {
-  const config = heroConfig;
+  // Detecta se é mobile ou desktop
+  const [isMobile, setIsMobile] = useState(false);
+
+  useEffect(() => {
+    const checkMobile = () => {
+      setIsMobile(window.innerWidth < 768); // Breakpoint: 768px (padrão Tailwind 'md')
+    };
+
+    // Verifica na montagem
+    checkMobile();
+
+    // Adiciona listener para mudanças de tamanho
+    window.addEventListener('resize', checkMobile);
+
+    // Limpa o listener ao desmontar
+    return () => window.removeEventListener('resize', checkMobile);
+  }, []);
+
+  // Usa a configuração apropriada baseado no tamanho da tela
+  const config = isMobile ? heroConfigMobile : heroConfigDesktop;
 
   return (
     <section 
@@ -85,8 +106,7 @@ export function Hero() {
                 className="bg-gradient-to-r from-logo to-logo-light text-white px-4 py-2 sm:px-6 sm:py-2 rounded-lg font-semibold transition-all duration-300 shadow-md hover:shadow-lg hover:scale-105 flex items-center space-x-2 animate-float text-sm sm:text-base whitespace-nowrap"
                 style={{ fontSize: config.botao.fontSize }}
               >
-                <span className="hidden sm:inline">Conheça nosso trabalho</span>
-                <span className="sm:hidden">Conheça</span>
+                <span>Conheça nosso trabalho</span>
                 <ArrowRight className="h-4 w-4 sm:h-5 sm:w-5 ml-1 sm:ml-2" />
               </Link>
             </div>
