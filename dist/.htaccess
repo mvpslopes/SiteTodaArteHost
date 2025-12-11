@@ -27,6 +27,39 @@ RewriteRule ^(.*)$ https://%{HTTP_HOST}%{REQUEST_URI} [L,R=301]
     RewriteEngine On
     RewriteBase /
     
+    # Permitir acesso direto a arquivos estáticos (imagens, etc) - IMPORTANTE para evitar 422
+    RewriteCond %{REQUEST_FILENAME} -f
+    RewriteRule . - [L]
+    
+    # Rewrite para imagens do Grupo Raça - redireciona da raiz para /gruporaca/
+    # Logo do Grupo Raça
+    RewriteCond %{REQUEST_URI} ^/logo\.png$
+    RewriteCond %{REQUEST_FILENAME} !-f
+    RewriteRule ^logo\.png$ /gruporaca/logo.png [L]
+    
+    # Imagens de leilões (incluindo Leilão 00.jpg caso o código tente carregar)
+    RewriteCond %{REQUEST_URI} ^/Leilão\s+0[0-9]\.jpg$ [OR]
+    RewriteCond %{REQUEST_URI} ^/Leil%C3%A3o%200[0-9]\.jpg$
+    RewriteCond %{REQUEST_FILENAME} !-f
+    # Se for 00, redireciona para 01 (fallback)
+    RewriteRule ^Leilão\s+00\.jpg$ /gruporaca/Leilão\ 01.jpg [L]
+    RewriteRule ^Leil%C3%A3o%2000\.jpg$ /gruporaca/Leilão\ 01.jpg [L]
+    # Para 01, 02, 03
+    RewriteRule ^Leilão\s+0([123])\.jpg$ /gruporaca/Leilão\ 0$1.jpg [L]
+    RewriteRule ^Leil%C3%A3o%200([123])\.jpg$ /gruporaca/Leilão\ 0$1.jpg [L]
+    
+    # Fundo Cavalo preto
+    RewriteCond %{REQUEST_URI} ^/Fundo\s+Cavalo\s+preto\.jpg$ [OR]
+    RewriteCond %{REQUEST_URI} ^/Fundo%20Cavalo%20preto\.jpg$
+    RewriteCond %{REQUEST_FILENAME} !-f
+    RewriteRule ^Fundo\s+Cavalo\s+preto\.jpg$ /gruporaca/Fundo\ Cavalo\ preto.jpg [L]
+    RewriteRule ^Fundo%20Cavalo%20preto\.jpg$ /gruporaca/Fundo\ Cavalo\ preto.jpg [L]
+    
+    # Outras imagens do Grupo Raça
+    RewriteCond %{REQUEST_URI} ^/(close-up-no-cavalo|rebanho-de-cavalos|lindo-cavalo)
+    RewriteCond %{REQUEST_FILENAME} !-f
+    RewriteRule ^(.+)$ /gruporaca/$1 [L]
+    
     # Se o arquivo ou diretório não existir, redirecionar para index.html
     RewriteCond %{REQUEST_FILENAME} !-f
     RewriteCond %{REQUEST_FILENAME} !-d

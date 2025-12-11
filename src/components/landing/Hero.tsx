@@ -148,27 +148,27 @@ export function Hero() {
           </div>
 
           {/* Botão "Conheça nosso trabalho" */}
-          <FadeIn delay={300} duration={0.8} direction="none">
-            <div 
-              className="absolute z-20"
-              style={{
+      <FadeIn delay={300} duration={0.8} direction="none">
+        <div 
+          className="absolute z-20"
+          style={{
                 top: config.botao.top,
                 left: config.botao.left,
-                transform: 'translate(-50%, -50%)',
+            transform: 'translate(-50%, -50%)',
                 pointerEvents: 'auto',
                 zIndex: config.botao.zIndex
-              }}
-            >
-              <Link 
-                to="/servicos"
-                className="bg-gradient-to-r from-logo to-logo-light text-white px-4 py-2 sm:px-6 sm:py-2 rounded-lg font-semibold transition-all duration-300 shadow-md hover:shadow-lg hover:scale-105 flex items-center space-x-2 animate-float text-sm sm:text-base whitespace-nowrap"
+          }}
+        >
+          <Link 
+            to="/servicos"
+            className="bg-gradient-to-r from-logo to-logo-light text-white px-4 py-2 sm:px-6 sm:py-2 rounded-lg font-semibold transition-all duration-300 shadow-md hover:shadow-lg hover:scale-105 flex items-center space-x-2 animate-float text-sm sm:text-base whitespace-nowrap"
                 style={{ fontSize: config.botao.fontSize }}
-              >
+          >
                 <span>Conheça nosso trabalho</span>
-                <ArrowRight className="h-4 w-4 sm:h-5 sm:w-5 ml-1 sm:ml-2" />
-              </Link>
-            </div>
-          </FadeIn>
+            <ArrowRight className="h-4 w-4 sm:h-5 sm:w-5 ml-1 sm:ml-2" />
+          </Link>
+        </div>
+      </FadeIn>
 
           {/* Imagem das meninas (Thaty_Lara.png) */}
           <div

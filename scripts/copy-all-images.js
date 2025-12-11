@@ -105,6 +105,10 @@ const gruporacaImages = [
   'Leilao-09a13-12.jpg',
   'Leilao-11-12-25.jpg',
   'Leilao-15-20-12.jpg',
+  'foto-ariane.png',
+  'foto-ariane-fundo.JPG',
+  'logo-ariane-andrade.png',
+  'logo-ariane-andrade-fundo.png',
 ];
 
 gruporacaImages.forEach(img => {

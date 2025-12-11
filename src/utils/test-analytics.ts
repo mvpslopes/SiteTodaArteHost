@@ -31,8 +31,8 @@ export const checkAnalyticsSetup = () => {
   return false;
 };
 
-// Executar verificação ao importar
-if (typeof window !== 'undefined') {
+// Executar verificação ao importar (apenas em desenvolvimento)
+if (typeof window !== 'undefined' && import.meta.env.DEV) {
   setTimeout(() => {
     checkAnalyticsSetup();
   }, 2000); // Aguarda 2 segundos para o GA carregar

@@ -9,7 +9,6 @@ export function WebDevelopment() {
   // Dimensões recomendadas: 200-300px de largura, PNG com fundo transparente
   const partners = [
     { name: 'Real Driver', logo: '/partners/LogoRealDriver.png', website: '#', bgColor: '#cfd7d5' },
-    { name: 'Grupo Raça', logo: '/partners/LogoGrupoRaca.png', website: '#', bgColor: '#000000' },
     { name: 'Ariane Andrade', logo: '/partners/LogoArianeAndrade.png', website: '#', bgColor: '#f9f9f9' },
     { name: 'Enxovais Maciel', logo: '/partners/LogoEnxovais_Maciel.png', website: '#', bgColor: '#124234' },
     { name: 'Jato Minas', logo: '/partners/LogoJatoMinas.png', website: '#', bgColor: '#f5f5f5' },
