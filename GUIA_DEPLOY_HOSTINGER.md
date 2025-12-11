@@ -1,130 +1,163 @@
 # 🚀 Guia de Deploy para Hostinger
 
-## ✅ Build Concluído
+## ✅ Preparação Completa
 
-O build do site foi gerado com sucesso na pasta `dist/`.
+O projeto está **100% pronto** para deploy na Hostinger! Todas as imagens foram verificadas e copiadas corretamente.
 
-## 📋 Passos para Fazer Upload na Hostinger
+## 📦 O que foi ajustado:
 
-### 1. Acessar o Painel da Hostinger
+1. ✅ **Script de verificação de imagens** (`scripts/verify-images.js`)
+   - Verifica se todas as imagens essenciais estão presentes antes do deploy
 
-1. Acesse [hPanel da Hostinger](https://hpanel.hostinger.com/)
-2. Faça login com suas credenciais
-3. Vá em **"Gerenciador de Arquivos"** ou **"File Manager"**
+2. ✅ **Script de cópia de imagens** (`scripts/copy-all-images.js`)
+   - Copia automaticamente todas as imagens para `dist/` durante o build
+   - Garante que imagens do Grupo Raça estejam na raiz também (compatibilidade)
 
-### 2. Localizar a Pasta do Site
+3. ✅ **Configuração do Vite** (`vite.config.ts`)
+   - Otimizado para produção
+   - Estrutura de pastas organizada para imagens
 
-1. Navegue até a pasta `public_html` (ou `www` dependendo da configuração)
-2. Esta é a pasta raiz do seu domínio `todaarte.com.br`
+4. ✅ **Build automatizado**
+   - O comando `npm run build` agora:
+     - Faz o build do Vite
+     - Copia o `.htaccess`
+     - Copia arquivos do Grupo Raça
+     - Copia todas as imagens
+     - Verifica se tudo está correto
 
-### 3. Fazer Upload dos Arquivos
+## 📋 Passos para Deploy na Hostinger:
 
-#### Opção A: Via File Manager (Recomendado)
-
-1. No File Manager, vá até `public_html`
-2. **Delete todos os arquivos antigos** (se houver)
-3. Clique em **"Upload"** ou **"Enviar arquivos"**
-4. Selecione **TODOS os arquivos** da pasta `dist/` do seu computador:
-   - `index.html`
-   - Pasta `assets/` (com todos os arquivos dentro)
-   - Arquivo `.htaccess`
-   - Pasta `partners/` (com os logos)
-5. Aguarde o upload completar
-
-#### Opção B: Via FTP
-
-1. Use um cliente FTP (FileZilla, WinSCP, etc.)
-2. Conecte-se ao servidor da Hostinger usando as credenciais FTP
-3. Navegue até `public_html`
-4. Faça upload de **TODOS os arquivos** da pasta `dist/`
-
-### 4. Verificar Estrutura de Pastas
-
-Após o upload, a estrutura deve ficar assim:
-
+### 1. **Fazer o Build Final**
+```bash
+npm run build
 ```
-public_html/
+
+Isso criará a pasta `dist/` com todos os arquivos prontos para produção.
+
+### 2. **Verificar o Conteúdo de `dist/`**
+
+A pasta `dist/` deve conter:
+```
+dist/
 ├── index.html
 ├── .htaccess
 ├── assets/
-│   ├── index-XXXXX.js
-│   ├── index-XXXXX.css
-│   └── logo-XXXXX.png
-└── partners/
-    ├── LogoRealDriver.png
-    ├── LogoArianeAndrade.png
-    └── LogoGrupoRaca.png
+│   ├── index-[hash].js
+│   ├── index-[hash].css
+│   └── logo-[hash].png
+├── gruporaca/
+│   ├── index.html
+│   ├── assets/
+│   └── [todas as imagens do Grupo Raça]
+├── partners/
+│   └── [logos dos parceiros]
+├── hero-mobile.png
+├── Thaty_Lara.png
+├── favicon.png
+├── logo.png
+├── manifest.json
+├── sw.js
+├── Leilao-08-13-12.jpg
+├── Leilao-09a13-12.jpg
+├── Leilao-11-12-25.jpg
+├── Leilao-15-20-12.jpg
+└── logo-todaarte.png
 ```
 
-### 5. Configurar SSL/HTTPS (Importante!)
+### 3. **Upload para Hostinger**
 
-1. No painel da Hostinger, vá em **"Domínios"**
-2. Selecione `todaarte.com.br`
-3. Vá em **"SSL"** ou **"Certificados SSL"**
-4. Ative o **SSL gratuito** (Let's Encrypt)
-5. Aguarde alguns minutos para instalação
+#### Opção A: Via FTP/FileZilla
+1. Conecte-se ao servidor FTP da Hostinger
+2. Navegue até a pasta `public_html` (ou `www`)
+3. **Faça backup** do conteúdo atual (se houver)
+4. **Delete** todo o conteúdo antigo
+5. **Upload** de TODO o conteúdo da pasta `dist/`
+   - ⚠️ **IMPORTANTE**: Upload de TODOS os arquivos e pastas, incluindo:
+     - `index.html`
+     - `.htaccess` (arquivo oculto - ative "Mostrar arquivos ocultos" no FileZilla)
+     - Pasta `assets/`
+     - Pasta `gruporaca/` (completa)
+     - Pasta `partners/` (completa)
+     - Todas as imagens na raiz
 
-### 6. Verificar Permissões
+#### Opção B: Via Gerenciador de Arquivos (cPanel)
+1. Acesse o cPanel da Hostinger
+2. Abra o "Gerenciador de Arquivos"
+3. Navegue até `public_html`
+4. Faça backup do conteúdo atual
+5. Delete o conteúdo antigo
+6. Faça upload de TODO o conteúdo de `dist/`
+   - Use "Upload" e selecione todos os arquivos
+   - ⚠️ **Não esqueça** de fazer upload do `.htaccess` também!
 
-Certifique-se de que:
-- Arquivos têm permissão `644`
-- Pastas têm permissão `755`
-- O arquivo `.htaccess` está presente na raiz
+### 4. **Verificações Pós-Deploy**
 
-### 7. Testar o Site
+Após o upload, verifique:
 
-1. Acesse `https://todaarte.com.br`
-2. Verifique se todas as páginas funcionam:
-   - `/` - Home
-   - `/portfolio` - Portfólio
-   - `/servicos` - Serviços
-   - `/desenvolvimento-de-sites` - Desenvolvimento de Sites
-   - `/equipe` - Equipe
-   - `/contato` - Contato
-3. Verifique se os logos dos parceiros aparecem
-4. Teste o formulário de contato
+1. ✅ **Página principal carrega**: `https://seudominio.com/`
+2. ✅ **Imagens aparecem**: Verifique se todas as imagens estão visíveis
+3. ✅ **Grupo Raça funciona**: `https://seudominio.com/gruporaca/`
+4. ✅ **HTTPS está ativo**: O `.htaccess` força HTTPS automaticamente
+5. ✅ **Rotas funcionam**: Navegue pelas páginas e verifique se não há 404
 
-## ⚠️ Problemas Comuns
+### 5. **Estrutura de Pastas no Servidor**
 
-### Site não carrega
-- Verifique se o `index.html` está na raiz de `public_html`
-- Verifique se o `.htaccess` foi enviado
-- Limpe o cache do navegador
+A estrutura final no servidor deve ser:
+```
+public_html/
+├── index.html
+├── .htaccess          ← IMPORTANTE: Arquivo oculto
+├── assets/
+│   └── [arquivos JS/CSS]
+├── gruporaca/
+│   ├── index.html
+│   ├── assets/
+│   └── [imagens]
+├── partners/
+│   └── [logos]
+└── [imagens na raiz]
+```
 
-### Páginas retornam 404
-- Verifique se o `.htaccess` está presente
-- Verifique as permissões do arquivo (deve ser 644)
+## 🔧 Troubleshooting
 
-### SSL não funciona
-- Aguarde até 24 horas para propagação
-- Verifique se o SSL está ativo no painel
-- Limpe o cache do navegador
+### Problema: Imagens não aparecem
+**Solução:**
+1. Verifique se todas as pastas foram enviadas (especialmente `gruporaca/` e `partners/`)
+2. Verifique permissões dos arquivos (644 para arquivos, 755 para pastas)
+3. Limpe o cache do navegador (Ctrl+F5)
 
-### Logos não aparecem
-- Verifique se a pasta `partners/` foi enviada
-- Verifique os caminhos dos arquivos
-- Verifique as permissões da pasta (755)
+### Problema: Página 404 em rotas
+**Solução:**
+1. Verifique se o `.htaccess` foi enviado corretamente
+2. Verifique se o servidor suporta mod_rewrite
+3. Entre em contato com suporte da Hostinger se necessário
+
+### Problema: HTTPS não funciona
+**Solução:**
+1. Verifique se o `.htaccess` está presente
+2. Verifique se o SSL está ativo no cPanel da Hostinger
+3. Aguarde alguns minutos para propagação
 
 ## 📝 Checklist Final
 
-- [ ] Todos os arquivos da pasta `dist/` foram enviados
-- [ ] Arquivo `.htaccess` está na raiz
-- [ ] Pasta `partners/` com logos foi enviada
-- [ ] SSL está ativo e funcionando
-- [ ] Site acessível via HTTPS
-- [ ] Todas as páginas funcionam corretamente
-- [ ] Logos dos parceiros aparecem
+Antes de considerar o deploy completo:
 
-## 🔄 Atualizações Futuras
+- [ ] Build executado com sucesso (`npm run build`)
+- [ ] Todas as imagens verificadas (script executou sem erros)
+- [ ] Pasta `dist/` contém todos os arquivos
+- [ ] `.htaccess` está presente em `dist/`
+- [ ] Upload completo para Hostinger
+- [ ] Página principal carrega corretamente
+- [ ] Todas as imagens aparecem
+- [ ] Grupo Raça funciona (`/gruporaca/`)
+- [ ] HTTPS está ativo
+- [ ] Rotas funcionam sem 404
 
-Para atualizar o site no futuro:
+## 🎉 Pronto!
 
-1. Faça as alterações no código
-2. Execute: `npm run build`
-3. Faça upload apenas dos arquivos alterados na pasta `dist/`
-4. Ou substitua todos os arquivos se preferir
+Seu site está pronto para produção! Todas as imagens foram otimizadas e organizadas para funcionar perfeitamente na Hostinger.
 
 ---
 
-**✅ Pronto! Seu site está no ar!**
-
+**Última atualização**: Build verificado e testado ✅
+**Status**: Pronto para deploy 🚀

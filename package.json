@@ -5,7 +5,10 @@
   "type": "module",
   "scripts": {
     "dev": "vite",
-    "build": "vite build && node scripts/copy-htaccess.js",
+    "build": "vite build && node scripts/copy-htaccess.js && node scripts/copy-gruporaca.js && node scripts/copy-all-images.js && node scripts/verify-images.js",
+    "rebuild-gruporaca": "cd GrupoRaca_ && npm run build && cd .. && node scripts/copy-gruporaca-from-source.js && node scripts/copy-gruporaca.js",
+    "update-gruporaca": "node scripts/update-gruporaca.js",
+    "verify-images": "node scripts/verify-images.js",
     "lint": "eslint .",
     "preview": "vite preview"
   },
