@@ -109,6 +109,8 @@ const gruporacaImages = [
   'foto-ariane-fundo.JPG',
   'logo-ariane-andrade.png',
   'logo-ariane-andrade-fundo.png',
+  'arte-ariane-horizontal.png',
+  'arte-ariane-vertical.png',
 ];
 
 gruporacaImages.forEach(img => {

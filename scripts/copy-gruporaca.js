@@ -133,7 +133,9 @@ function copyImagesToRoot() {
           'foto-ariane.png',
           'foto-ariane-fundo.JPG',
           'logo-ariane-andrade.png',
-          'logo-ariane-andrade-fundo.png'
+          'logo-ariane-andrade-fundo.png',
+          'arte-ariane-horizontal.png',
+          'arte-ariane-vertical.png'
         ];
   
   imageFiles.forEach(img => {
