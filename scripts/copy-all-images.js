@@ -101,6 +101,7 @@ console.log('\n📁 Copiando imagens do Grupo Raça para raiz (compatibilidade).
 const gruporacaImages = [
   'logo.png',
   'logo-todaarte.png',
+  'favicon.png',
   'Leilao-08-13-12.jpg',
   'Leilao-09a13-12.jpg',
   'Leilao-11-12-25.jpg',

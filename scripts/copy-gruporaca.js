@@ -118,6 +118,7 @@ function copyImagesToRoot() {
         const imageFiles = [
           'logo.png',
           'logo-todaarte.png',
+          'favicon.png',
           'Leilão 01.jpg',
           'Leilão 02.jpg',
           'Leilão 03.jpg',
