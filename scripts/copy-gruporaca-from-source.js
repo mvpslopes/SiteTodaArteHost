@@ -8,6 +8,19 @@ import { join } from 'path';
 const sourceDir = join(process.cwd(), 'GrupoRaca_', 'dist');
 const targetDir = join(process.cwd(), 'gruporaca', 'dist');
 
+// Lista de arquivos que NÃO devem ser copiados
+const excludedFiles = [
+  'close-up-no-cavalo-ao-ar-livre.jpg',
+  'favicon.psd',
+  'foto-ariane.png',
+  'foto-ariane-fundo.JPG',
+  'lindo-cavalo-castanho-close-up-focinho-aparencia-bonita-juba-plano-de-fundo-campo-de-atletismo-curral-arvores-cavalos-sao-animais-maravilhosos.jpg',
+  'lindo-cavalo-marrom-ao-ar-livre.jpg',
+  'logo-ariane-andrade.png',
+  'logo-ariane-andrade-fundo.png',
+  'rebanho-de-cavalos-correndo-pela-agua.jpg',
+];
+
 console.log('📁 Copiando build do Grupo Raça...\n');
 console.log(`   Origem: ${sourceDir}`);
 console.log(`   Destino: ${targetDir}\n`);
@@ -33,6 +46,13 @@ function copyRecursive(src, dest) {
       copyRecursive(srcPath, destPath);
     });
   } else {
+    const fileName = src.split(/[/\\]/).pop() || '';
+    
+    // Verificar se o arquivo está na lista de exclusão
+    if (excludedFiles.includes(fileName) || fileName?.endsWith('.psd')) {
+      return; // Pular este arquivo
+    }
+    
     copyFileSync(src, dest);
   }
 }

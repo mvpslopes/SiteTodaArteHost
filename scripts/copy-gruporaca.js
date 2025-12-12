@@ -4,6 +4,19 @@ import { join } from 'path';
 const sourceDir = join(process.cwd(), 'gruporaca', 'dist');
 const targetDir = join(process.cwd(), 'public', 'gruporaca');
 
+// Lista de arquivos que NÃO devem ser copiados
+const excludedFiles = [
+  'close-up-no-cavalo-ao-ar-livre.jpg',
+  'favicon.psd',
+  'foto-ariane.png',
+  'foto-ariane-fundo.JPG',
+  'lindo-cavalo-castanho-close-up-focinho-aparencia-bonita-juba-plano-de-fundo-campo-de-atletismo-curral-arvores-cavalos-sao-animais-maravilhosos.jpg',
+  'lindo-cavalo-marrom-ao-ar-livre.jpg',
+  'logo-ariane-andrade.png',
+  'logo-ariane-andrade-fundo.png',
+  'rebanho-de-cavalos-correndo-pela-agua.jpg',
+];
+
 function copyRecursive(src, dest) {
   if (!existsSync(src)) {
     console.log(`⚠️  Diretório não encontrado: ${src}`);
@@ -26,6 +39,12 @@ function copyRecursive(src, dest) {
   } else {
     // Se for o index.html, corrige os caminhos antes de copiar
     const fileName = src.split(/[/\\]/).pop();
+    
+    // Verificar se o arquivo está na lista de exclusão
+    if (excludedFiles.includes(fileName) || fileName?.endsWith('.psd')) {
+      return; // Pular este arquivo
+    }
+    
     if (fileName === 'index.html') {
       let content = readFileSync(src, 'utf8');
       // Remove a tag <base> PRIMEIRO - causa duplicação de caminhos
@@ -127,14 +146,6 @@ function copyImagesToRoot() {
           'Leilao-11-12-25.jpg',
           'Leilao-15-20-12.jpg',
           'Fundo Cavalo preto.jpg',
-          'close-up-no-cavalo-ao-ar-livre.jpg',
-          'lindo-cavalo-castanho-close-up-focinho-aparencia-bonita-juba-plano-de-fundo-campo-de-atletismo-curral-arvores-cavalos-sao-animais-maravilhosos.jpg',
-          'lindo-cavalo-marrom-ao-ar-livre.jpg',
-          'rebanho-de-cavalos-correndo-pela-agua.jpg',
-          'foto-ariane.png',
-          'foto-ariane-fundo.JPG',
-          'logo-ariane-andrade.png',
-          'logo-ariane-andrade-fundo.png',
           'arte-ariane-horizontal.png',
           'arte-ariane-vertical.png'
         ];

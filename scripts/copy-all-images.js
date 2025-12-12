@@ -9,6 +9,19 @@ import { join } from 'path';
 const publicDir = join(process.cwd(), 'public');
 const distDir = join(process.cwd(), 'dist');
 
+// Lista de arquivos que NÃO devem ser copiados
+const excludedFiles = [
+  'close-up-no-cavalo-ao-ar-livre.jpg',
+  'favicon.psd',
+  'foto-ariane.png',
+  'foto-ariane-fundo.JPG',
+  'lindo-cavalo-castanho-close-up-focinho-aparencia-bonita-juba-plano-de-fundo-campo-de-atletismo-curral-arvores-cavalos-sao-animais-maravilhosos.jpg',
+  'lindo-cavalo-marrom-ao-ar-livre.jpg',
+  'logo-ariane-andrade.png',
+  'logo-ariane-andrade-fundo.png',
+  'rebanho-de-cavalos-correndo-pela-agua.jpg',
+];
+
 function copyRecursive(src, dest) {
   if (!existsSync(src)) {
     console.log(`⚠️  Diretório não encontrado: ${src}`);
@@ -31,9 +44,20 @@ function copyRecursive(src, dest) {
   } else {
     // Copiar apenas arquivos de imagem e outros estáticos
     const fileName = src.split(/[/\\]/).pop() || '';
+    
+    // Verificar se o arquivo está na lista de exclusão
+    if (excludedFiles.includes(fileName)) {
+      return; // Pular este arquivo
+    }
+    
     const ext = fileName.split('.').pop()?.toLowerCase();
     const imageExts = ['jpg', 'jpeg', 'png', 'gif', 'svg', 'webp', 'ico', 'bmp', 'tiff'];
     const staticExts = ['css', 'js', 'json', 'xml', 'txt', 'pdf'];
+    
+    // Não copiar arquivos .psd
+    if (ext === 'psd') {
+      return;
+    }
     
     if (ext && (imageExts.includes(ext) || staticExts.includes(ext) || fileName === '.htaccess')) {
       try {
@@ -106,10 +130,6 @@ const gruporacaImages = [
   'Leilao-09a13-12.jpg',
   'Leilao-11-12-25.jpg',
   'Leilao-15-20-12.jpg',
-  'foto-ariane.png',
-  'foto-ariane-fundo.JPG',
-  'logo-ariane-andrade.png',
-  'logo-ariane-andrade-fundo.png',
   'arte-ariane-horizontal.png',
   'arte-ariane-vertical.png',
 ];
