@@ -3,6 +3,17 @@
  * Autenticação de Usuários
  */
 
+// Ativar exibição de erros em desenvolvimento
+if (file_exists(__DIR__ . '/.local')) {
+    error_reporting(E_ALL);
+    ini_set('display_errors', 0); // Desabilitar display para não quebrar JSON
+    ini_set('display_startup_errors', 0);
+    ini_set('log_errors', 1);
+}
+
+// Iniciar output buffering para capturar erros
+ob_start();
+
 require_once 'config.php';
 require_once 'permissions_db.php';
 
@@ -23,7 +34,11 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && ($_GET['action'] ?? '') === 'login'
     }
     
     // Atualizar último login
-    updateLastLogin($user['id']);
+    try {
+        updateLastLogin($user['id']);
+    } catch (Exception $e) {
+        error_log("Erro ao atualizar último login: " . $e->getMessage());
+    }
     
     // Criar sessão
     $_SESSION['user'] = [
@@ -38,7 +53,11 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && ($_GET['action'] ?? '') === 'login'
     $_SESSION['last_activity'] = time();
     
     // Log de auditoria
-    logAudit($user['id'], 'login', null, null, ['email' => $user['email']]);
+    try {
+        logAudit($user['id'], 'login', null, null, ['email' => $user['email']]);
+    } catch (Exception $e) {
+        error_log("Erro no log de auditoria: " . $e->getMessage());
+    }
     
     // Remover senha antes de retornar
     unset($user['password']);
@@ -52,7 +71,11 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && ($_GET['action'] ?? '') === 'login'
 // Rota: POST /api/auth.php?action=logout
 if ($_SERVER['REQUEST_METHOD'] === 'POST' && ($_GET['action'] ?? '') === 'logout') {
     if (isset($_SESSION['user'])) {
-        logAudit($_SESSION['user']['id'], 'logout', null, null, []);
+        try {
+            logAudit($_SESSION['user']['id'], 'logout', null, null, []);
+        } catch (Exception $e) {
+            error_log("Erro no log de auditoria: " . $e->getMessage());
+        }
     }
     session_destroy();
     jsonResponse(['success' => true, 'message' => 'Logout realizado com sucesso']);
@@ -79,6 +102,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'GET' && ($_GET['action'] ?? '') === 'check')
     }
 }
 
+// Se chegou aqui, nenhuma ação foi correspondida
+ob_clean(); // Limpar qualquer output anterior
 jsonError('Ação inválida', 400);
 ?>
 

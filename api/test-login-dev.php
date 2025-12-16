@@ -9,7 +9,8 @@ require_once 'permissions_db.php';
 
 header('Content-Type: application/json; charset=utf-8');
 
-$email = 'marcus@gruporaca.com.br';
+// Usuário ROOT padrão para testes em produção
+$email = 'marcus@todaarte.com.br';
 $senha = 'Gr@up0R@c@2024!M@rcus#Secure';
 
 $result = [

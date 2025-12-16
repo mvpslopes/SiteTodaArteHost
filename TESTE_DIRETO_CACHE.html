@@ -1,0 +1,145 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Teste de Cache - Grupo Raça</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            max-width: 800px;
+            margin: 50px auto;
+            padding: 20px;
+            background: #f5f5f5;
+        }
+        .test-box {
+            background: white;
+            padding: 20px;
+            margin: 20px 0;
+            border-radius: 8px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        }
+        .success { color: green; font-weight: bold; }
+        .error { color: red; font-weight: bold; }
+        .info { color: blue; }
+        button {
+            background: #000;
+            color: white;
+            padding: 10px 20px;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+            margin: 5px;
+        }
+        button:hover { background: #333; }
+        pre {
+            background: #f0f0f0;
+            padding: 10px;
+            border-radius: 5px;
+            overflow-x: auto;
+        }
+    </style>
+</head>
+<body>
+    <h1>🔍 Teste de Cache - Grupo Raça</h1>
+    
+    <div class="test-box">
+        <h2>1. Verificar Arquivo JS no Servidor</h2>
+        <button onclick="testarArquivoJS()">Testar Arquivo JS</button>
+        <div id="resultado-js"></div>
+    </div>
+
+    <div class="test-box">
+        <h2>2. Limpar Cache e Recarregar</h2>
+        <button onclick="limparCache()">Limpar Cache e Recarregar</button>
+        <p class="info">Isso vai limpar o cache e recarregar a página forçando o download do arquivo novo.</p>
+    </div>
+
+    <div class="test-box">
+        <h2>3. Verificar Nomes no Arquivo</h2>
+        <button onclick="verificarNomes()">Verificar Nomes</button>
+        <div id="resultado-nomes"></div>
+    </div>
+
+    <script>
+        async function testarArquivoJS() {
+            const resultado = document.getElementById('resultado-js');
+            resultado.innerHTML = '<p class="info">Testando...</p>';
+            
+            try {
+                // Tentar buscar o arquivo com versionamento
+                const url = 'https://todaarte.com.br/gruporaca/assets/index-BWxCFoPI.js?v=' + Date.now();
+                const response = await fetch(url);
+                
+                if (response.ok) {
+                    const text = await response.text();
+                    const temHugo = text.includes('HUGO FERRARI');
+                    const temMelquiades = text.includes('MELQUIADES LEANDRO');
+                    const temEvolucao = text.includes('EVOLUÇÃO DA MARCHA') || text.includes('EVOLUO DA MARCHA');
+                    
+                    resultado.innerHTML = `
+                        <p class="success">✅ Arquivo encontrado!</p>
+                        <p><strong>Tamanho:</strong> ${(text.length / 1024).toFixed(2)} KB</p>
+                        <p><strong>HUGO FERRARI:</strong> ${temHugo ? '✅ Encontrado' : '❌ Não encontrado'}</p>
+                        <p><strong>MELQUIADES LEANDRO:</strong> ${temMelquiades ? '✅ Encontrado' : '❌ Não encontrado'}</p>
+                        <p><strong>EVOLUÇÃO DA MARCHA:</strong> ${temEvolucao ? '✅ Encontrado' : '❌ Não encontrado'}</p>
+                        <p><strong>Data do servidor:</strong> ${response.headers.get('last-modified') || 'Não disponível'}</p>
+                    `;
+                } else {
+                    resultado.innerHTML = `<p class="error">❌ Erro ao buscar arquivo: ${response.status} ${response.statusText}</p>`;
+                }
+            } catch (error) {
+                resultado.innerHTML = `<p class="error">❌ Erro: ${error.message}</p>`;
+            }
+        }
+
+        async function verificarNomes() {
+            const resultado = document.getElementById('resultado-nomes');
+            resultado.innerHTML = '<p class="info">Verificando...</p>';
+            
+            try {
+                const url = 'https://todaarte.com.br/gruporaca/assets/index-BWxCFoPI.js?v=' + Date.now();
+                const response = await fetch(url);
+                const text = await response.text();
+                
+                // Procurar pelos nomes no arquivo
+                const regexHugo = /HUGO\s+FERRARI/g;
+                const regexMelquiades = /MELQUIADES\s+LEANDRO/g;
+                const regexEvolucao = /EVOLU[ÇÃ][OÓ]\s+DA\s+MARCHA/g;
+                
+                const matchesHugo = text.match(regexHugo);
+                const matchesMelquiades = text.match(regexMelquiades);
+                const matchesEvolucao = text.match(regexEvolucao);
+                
+                resultado.innerHTML = `
+                    <h3>Resultados:</h3>
+                    <p><strong>HUGO FERRARI:</strong> ${matchesHugo ? `✅ Encontrado ${matchesHugo.length} vez(es)` : '❌ Não encontrado'}</p>
+                    <p><strong>MELQUIADES LEANDRO:</strong> ${matchesMelquiades ? `✅ Encontrado ${matchesMelquiades.length} vez(es)` : '❌ Não encontrado'}</p>
+                    <p><strong>EVOLUÇÃO DA MARCHA:</strong> ${matchesEvolucao ? `✅ Encontrado ${matchesEvolucao.length} vez(es)` : '❌ Não encontrado'}</p>
+                    <details>
+                        <summary>Ver contexto (primeiras ocorrências)</summary>
+                        <pre>${text.substring(Math.max(0, text.indexOf('HUGO FERRARI') - 100), text.indexOf('HUGO FERRARI') + 200)}</pre>
+                    </details>
+                `;
+            } catch (error) {
+                resultado.innerHTML = `<p class="error">❌ Erro: ${error.message}</p>`;
+            }
+        }
+
+        function limparCache() {
+            // Limpar cache do navegador
+            if ('caches' in window) {
+                caches.keys().then(names => {
+                    names.forEach(name => {
+                        caches.delete(name);
+                    });
+                });
+            }
+            
+            // Recarregar a página principal
+            window.location.href = 'https://todaarte.com.br/gruporaca/?nocache=' + Date.now();
+        }
+    </script>
+</body>
+</html>
+

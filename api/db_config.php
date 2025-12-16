@@ -2,14 +2,33 @@
 /**
  * Configuração de Conexão com Banco de Dados MySQL
  * 
- * IMPORTANTE: Configure estas variáveis com os dados do seu banco na Hostinger
+ * Detecta automaticamente se está em desenvolvimento local (XAMPP) ou produção (Hostinger)
  */
 
-// Configurações do banco de dados
-define('DB_HOST', 'localhost'); // Host da Hostinger (geralmente 'localhost')
-define('DB_NAME', 'u179630068_gruporaca_db'); // Nome do banco criado
-define('DB_USER', 'u179630068_gruporaca_user'); // Usuário do banco
-define('DB_PASS', 'Gr@up0R@c@2024!DB#Secure'); // Senha do banco (verifique se é a mesma que você criou na Hostinger)
+// Detectar se está rodando localmente (XAMPP)
+$isLocal = (
+    ($_SERVER['SERVER_NAME'] ?? '') === 'localhost' || 
+    ($_SERVER['SERVER_NAME'] ?? '') === '127.0.0.1' ||
+    ($_SERVER['HTTP_HOST'] ?? '') === 'localhost' ||
+    ($_SERVER['HTTP_HOST'] ?? '') === '127.0.0.1' ||
+    strpos($_SERVER['SERVER_NAME'] ?? '', '.local') !== false ||
+    file_exists(__DIR__ . '/.local') // Arquivo marcador para forçar modo local
+);
+
+if ($isLocal) {
+    // Configurações para desenvolvimento local (XAMPP)
+    define('DB_HOST', 'localhost');
+    define('DB_NAME', 'gruporaca_db'); // Banco local (crie no phpMyAdmin)
+    define('DB_USER', 'root'); // Usuário padrão do XAMPP
+    define('DB_PASS', ''); // Senha padrão do XAMPP (vazio)
+} else {
+    // Configurações para produção (Hostinger)
+    define('DB_HOST', 'localhost');
+    define('DB_NAME', 'u179630068_gruporaca_db');
+    define('DB_USER', 'u179630068_gruporaca_user');
+    define('DB_PASS', 'Gr@up0R@c@2024!DB#Secure');
+}
+
 define('DB_CHARSET', 'utf8mb4');
 
 /**
