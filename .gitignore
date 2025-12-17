@@ -5,3 +5,12 @@ node_modules
 dist
 .DS_Store
 *.log
+# Arquivos de credenciais do Google Cloud
+*.json
+!package.json
+!package-lock.json
+!tsconfig*.json
+!eslint.config.js
+!postcss.config.js
+!tailwind.config.js
+tidal-triumph-*.json

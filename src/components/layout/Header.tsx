@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { Link, useLocation } from 'react-router-dom';
-import { Menu, X } from 'lucide-react';
+import { Menu, X, Lock } from 'lucide-react';
 import logo from '../../assets/logo.png';
 
 export function Header() {
@@ -66,6 +66,16 @@ export function Header() {
                 );
               })}
             </div>
+            
+            {/* Botão de acesso ao sistema interno */}
+            <Link
+              to="/sistema-interno"
+              className="ml-4 flex items-center space-x-2 px-3 py-2 bg-gray-100 hover:bg-gray-200 text-gray-700 rounded-lg transition-all duration-300 text-sm font-medium hover:shadow-md"
+              title="Acesso ao Sistema Interno"
+            >
+              <Lock size={16} />
+              <span className="hidden xl:inline">Sistema</span>
+            </Link>
           </nav>
 
           {/* Mobile menu button */}
@@ -117,6 +127,16 @@ export function Header() {
                 </Link>
               );
             })}
+            
+            {/* Botão de acesso ao sistema interno no mobile */}
+            <Link
+              to="/sistema-interno"
+              onClick={() => setIsMenuOpen(false)}
+              className="flex items-center justify-center space-x-2 px-6 py-3 bg-gray-100 hover:bg-gray-200 text-gray-700 rounded-lg transition-all duration-300 text-sm font-medium mt-3"
+            >
+              <Lock size={18} />
+              <span>Acesso ao Sistema Interno</span>
+            </Link>
           </nav>
         )}
       </div>
