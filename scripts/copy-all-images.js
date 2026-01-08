@@ -109,44 +109,5 @@ if (existsSync(partnersSrc)) {
   console.log('   ⚠️  Pasta partners/ não encontrada');
 }
 
-// Copiar pasta gruporaca/ completa
-console.log('\n📁 Copiando pasta gruporaca/...');
-const gruporacaSrc = join(publicDir, 'gruporaca');
-const gruporacaDest = join(distDir, 'gruporaca');
-if (existsSync(gruporacaSrc)) {
-  copyRecursive(gruporacaSrc, gruporacaDest);
-  console.log('   ✅ Pasta gruporaca/ copiada');
-} else {
-  console.log('   ⚠️  Pasta gruporaca/ não encontrada');
-}
-
-// Copiar imagens do Grupo Raça para a raiz também (compatibilidade)
-console.log('\n📁 Copiando imagens do Grupo Raça para raiz (compatibilidade)...');
-const gruporacaImages = [
-  'logo.png',
-  'logo-todaarte.png',
-  'favicon.png',
-  'Leilao-08-13-12.jpg',
-  'Leilao-09a13-12.jpg',
-  'Leilao-11-12-25.jpg',
-  'Leilao-15-20-12.jpg',
-  'arte-ariane-horizontal.png',
-  'arte-ariane-vertical.png',
-];
-
-gruporacaImages.forEach(img => {
-  const src = join(gruporacaSrc, img);
-  const dest = join(distDir, img);
-  
-  if (existsSync(src)) {
-    try {
-      copyFileSync(src, dest);
-      console.log(`   ✅ ${img}`);
-    } catch (error) {
-      console.error(`   ❌ ${img}:`, error.message);
-    }
-  }
-});
-
 console.log('\n✅ Todas as imagens foram copiadas para dist/!');
 
