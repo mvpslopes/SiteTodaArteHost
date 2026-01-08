@@ -1,6 +1,5 @@
 import React, { useState } from 'react';
 import { Mail, MessageCircle, Send, ArrowRight } from 'lucide-react';
-import { Link } from 'react-router-dom';
 import { analyticsEvents } from '../../utils/analytics';
 import { FadeIn } from '../common/FadeIn';
 
@@ -126,8 +125,8 @@ export function Contact() {
 
   return (
     <>
-      {/* Hero Section */}
-      <section className="relative bg-gradient-to-b from-black via-neutral-900 to-neutral-800 text-white py-12 sm:py-16 md:py-20 lg:py-24 overflow-hidden">
+      {/* Section Header */}
+      <section id="contato" className="relative bg-gradient-to-b from-black via-neutral-900 to-neutral-800 text-white py-12 sm:py-16 md:py-20 lg:py-24 overflow-hidden">
         <div className="absolute inset-0 bg-black/40"></div>
         <div className="relative z-10 max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 text-center">
           <FadeIn delay={0} duration={0.8}>

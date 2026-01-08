@@ -1,6 +1,5 @@
 import React from 'react';
 import { Palette, Target, Smartphone, Camera, TrendingUp, DollarSign, ArrowRight } from 'lucide-react';
-import { Link } from 'react-router-dom';
 import { FadeIn } from '../common/FadeIn';
 
 export function Services() {
@@ -74,18 +73,18 @@ export function Services() {
 
   return (
     <>
-      {/* Hero Section */}
-      <section className="relative bg-gradient-to-b from-black via-neutral-900 to-neutral-800 text-white py-12 sm:py-16 md:py-20 lg:py-24 overflow-hidden">
-        <div className="absolute inset-0 bg-black/40"></div>
+      {/* Section Header */}
+      <section id="servicos" className="relative bg-gradient-to-b from-gray-900 via-logo-dark to-logo-dark text-white py-12 sm:py-16 md:py-20 lg:py-24 overflow-hidden">
+        <div className="absolute inset-0 bg-gradient-to-br from-logo-dark/30 to-transparent"></div>
         <div className="relative z-10 max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 text-center">
           <FadeIn delay={0} duration={0.8}>
             <div className="space-y-4 sm:space-y-6 md:space-y-8">
               <h1 className="text-3xl sm:text-4xl md:text-5xl lg:text-6xl xl:text-7xl font-extrabold px-2">
                 <span className="text-white">Nossos</span>
                 <br />
-                <span className="text-logo">Serviços</span>
+                <span className="text-logo-light">Serviços</span>
               </h1>
-              <p className="text-base sm:text-lg md:text-xl lg:text-2xl text-gray-200 max-w-3xl mx-auto leading-relaxed px-2">
+              <p className="text-base sm:text-lg md:text-xl lg:text-2xl text-white/90 max-w-3xl mx-auto leading-relaxed px-2">
                 Nosso objetivo é oferecer uma visão especializada para posicionar sua empresa onde ela merece estar.
               </p>
             </div>
@@ -94,7 +93,7 @@ export function Services() {
       </section>
 
       {/* Services Section */}
-      <section className="py-12 sm:py-16 md:py-20 bg-gray-50">
+      <section className="py-12 sm:py-16 md:py-20 bg-gradient-to-br from-white via-gray-50 to-white">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <FadeIn delay={0} duration={0.6}>
             <div className="text-center mb-8 sm:mb-12 md:mb-16">
@@ -113,7 +112,7 @@ export function Services() {
               return (
                 <FadeIn key={index} delay={index * 100} duration={0.6}>
                   <div
-                    className="bg-white rounded-xl sm:rounded-2xl p-4 sm:p-6 md:p-8 shadow-lg hover:shadow-2xl transition-all duration-300 transform hover:-translate-y-2 card-hover"
+                    className="bg-white rounded-xl sm:rounded-2xl p-4 sm:p-6 md:p-8 shadow-lg hover:shadow-2xl transition-all duration-300 transform hover:-translate-y-2 card-hover border border-logo/10 hover:border-logo/30"
                   >
                   <div className="bg-gradient-to-br from-logo to-logo-light p-3 sm:p-4 rounded-xl w-12 h-12 sm:w-14 sm:h-14 md:w-16 md:h-16 flex items-center justify-center mb-4 sm:mb-6">
                     <IconComponent className="h-6 w-6 sm:h-7 sm:w-7 md:h-8 md:w-8 text-white" />
@@ -136,26 +135,6 @@ export function Services() {
         </div>
       </section>
 
-      {/* CTA Section */}
-      <section className="py-12 sm:py-16 md:py-20 bg-gradient-to-r from-logo to-logo-light">
-        <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 text-center">
-          <FadeIn delay={0} duration={0.6}>
-            <h2 className="text-2xl sm:text-3xl md:text-4xl lg:text-5xl font-bold text-white mb-4 sm:mb-6 px-2">
-              Pronto para impulsionar seu negócio?
-            </h2>
-            <p className="text-base sm:text-lg md:text-xl text-white/90 mb-6 sm:mb-8 px-2">
-              Entre em contato e vamos criar estratégias personalizadas para o seu sucesso
-            </p>
-            <Link
-              to="/contato"
-              className="inline-flex items-center space-x-2 bg-white text-logo px-6 sm:px-8 py-3 sm:py-4 rounded-lg font-semibold text-sm sm:text-base md:text-lg transition-all duration-300 shadow-lg hover:shadow-xl hover:scale-105"
-            >
-              <span>Solicitar Orçamento</span>
-              <ArrowRight className="h-4 w-4 sm:h-5 sm:w-5" />
-            </Link>
-          </FadeIn>
-        </div>
-      </section>
     </>
   );
 }

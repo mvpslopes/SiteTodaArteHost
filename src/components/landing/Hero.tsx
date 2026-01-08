@@ -1,5 +1,4 @@
 import { useState, useEffect } from 'react';
-import { Link } from 'react-router-dom';
 import { ArrowRight } from 'lucide-react';
 import { FadeIn } from '../common/FadeIn';
 import { heroConfigDesktop } from '../../config/hero.config.desktop';
@@ -31,6 +30,7 @@ export function Hero() {
   if (isMobile) {
     return (
       <section 
+        id="inicio"
         className="relative text-white min-h-[calc(100vh-5rem)] hero-container animate-fade-in"
         style={{
           background: 'transparent', // Sem gradiente - a imagem já tem o fundo
@@ -69,14 +69,14 @@ export function Hero() {
                 zIndex: 20
               }}
             >
-              <Link 
-                to="/servicos"
+              <a 
+                href="#servicos"
                 className="bg-gradient-to-r from-logo to-logo-light text-white px-6 py-3 rounded-lg font-semibold transition-all duration-300 shadow-md hover:shadow-lg hover:scale-105 flex items-center space-x-2 animate-float text-sm whitespace-nowrap"
                 style={{ fontSize: config.botao.fontSize }}
               >
                 <span>Conheça nosso trabalho</span>
                 <ArrowRight className="h-4 w-4 ml-2" />
-              </Link>
+              </a>
             </div>
           </FadeIn>
         </div>
@@ -87,6 +87,7 @@ export function Hero() {
   // 👉 Layout DESKTOP: mantém o layout absoluto existente com configurações específicas
   return (
     <section 
+      id="inicio"
       className="relative text-white min-h-[calc(100vh-5rem)] hero-container animate-fade-in"
       style={{
         background: config.background.gradient,
@@ -159,14 +160,14 @@ export function Hero() {
                 zIndex: config.botao.zIndex
           }}
         >
-          <Link 
-            to="/servicos"
+          <a 
+            href="#servicos"
             className="bg-gradient-to-r from-logo to-logo-light text-white px-4 py-2 sm:px-6 sm:py-2 rounded-lg font-semibold transition-all duration-300 shadow-md hover:shadow-lg hover:scale-105 flex items-center space-x-2 animate-float text-sm sm:text-base whitespace-nowrap"
                 style={{ fontSize: config.botao.fontSize }}
           >
                 <span>Conheça nosso trabalho</span>
             <ArrowRight className="h-4 w-4 sm:h-5 sm:w-5 ml-1 sm:ml-2" />
-          </Link>
+          </a>
         </div>
       </FadeIn>
 
