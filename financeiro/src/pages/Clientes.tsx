@@ -1,8 +1,10 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useState, useMemo } from 'react';
 import { UserPlus, Plus } from 'lucide-react';
 import { api, type Cliente } from '../api';
+import { useSearch, matchSearch } from '../contexts/SearchContext';
 
 export default function Clientes() {
+  const { query } = useSearch();
   const [clientes, setClientes] = useState<Cliente[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -10,6 +12,11 @@ export default function Clientes() {
   const [editingId, setEditingId] = useState<number | null>(null);
   const [nome, setNome] = useState('');
   const [mostrarInativos, setMostrarInativos] = useState(false);
+
+  const clientesFiltrados = useMemo(() => {
+    if (!query.trim()) return clientes;
+    return clientes.filter((c) => matchSearch(c.nome, query));
+  }, [clientes, query]);
 
   const load = () => {
     setLoading(true);
@@ -114,14 +121,16 @@ export default function Clientes() {
                 </tr>
               </thead>
               <tbody>
-                {clientes.length === 0 ? (
+                {clientesFiltrados.length === 0 ? (
                   <tr>
                     <td colSpan={3} className="py-8 text-gray-500 text-center">
-                      Nenhum cliente. Cadastre clientes para atribuir em entradas.
+                      {clientes.length === 0
+                        ? 'Nenhum cliente. Cadastre clientes para atribuir em entradas.'
+                        : 'Nenhum cliente encontrado para esta pesquisa.'}
                     </td>
                   </tr>
                 ) : (
-                  clientes.map((c) => (
+                  clientesFiltrados.map((c) => (
                     <tr key={c.id} className="border-b border-gray-100 hover:bg-gray-50/50">
                       <td className="py-3 px-4 text-gray-800 font-medium">{c.nome}</td>
                       <td className="py-3 px-4">

@@ -6,7 +6,7 @@ require_once 'db_config.php';
 $current = requireAuth();
 $pdo = getDBConnection();
 
-$perfis = ['root', 'administrador', 'usuario'];
+$perfis = ['root', 'administrador', 'usuario', 'cliente'];
 
 // GET: listar (root ou administrador) ou obter um por id
 if ($_SERVER['REQUEST_METHOD'] === 'GET') {
@@ -105,13 +105,13 @@ if ($_SERVER['REQUEST_METHOD'] === 'PUT') {
 
     $isSelf = ((int)$target['id']) === ((int)$current['id']);
 
-    if ($current['perfil'] === 'usuario') {
+    if ($current['perfil'] === 'usuario' || $current['perfil'] === 'cliente') {
         if (!$isSelf) {
             http_response_code(403);
             echo json_encode(['error' => 'Acesso negado']);
             exit;
         }
-        // Usuário só pode atualizar próprio nome (senha vai em alterar-senha.php)
+        // Cliente só pode atualizar próprio nome (senha vai em alterar-senha.php)
         $nome = trim($input['nome'] ?? '');
         $stmt = $pdo->prepare("UPDATE usuarios SET nome = ? WHERE id = ?");
         $stmt->execute([$nome, $id]);

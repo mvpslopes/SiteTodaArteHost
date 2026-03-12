@@ -1,22 +1,30 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useState, useMemo } from 'react';
 import { ShieldCheck, Plus } from 'lucide-react';
 import { useAuth } from '../contexts/AuthContext';
 import { api, type Usuario, type Perfil } from '../api';
+import { useSearch, matchSearch } from '../contexts/SearchContext';
 
 const PERFIS: { value: Perfil; label: string }[] = [
   { value: 'root', label: 'Root' },
   { value: 'administrador', label: 'Administrador' },
   { value: 'usuario', label: 'Usuário' },
+  { value: 'cliente', label: 'Cliente' },
 ];
 
 export default function Usuarios() {
   const { user: currentUser } = useAuth();
+  const { query } = useSearch();
   const [usuarios, setUsuarios] = useState<Usuario[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [modal, setModal] = useState<'add' | 'edit' | null>(null);
   const [editing, setEditing] = useState<Usuario | null>(null);
   const [form, setForm] = useState({ email: '', senha: '', nome: '', perfil: 'usuario' as Perfil });
+
+  const usuariosFiltrados = useMemo(() => {
+    if (!query.trim()) return usuarios;
+    return usuarios.filter((u) => matchSearch(u.nome, query) || matchSearch(u.email, query));
+  }, [usuarios, query]);
 
   const load = () => {
     setLoading(true);
@@ -131,13 +139,26 @@ export default function Usuarios() {
               </tr>
             </thead>
             <tbody>
-              {usuarios.map((u) => (
+              {usuariosFiltrados.length === 0 ? (
+                <tr>
+                  <td colSpan={isRoot ? 5 : 4} className="py-8 text-gray-500 text-center">
+                    {usuarios.length === 0 ? 'Nenhum usuário.' : 'Nenhum usuário encontrado para esta pesquisa.'}
+                  </td>
+                </tr>
+              ) : (
+              usuariosFiltrados.map((u) => (
                 <tr key={u.id} className="border-b border-gray-100 hover:bg-gray-50/50">
                   <td className="py-3 px-4 text-gray-800 font-medium">{u.nome || '—'}</td>
                   <td className="py-3 px-4 text-gray-500">{u.email}</td>
                   <td className="py-3 px-4">
                     <span className="text-gray-600">
-                      {u.perfil === 'root' ? 'Root' : u.perfil === 'administrador' ? 'Administrador' : 'Usuário'}
+                      {u.perfil === 'root'
+                        ? 'Root'
+                        : u.perfil === 'administrador'
+                        ? 'Administrador'
+                        : u.perfil === 'usuario'
+                        ? 'Usuário'
+                        : 'Cliente'}
                     </span>
                   </td>
                   <td className="py-3 px-4">
@@ -166,7 +187,8 @@ export default function Usuarios() {
                     </td>
                   )}
                 </tr>
-              ))}
+              ))
+              )}
             </tbody>
           </table>
         </div>

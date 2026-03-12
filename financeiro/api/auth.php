@@ -2,6 +2,7 @@
 require_once 'cors.php';
 require_once 'auth_helpers.php';
 require_once 'db_config.php';
+require_once 'audit_helpers.php';
 
 sessionStart();
 $pdo = getDBConnection();
@@ -47,6 +48,22 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     }
 
     $_SESSION['user_id'] = (int)$row['id'];
+
+    // cria registro de sessão
+    try {
+        $sessionId = session_id();
+        $ip = getClientIp();
+        $ua = getUserAgent();
+        $stmtSess = $pdo->prepare("
+            INSERT INTO sessoes_usuarios (user_id, session_id, ip, user_agent, login_at, last_activity_at)
+            VALUES (?, ?, ?, ?, NOW(), NOW())
+        ");
+        $stmtSess->execute([(int)$row['id'], $sessionId, $ip, $ua]);
+        $_SESSION['sessao_id'] = (int)$pdo->lastInsertId();
+        logAuditoria($pdo, $row, 'login', 'auth', null, []);
+    } catch (Throwable $e) {
+        // não impede login se auditoria falhar
+    }
     $user = [
         'id' => (int)$row['id'],
         'email' => $row['email'],
@@ -59,6 +76,20 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 
 // DELETE: logout
 if ($_SERVER['REQUEST_METHOD'] === 'DELETE') {
+    $user = getCurrentUser();
+
+    // fecha sessão e registra logout
+    if ($user && isset($_SESSION['sessao_id'])) {
+        try {
+            $sessaoId = (int)$_SESSION['sessao_id'];
+            $stmt = $pdo->prepare("UPDATE sessoes_usuarios SET logout_at = NOW() WHERE id = ?");
+            $stmt->execute([$sessaoId]);
+            logAuditoria($pdo, $user, 'logout', 'auth', null, []);
+        } catch (Throwable $e) {
+            // ignora falha de auditoria
+        }
+    }
+
     $_SESSION = [];
     if (ini_get('session.use_cookies')) {
         $p = session_get_cookie_params();

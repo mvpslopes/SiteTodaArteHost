@@ -1,6 +1,7 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useState, useMemo } from 'react';
 import { ArrowLeftRight, Plus } from 'lucide-react';
 import { api, type Transacao, type Favorecido, type Cliente, METODOS_PAGAMENTO } from '../api';
+import { useSearch, matchSearch } from '../contexts/SearchContext';
 
 const MESES = ['Jan','Fev','Mar','Abr','Mai','Jun','Jul','Ago','Set','Out','Nov','Dez'];
 
@@ -29,6 +30,7 @@ const emptyForm = () => ({
 });
 
 export default function Transacoes() {
+  const { query } = useSearch();
   const [transacoes, setTransacoes] = useState<Transacao[]>([]);
   const [favorecidos, setFavorecidos] = useState<Favorecido[]>([]);
   const [clientes, setClientes] = useState<Cliente[]>([]);
@@ -39,11 +41,59 @@ export default function Transacoes() {
   const [form, setForm] = useState(emptyForm());
   const [mes, setMes] = useState<number | ''>('');
   const [ano, setAno] = useState<number | ''>(() => new Date().getFullYear());
+  const [metodoFiltro, setMetodoFiltro] = useState<Transacao['metodo_pagamento'] | ''>('');
+  const [clienteFiltro, setClienteFiltro] = useState<number | ''>('');
+  const [selecionados, setSelecionados] = useState<number[]>([]);
+
+  const transacoesFiltradas = useMemo(() => {
+    const q = query.trim().toLowerCase();
+    return transacoes.filter((t) => {
+      if (q) {
+        const okBusca =
+          matchSearch(t.descricao, q) ||
+          matchSearch(t.favorecido_nome, q) ||
+          matchSearch(t.cliente_nome, q) ||
+          matchSearch(String(t.valor), q) ||
+          matchSearch(t.metodo_pagamento, q) ||
+          matchSearch(t.tipo === 'entrada' ? 'Entrada' : 'Saída', q) ||
+          matchSearch(formatDate(t.data_transacao), q);
+        if (!okBusca) return false;
+      }
+      if (metodoFiltro && t.metodo_pagamento !== metodoFiltro) return false;
+      if (clienteFiltro && (t.cliente_id ?? 0) !== clienteFiltro) return false;
+      return true;
+    });
+  }, [transacoes, query, metodoFiltro, clienteFiltro]);
+
+  const resumoSelecao = useMemo(() => {
+    if (selecionados.length === 0) {
+      return { entradas: 0, saidas: 0, saldo: 0 };
+    }
+    const set = new Set(selecionados);
+    return transacoesFiltradas.reduce(
+      (acc, t) => {
+        if (!set.has(t.id)) return acc;
+        const valor = Number(t.valor);
+        if (t.tipo === 'entrada') acc.entradas += valor;
+        else acc.saidas += valor;
+        acc.saldo = acc.entradas - acc.saidas;
+        return acc;
+      },
+      { entradas: 0, saidas: 0, saldo: 0 },
+    );
+  }, [selecionados, transacoesFiltradas]);
 
   const load = () => {
     setLoading(true);
     Promise.all([
-      api.transacoes.list(mes && ano ? { mes: Number(mes), ano: Number(ano) } : undefined),
+      api.transacoes.list(
+        mes && ano
+          ? {
+              mes: Number(mes),
+              ano: Number(ano),
+            }
+          : undefined,
+      ),
       api.favorecidos.list(true),
       api.clientes.list(true),
     ])
@@ -51,6 +101,7 @@ export default function Transacoes() {
         setTransacoes(t.transacoes);
         setFavorecidos(f.favorecidos);
         setClientes(c.clientes);
+        setSelecionados([]);
       })
       .catch((e) => setError(e.message))
       .finally(() => setLoading(false));
@@ -137,6 +188,14 @@ export default function Transacoes() {
     }
   };
 
+  const toggleSelecionado = (id: number) => {
+    setSelecionados((cur) =>
+      cur.includes(id) ? cur.filter((x) => x !== id) : [...cur, id],
+    );
+  };
+
+  const limparSelecao = () => setSelecionados([]);
+
   return (
     <div className="space-y-6">
       <div className="flex flex-wrap items-center justify-between gap-4">
@@ -184,6 +243,60 @@ export default function Transacoes() {
         </div>
       </div>
 
+      <div className="flex flex-wrap items-center justify-between gap-4">
+        <div className="flex flex-wrap items-center gap-3">
+          <label className="text-xs text-gray-600">
+            Método de pagamento:{' '}
+            <select
+              value={metodoFiltro}
+              onChange={(e) => setMetodoFiltro(e.target.value as Transacao['metodo_pagamento'] | '')}
+              className="ml-1 rounded-lg border border-gray-200 bg-white px-2 py-1 text-xs text-gray-800"
+            >
+              <option value="">Todos</option>
+              {METODOS_PAGAMENTO.map((m) => (
+                <option key={m.value} value={m.value}>
+                  {m.label}
+                </option>
+              ))}
+            </select>
+          </label>
+          <label className="text-xs text-gray-600">
+            Cliente:{' '}
+            <select
+              value={clienteFiltro}
+              onChange={(e) => setClienteFiltro(e.target.value ? Number(e.target.value) : '')}
+              className="ml-1 rounded-lg border border-gray-200 bg-white px-2 py-1 text-xs text-gray-800"
+            >
+              <option value="">Todos</option>
+              {clientes.map((c) => (
+                <option key={c.id} value={c.id}>
+                  {c.nome}
+                </option>
+              ))}
+            </select>
+          </label>
+        </div>
+
+        {selecionados.length > 0 && (
+          <div className="flex items-center gap-3 text-xs">
+            <div className="px-3 py-1 rounded-full bg-emerald-50 border border-emerald-200 text-emerald-800">
+              <span className="font-semibold mr-1">{selecionados.length}</span>
+              selecionada{selecionados.length > 1 && 's'} · Soma:{' '}
+              <span className="font-semibold">
+                {formatMoney(resumoSelecao.saldo)}
+              </span>
+            </div>
+            <button
+              type="button"
+              onClick={limparSelecao}
+              className="text-[11px] text-gray-500 hover:text-gray-700"
+            >
+              Limpar seleção
+            </button>
+          </div>
+        )}
+      </div>
+
       {error && (
         <div className="rounded-lg bg-red-50 border border-red-200 text-red-700 p-3 text-sm">
           {error}
@@ -198,6 +311,7 @@ export default function Transacoes() {
             <table className="w-full text-sm">
               <thead>
                 <tr className="text-gray-500 border-b border-gray-200 bg-gray-50/80">
+                  <th className="text-left py-3 px-4 font-medium w-6"></th>
                   <th className="text-left py-3 px-4 font-medium">Data</th>
                   <th className="text-left py-3 px-4 font-medium">Tipo</th>
                   <th className="text-left py-3 px-4 font-medium">Valor</th>
@@ -209,15 +323,25 @@ export default function Transacoes() {
                 </tr>
               </thead>
               <tbody>
-                {transacoes.length === 0 ? (
+                {transacoesFiltradas.length === 0 ? (
                   <tr>
-                    <td colSpan={8} className="py-8 text-gray-500 text-center">
-                      Nenhuma transação. Use o filtro ou adicione uma nova.
+                    <td colSpan={9} className="py-8 text-gray-500 text-center">
+                      {transacoes.length === 0
+                        ? 'Nenhuma transação. Use o filtro ou adicione uma nova.'
+                        : 'Nenhuma transação encontrada para esta pesquisa.'}
                     </td>
                   </tr>
                 ) : (
-                  transacoes.map((t) => (
-                    <tr key={t.id} className="border-b border-gray-100 hover:bg-gray-50/50">
+                  transacoesFiltradas.map((t) => (
+                  <tr key={t.id} className="border-b border-gray-100 hover:bg-gray-50/50">
+                      <td className="py-3 px-4">
+                        <input
+                          type="checkbox"
+                          checked={selecionados.includes(t.id)}
+                          onChange={() => toggleSelecionado(t.id)}
+                          className="rounded border-gray-300 text-primary-600 focus:ring-primary-500"
+                        />
+                      </td>
                       <td className="py-3 px-4 font-mono text-gray-600">{formatDate(t.data_transacao)}</td>
                       <td className="py-3 px-4">
                         <span className={`inline-flex px-2 py-0.5 rounded-full text-xs font-medium ${t.tipo === 'entrada' ? 'bg-emerald-50 text-emerald-700' : 'bg-rose-50 text-rose-700'}`}>
@@ -227,7 +351,7 @@ export default function Transacoes() {
                       <td className={`py-3 px-4 font-mono font-medium ${t.tipo === 'entrada' ? 'text-emerald-600' : 'text-rose-600'}`}>
                         {formatMoney(Number(t.valor))}
                       </td>
-                      <td className="py-3 px-4 text-gray-500 capitalize">{t.metodo_pagamento}</td>
+                      <td className="py-3 px-4 text-gray-500">{METODOS_PAGAMENTO.find(m => m.value === t.metodo_pagamento)?.label ?? t.metodo_pagamento}</td>
                       <td className="py-3 px-4 text-gray-800">{t.favorecido_nome ?? '—'}</td>
                       <td className="py-3 px-4 text-gray-600">{t.cliente_nome ?? '—'}</td>
                       <td className="py-3 px-4 text-gray-500 max-w-[200px] truncate">{t.descricao ?? '—'}</td>

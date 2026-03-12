@@ -1,6 +1,7 @@
-import { useEffect, useState, useRef } from 'react';
-import { LayoutDashboard, CreditCard, Download, FileSpreadsheet, FileText, MapPin, UserPlus } from 'lucide-react';
-import { api, METODOS_PAGAMENTO } from '../api';
+import { useEffect, useState, useRef, useMemo } from 'react';
+import { LayoutDashboard, CreditCard, Download, FileSpreadsheet, FileText, MapPin, UserPlus, AlertTriangle } from 'lucide-react';
+import { api, METODOS_PAGAMENTO, type GastoFixo } from '../api';
+import { useSearch, matchSearch } from '../contexts/SearchContext';
 import * as XLSX from 'xlsx';
 import { jsPDF } from 'jspdf';
 import autoTable from 'jspdf-autotable';
@@ -347,6 +348,7 @@ export default function Dashboard() {
   const [error, setError] = useState<string | null>(null);
   const [exportMenuOpen, setExportMenuOpen] = useState(false);
   const exportMenuRef = useRef<HTMLDivElement>(null);
+  const [gastosAlertas, setGastosAlertas] = useState<GastoFixo[]>([]);
 
   useEffect(() => {
     const close = (e: MouseEvent) => {
@@ -364,6 +366,37 @@ export default function Dashboard() {
       .catch((e) => setError(e.message))
       .finally(() => setLoading(false));
   }, [mes, ano]);
+
+  useEffect(() => {
+    api.gastosFixos
+      .alertas()
+      .then((res) => {
+        setGastosAlertas(res.alertas);
+      })
+      .catch(() => {
+        // Silencia erro de alertas de gastos fixos para não quebrar a dashboard
+      });
+  }, []);
+
+  const { query } = useSearch();
+  const transacoesFiltradas = useMemo(() => {
+    const list = data?.transacoes ?? [];
+    if (!query.trim()) return list;
+    const q = query.trim().toLowerCase();
+    return list.filter((t) => {
+      const tipoStr = t.tipo === 'entrada' ? 'Entrada' : 'Saída';
+      const dataStr = formatDate(t.data_transacao);
+      return (
+        matchSearch(t.descricao, q) ||
+        matchSearch(t.favorecido_nome, q) ||
+        matchSearch(t.cliente_nome, q) ||
+        matchSearch(String(t.valor), q) ||
+        matchSearch(t.metodo_pagamento, q) ||
+        matchSearch(tipoStr, q) ||
+        matchSearch(dataStr, q)
+      );
+    });
+  }, [data?.transacoes, query]);
 
   if (loading && !data) {
     return (
@@ -465,6 +498,35 @@ export default function Dashboard() {
           </div>
         </div>
       </div>
+
+      {gastosAlertas.length > 0 && (
+        <div className="rounded-xl bg-amber-50 border border-amber-200 px-5 py-4 flex flex-col sm:flex-row gap-3 sm:items-center shadow-card">
+          <div className="flex items-center gap-3">
+            <AlertTriangle className="w-5 h-5 text-amber-600" strokeWidth={1.8} />
+            <div>
+              <p className="text-sm font-semibold text-amber-800">
+                Você tem {gastosAlertas.length} gasto(s) fixo(s) com vencimento nos próximos dias.
+              </p>
+              <p className="text-xs text-amber-800/80">
+                Confira a aba de Gastos fixos para registrar os pagamentos.
+              </p>
+            </div>
+          </div>
+          <div className="flex-1">
+            <ul className="text-xs text-amber-900 list-disc pl-6 space-y-0.5">
+              {gastosAlertas.slice(0, 3).map((g) => (
+                <li key={g.id}>
+                  Dia {g.dia_vencimento.toString().padStart(2, '0')}: {g.nome}{' '}
+                  {g.valor_padrao && `(${Number(g.valor_padrao).toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })})`}
+                </li>
+              ))}
+              {gastosAlertas.length > 3 && (
+                <li>… e mais {gastosAlertas.length - 3} gasto(s).</li>
+              )}
+            </ul>
+          </div>
+        </div>
+      )}
 
       {/* Cards de totais */}
       <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
@@ -702,15 +764,21 @@ export default function Dashboard() {
               </tr>
             </thead>
             <tbody>
-              {d.transacoes.length === 0 ? (
+              {transacoesFiltradas.length === 0 ? (
                 <tr>
                   <td colSpan={7} className="py-8 px-5 text-gray-500 text-center">
-                    <p className="font-medium">Nenhuma transação em {MESES[mes - 1]} / {ano}.</p>
-                    <p className="text-sm mt-1">Altere o <strong>mês</strong> e o <strong>ano</strong> nos filtros acima — os lançamentos aparecem conforme a data da transação.</p>
+                    {d.transacoes.length === 0 ? (
+                      <>
+                        <p className="font-medium">Nenhuma transação em {MESES[mes - 1]} / {ano}.</p>
+                        <p className="text-sm mt-1">Altere o <strong>mês</strong> e o <strong>ano</strong> nos filtros acima — os lançamentos aparecem conforme a data da transação.</p>
+                      </>
+                    ) : (
+                      <p className="font-medium">Nenhum lançamento encontrado para esta pesquisa.</p>
+                    )}
                   </td>
                 </tr>
               ) : (
-                d.transacoes.map((t) => (
+                transacoesFiltradas.map((t) => (
                   <tr key={t.id} className="border-b border-gray-100 hover:bg-gray-50/50">
                     <td className="py-3 px-5 text-gray-600 font-mono">{formatDate(t.data_transacao)}</td>
                     <td className="py-3 px-5">
@@ -721,7 +789,7 @@ export default function Dashboard() {
                     <td className="py-3 px-5 text-gray-800">{t.favorecido_nome ?? '—'}</td>
                     <td className="py-3 px-5 text-gray-600">{t.cliente_nome ?? '—'}</td>
                     <td className="py-3 px-5 text-gray-500 max-w-xs truncate">{t.descricao ?? '—'}</td>
-                    <td className="py-3 px-5 text-gray-500 capitalize">{t.metodo_pagamento}</td>
+                    <td className="py-3 px-5 text-gray-500">{METODOS_PAGAMENTO.find(m => m.value === t.metodo_pagamento)?.label ?? t.metodo_pagamento}</td>
                     <td className={`py-3 px-5 text-right font-mono font-medium ${t.tipo === 'entrada' ? 'text-emerald-600' : 'text-rose-600'}`}>
                       {t.tipo === 'entrada' ? '+' : '-'} {formatMoney(Number(t.valor))}
                     </td>

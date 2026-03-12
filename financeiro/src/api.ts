@@ -29,6 +29,9 @@ async function request<T>(
     if (!res.ok) throw new Error(`Erro ${res.status}: ${text.slice(0, 100)}`);
   }
   if (!res.ok) {
+    if (res.status === 401) {
+      throw new Error('Sessão expirada ou não autorizada. Faça login novamente.');
+    }
     const err = data as { error?: string; detail?: string };
     const msg = err.detail ? `${err.error ?? 'Erro'}: ${err.detail}` : (err.error ?? `Erro ${res.status}`);
     throw new Error(msg);
@@ -36,7 +39,10 @@ async function request<T>(
   return data as T;
 }
 
-export type Perfil = 'root' | 'administrador' | 'usuario';
+export type Perfil = 'root' | 'administrador' | 'usuario' | 'cliente';
+
+export type TipoClienteDemanda = 'fixo' | 'avulso';
+export type CategoriaDemanda = 'cliente_avulso' | 'cliente_fixo' | 'cliente_gestao';
 
 export interface User {
   id: number;
@@ -58,12 +64,13 @@ export interface Transacao {
   tipo: 'entrada' | 'saida';
   data_transacao: string;
   valor: string;
-  metodo_pagamento: 'pix' | 'boleto' | 'ted' | 'dinheiro' | 'cheque';
+  metodo_pagamento: 'pix' | 'boleto' | 'ted' | 'dinheiro' | 'cheque' | 'pix_nota_fiscal';
   favorecido_id: number;
   favorecido_nome?: string;
   cliente_id?: number | null;
   cliente_nome?: string | null;
   descricao: string | null;
+  conciliada?: number;
   created_at: string;
   updated_at: string;
 }
@@ -71,6 +78,88 @@ export interface Transacao {
 export interface Cliente {
   id: number;
   nome: string;
+  ativo: number;
+  created_at: string;
+  updated_at: string;
+}
+
+export interface Demanda {
+  id: number;
+  tipo_cliente: TipoClienteDemanda;
+  cliente_id: number | null;
+  cliente_nome?: string | null;
+  categoria: CategoriaDemanda | null;
+  nome_cliente_avulso?: string | null;
+  data_pedido: string;
+  descricao: string;
+  quem_pediu: string;
+  data_execucao: string | null;
+  data_entrega: string | null;
+  valor_unitario: number;
+  quantidade: number;
+  valor_total: number;
+  prioridade: 'baixa' | 'media' | 'alta';
+  status: 'pendente' | 'em_execucao' | 'concluida' | 'cancelada';
+  created_at: string;
+  updated_at: string;
+}
+
+export interface GastoFixo {
+  id: number;
+  nome: string;
+  descricao: string | null;
+  valor_padrao: string | number | null;
+  dia_vencimento: number;
+  mes_inicio: number;
+  ano_inicio: number;
+  mes_fim: number | null;
+  ano_fim: number | null;
+  metodo_pagamento: Transacao['metodo_pagamento'] | null;
+  favorecido_id: number | null;
+  favorecido_nome?: string | null;
+  ativo: number;
+  created_at: string;
+  updated_at: string;
+}
+
+export interface SessaoUsuario {
+  id: number;
+  user_id: number;
+  session_id: string;
+  ip: string | null;
+  user_agent: string | null;
+  login_at: string;
+  logout_at: string | null;
+  last_activity_at: string | null;
+  created_at: string;
+  updated_at: string;
+  email: string;
+  nome: string;
+}
+
+export interface AuditoriaUsuario {
+  id: number;
+  user_id: number;
+  sessao_id: number | null;
+  acao: 'login' | 'logout' | 'acesso' | 'criar' | 'atualizar' | 'excluir';
+  recurso: string;
+  referencia_id: number | null;
+  detalhes: any;
+  ip: string | null;
+  user_agent: string | null;
+  path: string | null;
+  metodo_http: string | null;
+  created_at: string;
+  email: string;
+  nome: string;
+}
+
+export interface ChecklistTarefaFixa {
+  id: number;
+  titulo: string;
+  descricao: string | null;
+  periodicidade: 'diaria' | 'segunda' | 'terca' | 'quarta' | 'quinta' | 'sexta';
+  ordem: number;
   ativo: number;
   created_at: string;
   updated_at: string;
@@ -89,11 +178,13 @@ export const api = {
       request<{ success: boolean }>(`/api/favorecidos.php?id=${id}`, { method: 'DELETE' }),
   },
   transacoes: {
-    list: (params?: { mes?: number; ano?: number; tipo?: 'entrada' | 'saida' }) => {
+    list: (params?: { mes?: number; ano?: number; tipo?: 'entrada' | 'saida'; cliente_id?: number; conciliada?: 0 | 1 }) => {
       const q = new URLSearchParams();
       if (params?.mes) q.set('mes', String(params.mes));
       if (params?.ano) q.set('ano', String(params.ano));
       if (params?.tipo) q.set('tipo', params.tipo);
+      if (params?.cliente_id) q.set('cliente_id', String(params.cliente_id));
+      if (typeof params?.conciliada === 'number') q.set('conciliada', String(params.conciliada));
       const query = q.toString();
       return request<{ transacoes: Transacao[] }>(`/api/transacoes.php${query ? '?' + query : ''}`);
     },
@@ -117,6 +208,7 @@ export const api = {
       favorecido_id: number;
       cliente_id?: number | null;
       descricao?: string;
+      conciliada?: 0 | 1;
     }) =>
       request<Transacao>('/api/transacoes.php', { method: 'PUT', body: JSON.stringify(data) }),
     delete: (id: number) =>
@@ -132,6 +224,65 @@ export const api = {
       request<Cliente>('/api/clientes.php', { method: 'PUT', body: JSON.stringify(data) }),
     delete: (id: number) =>
       request<{ success: boolean }>(`/api/clientes.php?id=${id}`, { method: 'DELETE' }),
+  },
+  demandas: {
+    list: (params?: { tipo_cliente?: TipoClienteDemanda; cliente_id?: number; status?: Demanda['status'] }) => {
+      const q = new URLSearchParams();
+      if (params?.tipo_cliente) q.set('tipo_cliente', params.tipo_cliente);
+      if (params?.cliente_id) q.set('cliente_id', String(params.cliente_id));
+      if (params?.status) q.set('status', params.status);
+      const query = q.toString();
+      return request<{ demandas: Demanda[] }>(`/api/demandas.php${query ? '?' + query : ''}`);
+    },
+    create: (data: {
+      tipo_cliente: TipoClienteDemanda;
+      cliente_id?: number | null;
+      categoria?: CategoriaDemanda | null;
+      nome_cliente_avulso?: string | null;
+      data_pedido: string;
+      descricao: string;
+      quem_pediu: string;
+      data_execucao?: string | null;
+      data_entrega?: string | null;
+      valor_unitario: number | string;
+      quantidade: number;
+    }) => request<Demanda>('/api/demandas.php', { method: 'POST', body: JSON.stringify(data) }),
+    update: (data: Partial<Omit<Demanda, 'created_at' | 'updated_at'>> & { id: number }) =>
+      request<Demanda>('/api/demandas.php', { method: 'PUT', body: JSON.stringify(data) }),
+    delete: (id: number) =>
+      request<{ success: boolean }>('/api/demandas.php?id=' + id, { method: 'DELETE' }),
+  },
+  gastosFixos: {
+    list: (params?: { mes?: number; ano?: number }) => {
+      const q = new URLSearchParams();
+      if (params?.mes) q.set('mes', String(params.mes));
+      if (params?.ano) q.set('ano', String(params.ano));
+      const query = q.toString();
+      return request<{ mes: number; ano: number; gastos: GastoFixo[] }>(
+        `/api/gastos-fixos.php${query ? '?' + query : ''}`,
+      );
+    },
+    alertas: () =>
+      request<{ mes: number; ano: number; alertas: GastoFixo[] }>(
+        '/api/gastos-fixos.php?alertas=1',
+      ),
+    create: (data: {
+      nome: string;
+      descricao?: string;
+      valor_padrao?: number;
+      dia_vencimento: number;
+      mes_inicio: number;
+      ano_inicio: number;
+      mes_fim?: number | null;
+      ano_fim?: number | null;
+      metodo_pagamento?: Transacao['metodo_pagamento'] | null;
+      favorecido_id?: number | null;
+      ativo?: number;
+    }) => request<GastoFixo>('/api/gastos-fixos.php', { method: 'POST', body: JSON.stringify(data) }),
+    update: (data: Partial<Omit<GastoFixo, 'created_at' | 'updated_at'>> & { id: number }) =>
+      request<GastoFixo>('/api/gastos-fixos.php', { method: 'PUT', body: JSON.stringify(data) }),
+    delete: (id: number) =>
+      request<{ success: boolean }>(`/api/gastos-fixos.php?id=${id}`, { method: 'DELETE' }),
   },
   dashboard: (mes: number, ano: number) =>
     request<{
@@ -168,6 +319,91 @@ export const api = {
     delete: (id: number) =>
       request<{ success: boolean }>(`/api/usuarios.php?id=${id}`, { method: 'DELETE' }),
   },
+  checklist: {
+    list: (data: string) =>
+      request<{ data_referencia: string; tarefas: Array<{
+        id: number;
+        titulo: string;
+        descricao: string | null;
+        periodicidade: 'diaria' | 'segunda' | 'terca' | 'quarta' | 'quinta' | 'sexta';
+        ordem: number;
+        exec_id: number | null;
+        concluida: number | null;
+        observacao: string | null;
+      }> }>('/api/checklist.php?data=' + encodeURIComponent(data)),
+    salvar: (payload: {
+      tarefa_fixa_id: number;
+      data_referencia: string;
+      concluida: boolean;
+      observacao?: string;
+    }) =>
+      request<{ success: boolean }>('/api/checklist.php', {
+        method: 'POST',
+        body: JSON.stringify(payload),
+      }),
+  },
+  checklistConfig: {
+    list: () =>
+      request<{ tarefas: ChecklistTarefaFixa[] }>('/api/checklist-config.php'),
+    create: (data: {
+      titulo: string;
+      descricao?: string;
+      periodicidade: ChecklistTarefaFixa['periodicidade'];
+      ordem?: number;
+      ativo?: number;
+    }) =>
+      request<ChecklistTarefaFixa>('/api/checklist-config.php', {
+        method: 'POST',
+        body: JSON.stringify(data),
+      }),
+    update: (data: Partial<Omit<ChecklistTarefaFixa, 'created_at' | 'updated_at'>> & { id: number }) =>
+      request<ChecklistTarefaFixa>('/api/checklist-config.php', {
+        method: 'PUT',
+        body: JSON.stringify(data),
+      }),
+    delete: (id: number) =>
+      request<{ success: boolean }>(`/api/checklist-config.php?id=${id}`, {
+        method: 'DELETE',
+      }),
+  },
+  checklistRelatorio: {
+    gerar: (params: { inicio: string; fim: string; user_id?: number }) => {
+      const q = new URLSearchParams();
+      if (params.inicio) q.set('inicio', params.inicio);
+      if (params.fim) q.set('fim', params.fim);
+      if (params.user_id) q.set('user_id', String(params.user_id));
+      const query = q.toString();
+      return request<{
+        inicio: string;
+        fim: string;
+        user_id: number | null;
+        geral: { esperadas: number; concluidas: number };
+        por_periodicidade: {
+          esperadas: Record<string, number>;
+          concluidas: Record<string, number>;
+        };
+        por_tarefa: Array<{
+          id: number;
+          titulo: string;
+          periodicidade: string;
+          esperadas: number;
+          concluidas: number;
+        }>;
+      }>(`/api/checklist-relatorio.php?${query}`);
+    },
+  },
+  auditoria: {
+    list: (params?: { user_id?: number; inicio?: string; fim?: string }) => {
+      const q = new URLSearchParams();
+      if (params?.user_id) q.set('user_id', String(params.user_id));
+      if (params?.inicio) q.set('inicio', params.inicio);
+      if (params?.fim) q.set('fim', params.fim);
+      const query = q.toString();
+      return request<{ sessoes: SessaoUsuario[]; acoes: AuditoriaUsuario[] }>(
+        `/api/auditoria.php${query ? '?' + query : ''}`,
+      );
+    },
+  },
 };
 
 export interface Usuario {
@@ -186,4 +422,5 @@ export const METODOS_PAGAMENTO: { value: Transacao['metodo_pagamento']; label: s
   { value: 'ted', label: 'TED' },
   { value: 'dinheiro', label: 'Dinheiro' },
   { value: 'cheque', label: 'Cheque' },
+  { value: 'pix_nota_fiscal', label: 'Pix / Nota Fiscal' },
 ];

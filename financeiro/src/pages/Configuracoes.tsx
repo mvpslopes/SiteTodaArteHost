@@ -36,7 +36,14 @@ export default function Configuracoes() {
     }
   };
 
-  const perfilLabel = user?.perfil === 'root' ? 'Root' : user?.perfil === 'administrador' ? 'Administrador' : 'Usuário';
+  const perfilLabel =
+    user?.perfil === 'root'
+      ? 'Root'
+      : user?.perfil === 'administrador'
+      ? 'Administrador'
+      : user?.perfil === 'usuario'
+      ? 'Usuário'
+      : 'Cliente';
 
   return (
     <div className="space-y-8">

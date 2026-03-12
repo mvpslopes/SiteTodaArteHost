@@ -5,9 +5,10 @@ require_once 'cors.php';
 require_once 'auth_helpers.php';
 require_once 'db_config.php';
 require_once 'db_helpers.php';
+require_once 'audit_helpers.php';
 
 try {
-    requireAuth();
+    $currentUser = requireAuth();
     $pdo = getDBConnection();
 } catch (Throwable $e) {
     http_response_code(500);
@@ -15,7 +16,7 @@ try {
     exit;
 }
 
-$metodosPermitidos = ['pix', 'boleto', 'ted', 'dinheiro', 'cheque'];
+$metodosPermitidos = ['pix', 'boleto', 'ted', 'dinheiro', 'cheque', 'pix_nota_fiscal'];
 $tiposPermitidos = ['entrada', 'saida'];
 $hasClienteId = columnExists($pdo, 'transacoes', 'cliente_id');
 $hasClientes = tableExists($pdo, 'clientes');
@@ -49,12 +50,17 @@ if ($_SERVER['REQUEST_METHOD'] === 'GET') {
         }
         if (!isset($row['cliente_nome'])) $row['cliente_nome'] = null;
         echo json_encode($row);
+        if (isset($currentUser)) {
+            logAuditoria($pdo, $currentUser, 'acesso', 'transacoes', $id, ['tipo' => 'GET_BY_ID']);
+        }
         exit;
     }
 
     $mes = isset($_GET['mes']) ? (int)$_GET['mes'] : null;
     $ano = isset($_GET['ano']) ? (int)$_GET['ano'] : null;
     $tipo = isset($_GET['tipo']) ? $_GET['tipo'] : null;
+    $clienteFiltro = isset($_GET['cliente_id']) ? (int)$_GET['cliente_id'] : null;
+    $conciliadaFiltro = isset($_GET['conciliada']) ? $_GET['conciliada'] : null;
     if ($tipo && !in_array($tipo, $tiposPermitidos, true)) $tipo = null;
 
     if ($hasClientes && $hasClienteId) {
@@ -78,10 +84,21 @@ if ($_SERVER['REQUEST_METHOD'] === 'GET') {
         $sql .= " AND MONTH(t.data_transacao) = ? AND YEAR(t.data_transacao) = ?";
         $params[] = $mes;
         $params[] = $ano;
+    } elseif ($ano) {
+        $sql .= " AND YEAR(t.data_transacao) = ?";
+        $params[] = $ano;
     }
     if ($tipo) {
         $sql .= " AND t.tipo = ?";
         $params[] = $tipo;
+    }
+    if ($clienteFiltro && $hasClienteId) {
+        $sql .= " AND t.cliente_id = ?";
+        $params[] = $clienteFiltro;
+    }
+    if ($conciliadaFiltro !== null && $conciliadaFiltro !== '') {
+        $sql .= " AND t.conciliada = ?";
+        $params[] = (int)((string)$conciliadaFiltro === '1');
     }
     $sql .= " ORDER BY t.data_transacao DESC, t.id DESC";
     $stmt = $pdo->prepare($sql);
@@ -93,6 +110,9 @@ if ($_SERVER['REQUEST_METHOD'] === 'GET') {
         }
     }
     echo json_encode(['transacoes' => $list]);
+    if (isset($currentUser)) {
+        logAuditoria($pdo, $currentUser, 'acesso', 'transacoes', null, ['tipo' => 'LIST', 'mes' => $mes, 'ano' => $ano, 'filtro_tipo' => $tipo]);
+    }
     exit;
 }
 
@@ -108,6 +128,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     $cliente_id = isset($input['cliente_id']) ? (int)$input['cliente_id'] : null;
     if ($cliente_id < 1) $cliente_id = null;
     $descricao = trim($input['descricao'] ?? '');
+    $conciliada = array_key_exists('conciliada', $input) ? (int)(bool)$input['conciliada'] : null;
 
     if (!in_array($tipo, $tiposPermitidos, true)) {
         http_response_code(400);
@@ -220,6 +241,10 @@ if ($_SERVER['REQUEST_METHOD'] === 'PUT') {
     } else {
         $stmt = $pdo->prepare("UPDATE transacoes SET tipo=?, data_transacao=?, valor=?, metodo_pagamento=?, favorecido_id=?, descricao=? WHERE id=?");
         $stmt->execute([$tipo, $dataObj, $valor, $metodo, $favorecido_id, $descricao ?: null, $id]);
+    }
+    if ($conciliada !== null) {
+        $stmt2 = $pdo->prepare("UPDATE transacoes SET conciliada = ? WHERE id = ?");
+        $stmt2->execute([$conciliada, $id]);
     }
     if ($stmt->rowCount() === 0) {
         http_response_code(404);

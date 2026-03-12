@@ -8,7 +8,7 @@ CREATE TABLE IF NOT EXISTS usuarios (
   email VARCHAR(255) NOT NULL UNIQUE,
   password_hash VARCHAR(255) NOT NULL,
   nome VARCHAR(255) NOT NULL DEFAULT '',
-  perfil ENUM('root','administrador','usuario') NOT NULL DEFAULT 'usuario',
+  perfil ENUM('root','administrador','usuario','cliente') NOT NULL DEFAULT 'usuario',
   ativo TINYINT(1) NOT NULL DEFAULT 1,
   created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
   updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,

@@ -1,8 +1,10 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useState, useMemo } from 'react';
 import { MapPin, Plus } from 'lucide-react';
 import { api, type Favorecido } from '../api';
+import { useSearch, matchSearch } from '../contexts/SearchContext';
 
 export default function Destinos() {
+  const { query } = useSearch();
   const [destinos, setDestinos] = useState<Favorecido[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -10,6 +12,11 @@ export default function Destinos() {
   const [editingId, setEditingId] = useState<number | null>(null);
   const [nome, setNome] = useState('');
   const [mostrarInativos, setMostrarInativos] = useState(false);
+
+  const destinosFiltrados = useMemo(() => {
+    if (!query.trim()) return destinos;
+    return destinos.filter((d) => matchSearch(d.nome, query));
+  }, [destinos, query]);
 
   const load = () => {
     setLoading(true);
@@ -114,14 +121,16 @@ export default function Destinos() {
                 </tr>
               </thead>
               <tbody>
-                {destinos.length === 0 ? (
+                {destinosFiltrados.length === 0 ? (
                   <tr>
                     <td colSpan={3} className="py-8 text-gray-500 text-center">
-                      Nenhum destino. Cadastre pessoas ou instituições para onde vai o valor.
+                      {destinos.length === 0
+                        ? 'Nenhum destino. Cadastre pessoas ou instituições para onde vai o valor.'
+                        : 'Nenhum destino encontrado para esta pesquisa.'}
                     </td>
                   </tr>
                 ) : (
-                  destinos.map((f) => (
+                  destinosFiltrados.map((f) => (
                     <tr key={f.id} className="border-b border-gray-100 hover:bg-gray-50/50">
                       <td className="py-3 px-4 text-gray-800 font-medium">{f.nome}</td>
                       <td className="py-3 px-4">

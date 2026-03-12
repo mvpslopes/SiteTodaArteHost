@@ -29,7 +29,34 @@ function getCurrentUser() {
         $stmt = $pdo->prepare("SELECT id, email, nome, perfil, ativo, created_at FROM usuarios WHERE id = ? AND ativo = 1");
         $stmt->execute([$id]);
         $user = $stmt->fetch();
-        return $user ?: null;
+
+        if (!$user) return null;
+
+        // Atualiza última atividade da sessão, se houver registro
+        if (isset($_SESSION['sessao_id'])) {
+            try {
+                $sessaoId = (int)$_SESSION['sessao_id'];
+                $ip = $_SERVER['HTTP_X_FORWARDED_FOR'] ?? $_SERVER['REMOTE_ADDR'] ?? null;
+                if ($ip && strpos($ip, ',') !== false) {
+                    $ip = trim(explode(',', $ip)[0]);
+                }
+                $ua = $_SERVER['HTTP_USER_AGENT'] ?? null;
+                $stmtSess = $pdo->prepare("
+                    UPDATE sessoes_usuarios
+                    SET last_activity_at = NOW(), ip = COALESCE(?, ip), user_agent = COALESCE(?, user_agent)
+                    WHERE id = ?
+                ");
+                $stmtSess->execute([
+                    $ip ? substr($ip, 0, 45) : null,
+                    $ua ? substr($ua, 0, 255) : null,
+                    $sessaoId,
+                ]);
+            } catch (Throwable $e) {
+                // não interrompe fluxo se auditoria falhar
+            }
+        }
+
+        return $user;
     } catch (Throwable $e) {
         return null;
     }

@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { Outlet, NavLink, useNavigate } from 'react-router-dom';
+import { Outlet, NavLink, useNavigate, useLocation, Navigate } from 'react-router-dom';
 import {
   LayoutDashboard,
   ArrowLeftRight,
@@ -10,22 +10,45 @@ import {
   Search,
   ChevronDown,
   LogOut,
+  Menu,
+  ClipboardList,
+  Clock3,
+  BarChart2,
+  CheckSquare,
+  CalendarDays,
+  PieChart,
 } from 'lucide-react';
 import { useAuth } from '../contexts/AuthContext';
+import { useSearch } from '../contexts/SearchContext';
 
 const nav = [
-  { to: '/dashboard', label: 'Dashboard', Icon: LayoutDashboard, roles: ['root', 'administrador', 'usuario'] },
-  { to: '/transacoes', label: 'Transações', Icon: ArrowLeftRight, roles: ['root', 'administrador', 'usuario'] },
-  { to: '/destinos', label: 'Destinos', Icon: MapPin, roles: ['root', 'administrador', 'usuario'] },
-  { to: '/clientes', label: 'Clientes', Icon: UserPlus, roles: ['root', 'administrador', 'usuario'] },
+  { to: '/dashboard', label: 'Dashboard', Icon: LayoutDashboard, roles: ['root', 'administrador', 'cliente'] },
+  { to: '/transacoes', label: 'Transações', Icon: ArrowLeftRight, roles: ['root', 'administrador', 'cliente'] },
+  { to: '/destinos', label: 'Destinos', Icon: MapPin, roles: ['root', 'administrador', 'cliente'] },
+  { to: '/clientes', label: 'Clientes', Icon: UserPlus, roles: ['root', 'administrador', 'cliente'] },
+  { to: '/gastos-fixos', label: 'Gastos fixos', Icon: CalendarDays, roles: ['root', 'administrador'] },
+  { to: '/demandas', label: 'Demandas', Icon: ClipboardList, roles: ['root', 'administrador', 'usuario'] },
+  { to: '/checklist', label: 'Checklist', Icon: CheckSquare, roles: ['root', 'administrador', 'usuario'] },
+  { to: '/checklist-admin', label: 'Checklist Gestão', Icon: PieChart, roles: ['root', 'administrador'] },
+  { to: '/relatorios-cliente', label: 'Relatórios Cliente', Icon: BarChart2, roles: ['root', 'administrador'] },
+  { to: '/auditoria', label: 'Sessões/Auditoria', Icon: Clock3, roles: ['root'] },
   { to: '/usuarios', label: 'Usuários', Icon: ShieldCheck, roles: ['root', 'administrador'] },
-  { to: '/configuracoes', label: 'Configurações', Icon: Settings, roles: ['root', 'administrador', 'usuario'] },
+  { to: '/configuracoes', label: 'Configurações', Icon: Settings, roles: ['root', 'administrador', 'usuario', 'cliente'] },
 ];
+
+const ROTAS_PERMITIDAS_USUARIO = ['/demandas', '/checklist', '/configuracoes'];
 
 export default function Layout() {
   const { user, logout } = useAuth();
+  const { query, setQuery } = useSearch();
   const navigate = useNavigate();
+  const location = useLocation();
   const [userMenuOpen, setUserMenuOpen] = useState(false);
+  const [sidebarOpen, setSidebarOpen] = useState(false);
+
+  if (user?.perfil === 'usuario' && !ROTAS_PERMITIDAS_USUARIO.includes(location.pathname)) {
+    return <Navigate to="/demandas" replace />;
+  }
 
   const handleLogout = async () => {
     setUserMenuOpen(false);
@@ -34,21 +57,50 @@ export default function Layout() {
   };
 
   const visibleNav = nav.filter((item) => user && item.roles.includes(user.perfil));
-  const perfilLabel = user?.perfil === 'root' ? 'Root' : user?.perfil === 'administrador' ? 'Admin' : 'Usuário';
+  const perfilLabel =
+    user?.perfil === 'root'
+      ? 'Root'
+      : user?.perfil === 'administrador'
+      ? 'Administrador'
+      : user?.perfil === 'usuario'
+      ? 'Usuário'
+      : 'Cliente';
 
   return (
     <div className="flex h-full min-h-screen bg-gray-50">
       {/* Sidebar esquerda - Menu */}
-      <aside className="w-60 shrink-0 flex flex-col bg-white border-r border-gray-200 shadow-card">
-        <div className="p-4 border-b border-gray-100">
-          <img
-            src="/logo-todaarte.png"
-            alt="TodaArte"
-            className="h-14 w-auto object-contain object-left"
-          />
-          <p className="text-xs text-gray-500 mt-2">Sistema Financeiro</p>
+      {/* Overlay mobile */}
+      {sidebarOpen && (
+        <div
+          className="fixed inset-0 z-30 bg-black/40 md:hidden"
+          onClick={() => setSidebarOpen(false)}
+        />
+      )}
+
+      <aside
+        className={`fixed inset-y-0 left-0 z-40 w-64 shrink-0 flex flex-col bg-white border-r border-gray-200 shadow-card transform transition-transform duration-200 ease-out md:static md:w-60 md:translate-x-0 ${
+          sidebarOpen ? 'translate-x-0' : '-translate-x-full md:translate-x-0'
+        }`}
+      >
+        <div className="p-4 border-b border-gray-100 flex items-center justify-between gap-3">
+          <div>
+            <img
+              src="/logo-todaarte.png"
+              alt="TodaArte"
+              className="h-14 w-auto object-contain object-left"
+            />
+            <p className="text-xs text-gray-500 mt-2">Sistema Financeiro</p>
+          </div>
+          <button
+            type="button"
+            onClick={() => setSidebarOpen(false)}
+            className="md:hidden p-2 rounded-lg text-gray-500 hover:bg-gray-100"
+            aria-label="Fechar menu"
+          >
+            ✕
+          </button>
         </div>
-        <div className="px-3 py-4">
+        <div className="px-3 py-4 overflow-y-auto scroll-thin">
           <p className="text-xs font-medium text-gray-400 uppercase tracking-wider px-3 mb-2">Menu</p>
           <nav className="space-y-0.5">
             {visibleNav.map(({ to, label, Icon }) => (
@@ -62,6 +114,7 @@ export default function Layout() {
                       : 'border-transparent text-gray-600 hover:bg-gray-50 hover:text-gray-800'
                   }`
                 }
+                onClick={() => setSidebarOpen(false)}
               >
                 <Icon className="w-5 h-5 shrink-0" strokeWidth={1.8} />
                 {label}
@@ -74,18 +127,29 @@ export default function Layout() {
       {/* Conteúdo central + header */}
       <div className="flex-1 flex flex-col min-w-0">
         {/* Header top */}
-        <header className="h-14 shrink-0 flex items-center justify-between px-6 bg-white border-b border-gray-200 shadow-card">
-          <div className="flex items-center gap-4">
+        <header className="h-14 shrink-0 flex items-center justify-between px-4 md:px-6 bg-white border-b border-gray-200 shadow-card">
+          <div className="flex items-center gap-3 w-full md:w-auto">
+            <button
+              type="button"
+              onClick={() => setSidebarOpen(true)}
+              className="inline-flex items-center justify-center rounded-lg p-2 text-gray-600 hover:bg-gray-100 md:hidden"
+              aria-label="Abrir menu"
+            >
+              <Menu className="w-5 h-5" strokeWidth={1.8} />
+            </button>
             <div className="relative flex-1 max-w-md">
               <input
                 type="search"
-                placeholder="Pesquisar..."
+                placeholder="Pesquisar na tela atual..."
+                value={query}
+                onChange={(e) => setQuery(e.target.value)}
                 className="w-full rounded-lg border border-gray-200 bg-gray-50 py-2 pl-10 pr-4 text-sm text-gray-700 placeholder-gray-400 focus:border-primary-400 focus:ring-2 focus:ring-primary-500/20 outline-none"
+                aria-label="Pesquisar"
               />
               <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" strokeWidth={1.8} />
             </div>
           </div>
-          <div className="flex items-center gap-4">
+          <div className="hidden sm:flex items-center gap-4">
             <img
               src="/logo-todaarte.png"
               alt="TodaArte"
