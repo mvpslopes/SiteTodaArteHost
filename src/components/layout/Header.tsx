@@ -5,22 +5,22 @@ import logo from '../../assets/logo.png';
 export function Header() {
   const [isMenuOpen, setIsMenuOpen] = useState(false);
   const [activeSection, setActiveSection] = useState('inicio');
+  const [scrolled, setScrolled] = useState(false);
 
   const navItems = [
     { label: 'Início', anchor: '#inicio' },
     { label: 'Quem Somos', anchor: '#quem-somos' },
-    { label: 'Nossos Serviços', anchor: '#servicos' },
-    { label: 'Desenvolvimento de Sites', anchor: '#desenvolvimento-de-sites' },
-    { label: 'Diagnósticos', anchor: '#diagnosticos' },
+    { label: 'Serviços', anchor: '#servicos' },
+    { label: 'Desenvolvimento', anchor: '#desenvolvimento-de-sites' },
+    { label: 'Seja Digital', anchor: '#seja-digital' },
     { label: 'Contato', anchor: '#contato' },
-    { label: 'Seja Digital', anchor: '#seja-digital' }
   ];
 
   useEffect(() => {
     const handleScroll = () => {
+      setScrolled(window.scrollY > 20);
       const sections = navItems.map(item => item.anchor.substring(1));
       const scrollPosition = window.scrollY + 100;
-
       for (let i = sections.length - 1; i >= 0; i--) {
         const section = document.getElementById(sections[i]);
         if (section && section.offsetTop <= scrollPosition) {
@@ -29,135 +29,111 @@ export function Header() {
         }
       }
     };
-
     window.addEventListener('scroll', handleScroll);
     return () => window.removeEventListener('scroll', handleScroll);
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   const handleNavClick = (e: React.MouseEvent<HTMLAnchorElement>, anchor: string) => {
     e.preventDefault();
     setIsMenuOpen(false);
-    
     const targetId = anchor.substring(1);
     const targetElement = document.getElementById(targetId);
-    
     if (targetElement) {
       const headerOffset = 80;
       const elementPosition = targetElement.getBoundingClientRect().top;
       const offsetPosition = elementPosition + window.pageYOffset - headerOffset;
-
-      window.scrollTo({
-        top: offsetPosition,
-        behavior: 'smooth'
-      });
+      window.scrollTo({ top: offsetPosition, behavior: 'smooth' });
     }
   };
 
   return (
-    <header className="bg-white shadow-sm sticky top-0 z-50">
-      <div className="max-w-7xl mx-auto px-3 sm:px-4 md:px-6 lg:px-8">
-        <div className="flex justify-between items-center py-2 sm:py-3">
-          <a href="#inicio" onClick={(e) => handleNavClick(e, '#inicio')} className="flex items-center space-x-2">
-            <img src={logo} alt="Logo Toda Arte" className="h-12 w-12 sm:h-16 sm:w-16 md:h-20 md:w-20 object-contain" />
+    <header
+      className={`sticky top-0 z-50 transition-all duration-500 ${
+        scrolled
+          ? 'bg-[#0A0A0C]/95 backdrop-blur-md shadow-2xl shadow-black/50 border-b border-[#AC8869]/10'
+          : 'bg-[#0A0A0C]'
+      }`}
+    >
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+        <div className="flex justify-between items-center h-16 sm:h-20">
+          {/* Logo */}
+          <a href="#inicio" onClick={(e) => handleNavClick(e, '#inicio')} className="flex items-center">
+            <img src={logo} alt="Toda Arte" className="h-10 sm:h-14 w-auto object-contain" />
           </a>
 
           {/* Desktop Navigation */}
-          <nav className="hidden lg:flex items-center space-x-4 xl:space-x-8">
-            <div className="flex-1 flex justify-center items-center space-x-3 xl:space-x-6">
-              {navItems.map((item) => {
-                const sectionId = item.anchor.substring(1);
-                const isActive = activeSection === sectionId;
-                
-                // Seja Digital como botão de ação
-                if (item.anchor === '#seja-digital') {
-                  return (
-                    <a
-                      key={item.anchor}
-                      href={item.anchor}
-                      onClick={(e) => handleNavClick(e, item.anchor)}
-                      className="bg-gradient-to-r from-logo to-logo-light text-white px-4 xl:px-6 py-2 rounded-lg font-semibold text-sm xl:text-base transition-all duration-300 shadow-md hover:shadow-lg hover:scale-105 whitespace-nowrap"
-                      style={{ fontFamily: 'inherit' }}
-                    >
-                      {item.label}
-                    </a>
-                  );
-                }
-                // Outros itens do menu
-                return (
-                  <a
-                    key={item.anchor}
-                    href={item.anchor}
-                    onClick={(e) => handleNavClick(e, item.anchor)}
-                    className={`header-nav-link hover:opacity-80 transition-colors font-medium text-sm xl:text-base ${
-                      isActive ? 'font-semibold' : ''
-                    }`}
-                    style={{ 
-                      color: isActive ? '#AC8869' : '#070709',
-                      fontFamily: 'inherit'
-                    }}
-                  >
-                    {item.label}
-                  </a>
-                );
-              })}
-            </div>
-          </nav>
-
-          {/* Mobile menu button */}
-          <button
-            onClick={() => setIsMenuOpen(!isMenuOpen)}
-            className="lg:hidden p-2"
-            style={{ color: '#070709' }}
-            aria-label="Toggle menu"
-          >
-            {isMenuOpen ? <X className="h-6 w-6" /> : <Menu className="h-6 w-6" />}
-          </button>
-        </div>
-
-        {/* Mobile Navigation */}
-        {isMenuOpen && (
-          <nav className="lg:hidden pb-3 border-t border-gray-200 mt-3 pt-3">
+          <nav className="hidden lg:flex items-center space-x-1">
             {navItems.map((item) => {
               const sectionId = item.anchor.substring(1);
               const isActive = activeSection === sectionId;
-              
-              // Seja Digital como botão de ação no mobile
-              if (item.anchor === '#seja-digital') {
-                return (
-                  <a
-                    key={item.anchor}
-                    href={item.anchor}
-                    onClick={(e) => handleNavClick(e, item.anchor)}
-                    className="bg-gradient-to-r from-logo to-logo-light text-white px-6 py-3 rounded-lg font-semibold transition-all duration-300 shadow-md hover:shadow-lg text-center block w-full mb-3 text-sm"
-                    style={{ fontFamily: 'inherit' }}
-                  >
-                    {item.label}
-                  </a>
-                );
-              }
-              // Outros itens do menu
               return (
                 <a
                   key={item.anchor}
                   href={item.anchor}
                   onClick={(e) => handleNavClick(e, item.anchor)}
-                  className={`header-nav-link block w-full text-left py-3 px-2 transition-colors text-sm ${
+                  className={`px-3 xl:px-4 py-2 rounded-lg text-sm font-medium transition-all duration-300 ${
                     isActive
-                      ? 'font-semibold'
-                      : 'hover:opacity-80'
+                      ? 'text-logo bg-logo/10'
+                      : 'text-gray-300 hover:text-logo hover:bg-logo/5'
                   }`}
-                  style={{ 
-                    color: isActive ? '#AC8869' : '#070709',
-                    fontFamily: 'inherit'
-                  }}
                 >
                   {item.label}
                 </a>
               );
             })}
+            <a
+              href="#contato"
+              onClick={(e) => handleNavClick(e, '#contato')}
+              className="ml-3 bg-gradient-to-r from-logo to-logo-light text-white px-5 xl:px-6 py-2.5 rounded-lg font-semibold text-sm transition-all duration-300 hover:shadow-lg hover:shadow-logo/30 hover:scale-105 whitespace-nowrap"
+            >
+              Solicitar Orçamento
+            </a>
           </nav>
-        )}
+
+          {/* Mobile menu button */}
+          <button
+            onClick={() => setIsMenuOpen(!isMenuOpen)}
+            className="lg:hidden p-2 text-gray-300 hover:text-logo transition-colors"
+            aria-label="Toggle menu"
+          >
+            {isMenuOpen ? <X className="h-6 w-6" /> : <Menu className="h-6 w-6" />}
+          </button>
+        </div>
       </div>
+
+      {/* Mobile Navigation */}
+      {isMenuOpen && (
+        <div className="lg:hidden border-t border-[#AC8869]/10 bg-[#0A0A0C]/98 backdrop-blur-md">
+          <nav className="max-w-7xl mx-auto px-4 py-4 space-y-1">
+            {navItems.map((item) => {
+              const sectionId = item.anchor.substring(1);
+              const isActive = activeSection === sectionId;
+              return (
+                <a
+                  key={item.anchor}
+                  href={item.anchor}
+                  onClick={(e) => handleNavClick(e, item.anchor)}
+                  className={`block px-4 py-3 rounded-lg text-sm font-medium transition-all duration-300 ${
+                    isActive
+                      ? 'text-logo bg-logo/10'
+                      : 'text-gray-300 hover:text-logo hover:bg-logo/5'
+                  }`}
+                >
+                  {item.label}
+                </a>
+              );
+            })}
+            <a
+              href="#contato"
+              onClick={(e) => handleNavClick(e, '#contato')}
+              className="block text-center mt-3 bg-gradient-to-r from-logo to-logo-light text-white px-6 py-3 rounded-lg font-semibold text-sm"
+            >
+              Solicitar Orçamento
+            </a>
+          </nav>
+        </div>
+      )}
     </header>
   );
 }

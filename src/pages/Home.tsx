@@ -8,255 +8,249 @@ import { Contact } from '../components/landing/Contact';
 import { WhatsAppButton } from '../components/layout/WhatsAppButton';
 import { Loader } from '../components/common/Loader';
 import { usePageLoader } from '../hooks/usePageLoader';
-import { Code, Globe, Smartphone, Zap, Shield, Search, ArrowRight } from 'lucide-react';
+import { Code, Globe, Smartphone, Zap, Shield, Search, ArrowRight, Wrench } from 'lucide-react';
 import { FadeIn } from '../components/common/FadeIn';
-import { DiagnosticosSection } from '../components/diagnosticos/DiagnosticosSection';
 
-// Componente de Desenvolvimento de Sites (extraído de WebDevelopment.tsx)
 function DesenvolvimentoSites() {
   const partners = [
-    { name: 'Real Driver', logo: '/partners/LogoRealDriver.png', website: '#', bgColor: '#cfd7d5' },
-    { name: 'Ariane Andrade', logo: '/partners/LogoArianeAndrade.png', website: '#', bgColor: '#f9f9f9' },
-    { name: 'Enxovais Maciel', logo: '/partners/LogoEnxovais_Maciel.png', website: '#', bgColor: '#124234' },
-    { name: 'Jato Minas', logo: '/partners/LogoJatoMinas.png', website: '#', bgColor: '#f5f5f5' },
-    { name: 'JM Soluções', logo: '/partners/LogoJM.png', website: '#', bgColor: '#0a6899' }
+    { name: 'Real Driver', logo: '/partners/LogoRealDriver.png', bgColor: '#cfd7d5' },
+    { name: 'Ariane Andrade', logo: '/partners/LogoArianeAndrade.png', bgColor: '#f9f9f9' },
+    { name: 'Enxovais Maciel', logo: '/partners/LogoEnxovais_Maciel.png', bgColor: '#124234' },
+    { name: 'Jato Minas', logo: '/partners/LogoJatoMinas.png', bgColor: '#f5f5f5' },
+    { name: 'JM Soluções', logo: '/partners/LogoJM.png', bgColor: '#0a6899' },
   ];
 
-  const services = [
+  const webServices = [
     {
       icon: Globe,
       title: 'Sites Institucionais',
-      description: 'Desenvolvemos sites modernos e responsivos que representam sua marca de forma profissional.',
-      features: ['Design Responsivo', 'SEO Otimizado', 'Performance Rápida']
+      description: 'Sites modernos e responsivos que representam sua marca de forma profissional.',
+      features: ['Design Responsivo', 'SEO Otimizado', 'Performance Rápida'],
+      color: 'from-blue-500/20 to-cyan-500/10',
+      iconBg: 'from-blue-500 to-cyan-500',
     },
     {
       icon: Smartphone,
       title: 'Aplicativos Web',
-      description: 'Criação de aplicações web interativas e funcionais para atender suas necessidades específicas.',
-      features: ['Interface Intuitiva', 'Multiplataforma', 'Integração de APIs']
+      description: 'Aplicações web interativas e funcionais para suas necessidades específicas.',
+      features: ['Interface Intuitiva', 'Multiplataforma', 'Integração de APIs'],
+      color: 'from-purple-500/20 to-pink-500/10',
+      iconBg: 'from-purple-500 to-pink-500',
     },
     {
       icon: Zap,
       title: 'E-commerce',
-      description: 'Lojas virtuais completas com sistema de pagamento, gestão de produtos e painel administrativo.',
-      features: ['Carrinho de Compras', 'Gateway de Pagamento', 'Painel Admin']
+      description: 'Lojas virtuais completas com sistema de pagamento e painel administrativo.',
+      features: ['Carrinho de Compras', 'Gateway de Pagamento', 'Painel Admin'],
+      color: 'from-logo/20 to-logo-light/10',
+      iconBg: 'from-logo to-logo-light',
     },
     {
       icon: Code,
       title: 'Sistemas Personalizados',
-      description: 'Desenvolvimento de sistemas sob medida para otimizar processos e aumentar produtividade.',
-      features: ['Solução Customizada', 'Banco de Dados', 'Relatórios']
+      description: 'Sistemas sob medida para otimizar processos e aumentar produtividade.',
+      features: ['Solução Customizada', 'Banco de Dados', 'Relatórios'],
+      color: 'from-orange-500/20 to-amber-500/10',
+      iconBg: 'from-orange-500 to-amber-500',
     },
     {
       icon: Shield,
       title: 'Segurança e SSL',
-      description: 'Implementação de certificados SSL e medidas de segurança para proteger seus dados.',
-      features: ['HTTPS', 'Backup Automático', 'Monitoramento']
+      description: 'Certificados SSL e medidas de segurança para proteger seus dados.',
+      features: ['HTTPS', 'Backup Automático', 'Monitoramento'],
+      color: 'from-green-500/20 to-emerald-500/10',
+      iconBg: 'from-green-500 to-emerald-500',
     },
     {
       icon: Search,
       title: 'Otimização SEO',
       description: 'Otimização para mecanismos de busca, aumentando sua visibilidade online.',
-      features: ['Meta Tags', 'Sitemap', 'Google Analytics']
-    }
+      features: ['Meta Tags', 'Sitemap', 'Google Analytics'],
+      color: 'from-rose-500/20 to-red-500/10',
+      iconBg: 'from-rose-500 to-red-500',
+    },
   ];
 
-  const technologies = [
-    'React', 'TypeScript', 'Node.js', 'PHP', 'WordPress', 'MySQL', 'Git'
+  const technologies = ['React', 'TypeScript', 'Node.js', 'PHP', 'WordPress', 'MySQL', 'Git'];
+
+  const processSteps = [
+    {
+      step: '01',
+      title: 'Análise e Planejamento',
+      description: 'Entendemos suas necessidades e definimos a melhor estratégia',
+    },
+    {
+      step: '02',
+      title: 'Design e Prototipagem',
+      description: 'Criamos o design visual e protótipos interativos para aprovação',
+    },
+    {
+      step: '03',
+      title: 'Desenvolvimento',
+      description: 'Programamos seu site com as melhores práticas e tecnologias',
+    },
+    {
+      step: '04',
+      title: 'Lançamento e Suporte',
+      description: 'Publicamos seu site e oferecemos suporte contínuo',
+    },
   ];
 
   return (
     <>
-      {/* Hero Section */}
-      <section id="desenvolvimento-de-sites" className="relative bg-gradient-to-b from-black via-neutral-900 to-neutral-800 text-white py-12 sm:py-16 md:py-20 lg:py-24 overflow-hidden">
-        <div className="absolute inset-0 bg-black/40"></div>
-        <div className="relative z-10 max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 text-center">
+      {/* Hero da seção */}
+      <section
+        id="desenvolvimento-de-sites"
+        className="relative bg-[#0D0D10] py-20 sm:py-24 lg:py-32 overflow-hidden"
+      >
+        <div className="absolute inset-0 pointer-events-none">
+          <div className="absolute top-1/2 right-0 w-72 h-72 sm:w-96 sm:h-96 bg-logo/6 rounded-full blur-3xl" />
+        </div>
+        <div className="relative z-10 max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <FadeIn delay={0} duration={0.8}>
-            <div className="space-y-4 sm:space-y-6 md:space-y-8">
-              <h1 className="text-3xl sm:text-4xl md:text-5xl lg:text-6xl xl:text-7xl font-extrabold px-2">
-                <span className="text-white">Desenvolvimento</span>
-                <br />
-                <span className="text-logo">de Sites</span>
-              </h1>
-              <p className="text-base sm:text-lg md:text-xl lg:text-2xl text-gray-200 max-w-3xl mx-auto leading-relaxed px-2">
+            <div className="text-center mb-14 sm:mb-16 lg:mb-20">
+              <div className="inline-flex items-center space-x-2 bg-logo/10 border border-logo/20 text-logo-light px-4 py-2 rounded-full text-xs sm:text-sm font-medium mb-5 sm:mb-6">
+                <Wrench className="h-3 w-3 sm:h-4 sm:w-4" />
+                <span>Web Development</span>
+              </div>
+              <h2 className="text-3xl sm:text-4xl md:text-5xl lg:text-6xl font-black text-white mb-5 sm:mb-6">
+                Desenvolvimento{' '}
+                <span className="text-transparent bg-clip-text bg-gradient-to-r from-logo to-logo-light">
+                  de Sites
+                </span>
+              </h2>
+              <p className="text-sm sm:text-base md:text-lg lg:text-xl text-gray-400 max-w-3xl mx-auto leading-relaxed">
                 Criamos sites modernos, rápidos e otimizados que impulsionam seu negócio na internet.
                 Do design à programação, entregamos soluções completas e profissionais.
               </p>
             </div>
           </FadeIn>
-        </div>
-      </section>
 
-      {/* Services Section */}
-      <section className="py-12 sm:py-16 md:py-20 bg-gradient-to-br from-white via-gray-50 to-white">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="text-center mb-8 sm:mb-12 md:mb-16">
-            <h2 className="text-2xl sm:text-3xl md:text-4xl lg:text-5xl font-bold text-gray-900 mb-3 sm:mb-4 px-2">
-              Nossos Serviços de Desenvolvimento
-            </h2>
-            <p className="text-base sm:text-lg md:text-xl text-gray-600 max-w-3xl mx-auto px-2">
-              Oferecemos soluções completas em desenvolvimento web para atender todas as suas necessidades
-            </p>
-          </div>
-
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 sm:gap-6 md:gap-8">
-            {services.map((service, index) => {
+          {/* Web Services Grid */}
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-5 sm:gap-6 md:gap-8 mb-16 sm:mb-20">
+            {webServices.map((service, index) => {
               const IconComponent = service.icon;
               return (
-                <FadeIn key={index} delay={index * 100} duration={0.6}>
-                  <div className="bg-white rounded-xl sm:rounded-2xl p-4 sm:p-6 md:p-8 shadow-lg hover:shadow-2xl transition-all duration-300 transform hover:-translate-y-2 card-hover border border-logo/10 hover:border-logo/30">
-                    <div className="bg-gradient-to-br from-logo to-logo-light p-3 sm:p-4 rounded-xl w-12 h-12 sm:w-14 sm:h-14 md:w-16 md:h-16 flex items-center justify-center mb-4 sm:mb-6">
-                      <IconComponent className="h-6 w-6 sm:h-7 sm:w-7 md:h-8 md:w-8 text-white" />
+                <FadeIn key={index} delay={index * 80} duration={0.6}>
+                  <div
+                    className={`group relative bg-white/[0.03] border border-white/5 rounded-2xl p-6 sm:p-7 transition-all duration-500 hover:-translate-y-1.5 overflow-hidden hover:border-logo/20`}
+                  >
+                    <div
+                      className={`absolute inset-0 bg-gradient-to-br ${service.color} opacity-0 group-hover:opacity-100 transition-opacity duration-500 rounded-2xl`}
+                    />
+                    <div className="relative z-10">
+                      <div
+                        className={`w-12 h-12 sm:w-14 sm:h-14 bg-gradient-to-br ${service.iconBg} rounded-2xl flex items-center justify-center mb-5 sm:mb-6 group-hover:scale-110 transition-transform duration-300 shadow-lg`}
+                      >
+                        <IconComponent className="h-6 w-6 sm:h-7 sm:w-7 text-white" />
+                      </div>
+                      <h3 className="text-lg sm:text-xl font-bold text-white mb-2">{service.title}</h3>
+                      <p className="text-xs sm:text-sm text-gray-500 mb-4">{service.description}</p>
+                      <ul className="space-y-2">
+                        {service.features.map((f, idx) => (
+                          <li key={idx} className="flex items-center space-x-2 text-gray-400">
+                            <span className="text-logo text-sm flex-shrink-0">✓</span>
+                            <span className="text-xs sm:text-sm">{f}</span>
+                          </li>
+                        ))}
+                      </ul>
                     </div>
-                    <h3 className="text-lg sm:text-xl md:text-2xl font-bold text-gray-900 mb-2 sm:mb-3">{service.title}</h3>
-                    <p className="text-sm sm:text-base text-gray-600 mb-4 sm:mb-6 leading-relaxed">{service.description}</p>
-                    <ul className="space-y-2">
-                      {service.features.map((feature, idx) => (
-                        <li key={idx} className="flex items-center text-gray-700">
-                          <span className="text-logo mr-2">✓</span>
-                          {feature}
-                        </li>
-                      ))}
-                    </ul>
                   </div>
                 </FadeIn>
               );
             })}
           </div>
-        </div>
-      </section>
 
-      {/* Partners Section */}
-      <section className="py-12 sm:py-16 md:py-20 bg-white">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <FadeIn delay={0} duration={0.6}>
-            <div className="text-center mb-8 sm:mb-12 md:mb-16">
-              <h2 className="text-2xl sm:text-3xl md:text-4xl lg:text-5xl font-bold text-gray-900 mb-3 sm:mb-4 px-2">
-                Nossos Parceiros
-              </h2>
-              <p className="text-base sm:text-lg md:text-xl text-gray-600 max-w-3xl mx-auto px-2">
-                Trabalhamos em parceria com empresas líderes para oferecer as melhores soluções
+          {/* Process Steps */}
+          <FadeIn delay={0} duration={0.8}>
+            <div className="text-center mb-10 sm:mb-12">
+              <h3 className="text-2xl sm:text-3xl md:text-4xl font-black text-white mb-3">
+                Nosso Processo
+              </h3>
+              <p className="text-gray-400 text-sm sm:text-base">
+                Trabalhamos de forma organizada e transparente para entregar o melhor resultado
               </p>
             </div>
           </FadeIn>
-
-          <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-3 sm:gap-4 md:gap-6 lg:gap-8 items-center">
-            {partners.map((partner, index) => (
-              <FadeIn key={index} delay={index * 50} duration={0.5}>
-                <div
-                  className="flex items-center justify-center p-3 sm:p-4 md:p-6 rounded-lg sm:rounded-xl transition-all duration-300 border border-gray-200 hover:border-logo hover:shadow-lg transform hover:-translate-y-1"
-                  style={{ 
-                    backgroundColor: partner.bgColor || '#f9fafb',
-                    minHeight: '80px'
-                  }}
-                >
-                  {partner.logo ? (
-                    <img
-                      src={partner.logo}
-                      alt={partner.name}
-                      className="max-h-16 sm:max-h-20 md:max-h-24 lg:max-h-32 max-w-full object-contain transition-all hover:scale-105"
-                    />
-                  ) : (
-                    <span className="text-xs sm:text-sm text-gray-600 font-medium text-center hover:text-logo transition-colors px-2">
-                      {partner.name}
-                    </span>
-                  )}
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6 sm:gap-8 mb-16 sm:mb-20">
+            {processSteps.map((item, index) => (
+              <FadeIn key={index} delay={index * 80} duration={0.6}>
+                <div className="text-center group">
+                  <div className="w-14 h-14 sm:w-16 sm:h-16 bg-gradient-to-br from-logo to-logo-light rounded-2xl flex items-center justify-center mx-auto mb-4 group-hover:scale-110 transition-transform duration-300">
+                    <span className="text-white text-xl sm:text-2xl font-black">{item.step}</span>
+                  </div>
+                  <h4 className="text-base sm:text-lg font-bold text-white mb-2">{item.title}</h4>
+                  <p className="text-gray-400 text-sm leading-relaxed">{item.description}</p>
                 </div>
               </FadeIn>
             ))}
           </div>
-        </div>
-      </section>
 
-      {/* Technologies Section */}
-      <section className="py-12 sm:py-16 md:py-20 bg-gradient-to-b from-black to-neutral-800">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <FadeIn delay={0} duration={0.6}>
-            <div className="text-center mb-8 sm:mb-12 md:mb-16">
-              <h2 className="text-2xl sm:text-3xl md:text-4xl lg:text-5xl font-bold text-white mb-3 sm:mb-4 px-2">
-                Tecnologias que Utilizamos
-              </h2>
-              <p className="text-base sm:text-lg md:text-xl text-gray-300 max-w-3xl mx-auto px-2">
-                Trabalhamos com as melhores tecnologias do mercado para garantir qualidade e performance
+          {/* Technologies */}
+          <FadeIn delay={0} duration={0.8}>
+            <div className="text-center mb-8 sm:mb-10">
+              <h3 className="text-2xl sm:text-3xl font-black text-white mb-3">Tecnologias que Utilizamos</h3>
+              <p className="text-gray-400 text-sm sm:text-base">
+                As melhores tecnologias do mercado para garantir qualidade e performance
               </p>
             </div>
           </FadeIn>
-
-          <div className="flex flex-wrap justify-center gap-2 sm:gap-3 md:gap-4">
+          <div className="flex flex-wrap justify-center gap-2 sm:gap-3 mb-16 sm:mb-20">
             {technologies.map((tech, index) => (
-              <FadeIn key={index} delay={index * 80} duration={0.4}>
-                <div className="bg-white/10 backdrop-blur-sm border border-white/20 rounded-lg px-3 sm:px-4 md:px-6 py-2 sm:py-2.5 md:py-3 text-sm sm:text-base text-white font-medium hover:bg-white/20 transition-all duration-300 hover:scale-105">
+              <FadeIn key={index} delay={index * 60} duration={0.4}>
+                <div className="bg-white/5 border border-logo/15 rounded-xl px-4 sm:px-5 py-2 sm:py-2.5 text-xs sm:text-sm text-gray-300 font-medium hover:bg-logo/10 hover:text-white hover:border-logo/30 transition-all duration-300 cursor-default">
                   {tech}
                 </div>
               </FadeIn>
             ))}
           </div>
-        </div>
-      </section>
 
-      {/* Process Section */}
-      <section className="py-12 sm:py-16 md:py-20 bg-white">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="text-center mb-8 sm:mb-12 md:mb-16">
-            <h2 className="text-2xl sm:text-3xl md:text-4xl lg:text-5xl font-bold text-gray-900 mb-3 sm:mb-4 px-2">
-              Nosso Processo
-            </h2>
-            <p className="text-base sm:text-lg md:text-xl text-gray-600 max-w-3xl mx-auto px-2">
-              Trabalhamos de forma organizada e transparente para entregar o melhor resultado
-            </p>
-          </div>
-
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6 sm:gap-8">
-            {[
-              {
-                step: '01',
-                title: 'Análise e Planejamento',
-                description: 'Entendemos suas necessidades e definimos a melhor estratégia'
-              },
-              {
-                step: '02',
-                title: 'Design e Prototipagem',
-                description: 'Criamos o design visual e protótipos interativos para aprovação'
-              },
-              {
-                step: '03',
-                title: 'Desenvolvimento',
-                description: 'Programamos seu site com as melhores práticas e tecnologias'
-              },
-              {
-                step: '04',
-                title: 'Lançamento e Suporte',
-                description: 'Publicamos seu site e oferecemos suporte contínuo'
-              }
-            ].map((item, index) => (
-              <div key={index} className="text-center">
-                <div className="bg-gradient-to-br from-logo to-logo-light text-white text-2xl sm:text-3xl md:text-4xl font-bold rounded-full w-16 h-16 sm:w-18 sm:h-18 md:w-20 md:h-20 flex items-center justify-center mx-auto mb-3 sm:mb-4">
-                  {item.step}
+          {/* Partners */}
+          <FadeIn delay={0} duration={0.8}>
+            <div className="text-center mb-8 sm:mb-10">
+              <h3 className="text-2xl sm:text-3xl font-black text-white mb-3">Nossos Parceiros</h3>
+              <p className="text-gray-400 text-sm sm:text-base">
+                Trabalhamos com empresas de diferentes segmentos para oferecer as melhores soluções
+              </p>
+            </div>
+          </FadeIn>
+          <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-3 sm:gap-4 mb-12">
+            {partners.map((partner, index) => (
+              <FadeIn key={index} delay={index * 60} duration={0.5}>
+                <div
+                  className="flex items-center justify-center p-4 sm:p-5 rounded-2xl border border-logo/10 hover:border-logo/30 transition-all duration-300 hover:-translate-y-1 hover:shadow-lg hover:shadow-logo/10"
+                  style={{ backgroundColor: partner.bgColor, minHeight: '80px' }}
+                >
+                  {partner.logo && (
+                    <img
+                      src={partner.logo}
+                      alt={partner.name}
+                      className="max-h-12 sm:max-h-16 max-w-full object-contain"
+                    />
+                  )}
                 </div>
-                <h3 className="text-lg sm:text-xl font-bold text-gray-900 mb-2">{item.title}</h3>
-                <p className="text-sm sm:text-base text-gray-600 px-2">{item.description}</p>
-              </div>
+              </FadeIn>
             ))}
           </div>
-        </div>
-      </section>
 
-      {/* CTA Section */}
-      <section className="py-12 sm:py-16 md:py-20 bg-gradient-to-r from-logo to-logo-light">
-        <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 text-center">
-          <h2 className="text-2xl sm:text-3xl md:text-4xl lg:text-5xl font-bold text-white mb-4 sm:mb-6 px-2">
-            Pronto para ter seu site profissional?
-          </h2>
-          <p className="text-base sm:text-lg md:text-xl text-white/90 mb-6 sm:mb-8 px-2">
-            Entre em contato e vamos transformar sua ideia em realidade
-          </p>
-          <a
-            href="#contato"
-            className="inline-flex items-center space-x-2 bg-white text-logo px-6 sm:px-8 py-3 sm:py-4 rounded-lg font-semibold text-sm sm:text-base md:text-lg transition-all duration-300 shadow-lg hover:shadow-xl hover:scale-105"
-          >
-            <span>Solicitar Orçamento</span>
-            <ArrowRight className="h-4 w-4 sm:h-5 sm:w-5" />
-          </a>
+          {/* CTA */}
+          <FadeIn delay={0} duration={0.8}>
+            <div className="bg-gradient-to-br from-logo/10 to-logo-dark/5 border border-logo/20 rounded-3xl p-8 sm:p-12 text-center">
+              <h3 className="text-2xl sm:text-3xl md:text-4xl font-black text-white mb-4">
+                Pronto para ter seu site profissional?
+              </h3>
+              <p className="text-gray-400 text-sm sm:text-base mb-8 max-w-xl mx-auto">
+                Entre em contato e vamos transformar sua ideia em realidade
+              </p>
+              <a
+                href="#contato"
+                className="inline-flex items-center space-x-2 bg-gradient-to-r from-logo to-logo-light text-white px-8 py-4 rounded-xl font-bold text-sm sm:text-base transition-all duration-300 hover:scale-105 hover:shadow-xl hover:shadow-logo/30"
+              >
+                <span>Solicitar Orçamento</span>
+                <ArrowRight className="h-5 w-5" />
+              </a>
+            </div>
+          </FadeIn>
         </div>
       </section>
     </>
@@ -267,27 +261,22 @@ export function Home() {
   const isLoading = usePageLoader();
 
   useEffect(() => {
-    // Scroll suave para âncoras
     const handleAnchorClick = (e: MouseEvent) => {
       const target = e.target as HTMLElement;
       const link = target.closest('a[href^="#"]') as HTMLAnchorElement;
-      
+
       if (link) {
         const href = link.getAttribute('href');
         if (href && href !== '#') {
           e.preventDefault();
           const targetId = href.substring(1);
           const targetElement = document.getElementById(targetId);
-          
+
           if (targetElement) {
             const headerOffset = 80;
             const elementPosition = targetElement.getBoundingClientRect().top;
             const offsetPosition = elementPosition + window.pageYOffset - headerOffset;
-
-            window.scrollTo({
-              top: offsetPosition,
-              behavior: 'smooth'
-            });
+            window.scrollTo({ top: offsetPosition, behavior: 'smooth' });
           }
         }
       }
@@ -298,7 +287,7 @@ export function Home() {
   }, []);
 
   return (
-    <div className="min-h-screen">
+    <div className="min-h-screen bg-[#0A0A0C]">
       {isLoading && <Loader />}
       <Header />
       <main>
@@ -306,29 +295,7 @@ export function Home() {
         <QuemSomos />
         <Services />
         <DesenvolvimentoSites />
-        <DiagnosticosSection />
         <SejaDigital />
-        {/* CTA Principal antes do contato */}
-        <section className="py-16 sm:py-20 md:py-24 bg-gradient-to-r from-logo-dark via-logo to-logo-light relative overflow-hidden">
-          <div className="absolute inset-0 bg-black/10"></div>
-          <div className="relative z-10 max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 text-center">
-            <FadeIn delay={0} duration={0.8}>
-              <h2 className="text-3xl sm:text-4xl md:text-5xl lg:text-6xl font-bold text-white mb-4 sm:mb-6 px-2">
-                Pronto para transformar seu negócio digital?
-              </h2>
-              <p className="text-lg sm:text-xl md:text-2xl text-white/95 mb-8 sm:mb-10 px-2 max-w-2xl mx-auto">
-                Entre em contato e vamos criar estratégias personalizadas para o seu sucesso
-              </p>
-              <a
-                href="#contato"
-                className="inline-flex items-center space-x-2 bg-white text-logo-dark px-8 sm:px-10 py-4 sm:py-5 rounded-xl font-bold text-base sm:text-lg md:text-xl transition-all duration-300 shadow-2xl hover:shadow-3xl hover:scale-110 transform"
-              >
-                <span>Falar com Especialista</span>
-                <ArrowRight className="h-5 w-5 sm:h-6 sm:w-6" />
-              </a>
-            </FadeIn>
-          </div>
-        </section>
         <Contact />
       </main>
       <WhatsAppButton />

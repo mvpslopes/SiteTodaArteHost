@@ -1,204 +1,137 @@
 import { useState, useEffect } from 'react';
-import { ArrowRight } from 'lucide-react';
+import { ArrowRight, Sparkles } from 'lucide-react';
 import { FadeIn } from '../common/FadeIn';
-import { heroConfigDesktop } from '../../config/hero.config.desktop';
-import { heroConfigMobile } from '../../config/hero.config.mobile';
 
 export function Hero() {
-  // Detecta se é mobile ou desktop
   const [isMobile, setIsMobile] = useState(false);
 
   useEffect(() => {
-    const checkMobile = () => {
-      setIsMobile(window.innerWidth < 768); // Breakpoint: 768px (padrão Tailwind 'md')
-    };
-
-    // Verifica na montagem
+    const checkMobile = () => setIsMobile(window.innerWidth < 768);
     checkMobile();
-
-    // Adiciona listener para mudanças de tamanho
     window.addEventListener('resize', checkMobile);
-
-    // Limpa o listener ao desmontar
     return () => window.removeEventListener('resize', checkMobile);
   }, []);
 
-  // Usa a configuração apropriada baseado no tamanho da tela
-  const config = isMobile ? heroConfigMobile : heroConfigDesktop;
-
-  // 👉 Layout MOBILE: usa imagem única (hero-mobile.png) que já contém todos os elementos
-  if (isMobile) {
-    return (
-      <section 
-        id="inicio"
-        className="relative text-white min-h-[calc(100vh-5rem)] hero-container animate-fade-in"
-        style={{
-          background: 'transparent', // Sem gradiente - a imagem já tem o fundo
-          overflow: 'hidden',
-          position: 'relative',
-          minHeight: 'calc(100vh - 5rem)',
-          display: 'flex',
-          alignItems: 'center',
-          justifyContent: 'center'
-        }}
-      >
-        <div className="relative z-10 w-full h-full flex flex-col items-center justify-center">
-          {/* Imagem única do hero para mobile - ocupa toda a altura disponível */}
-          <img
-            src="/hero-mobile.png"
-            alt="Toda Arte - Seu Negócio Seu Sucesso - Conecte"
-            style={{
-              width: '100%',
-              height: 'auto',
-              minHeight: 'calc(100vh - 5rem)',
-              objectFit: 'cover',
-              display: 'block',
-              pointerEvents: 'none',
-              userSelect: 'none'
-            }}
-          />
-
-          {/* Botão real, separado da imagem, posicionado absolutamente sobre a imagem */}
-          <FadeIn delay={300} duration={0.8} direction="none">
-            <div 
-              className="absolute"
-              style={{
-                bottom: '10%',
-                left: '50%',
-                transform: 'translateX(-50%)',
-                zIndex: 20
-              }}
-            >
-              <a 
-                href="#servicos"
-                className="bg-gradient-to-r from-logo to-logo-light text-white px-6 py-3 rounded-lg font-semibold transition-all duration-300 shadow-md hover:shadow-lg hover:scale-105 flex items-center space-x-2 animate-float text-sm whitespace-nowrap"
-                style={{ fontSize: config.botao.fontSize }}
-              >
-                <span>Conheça nosso trabalho</span>
-                <ArrowRight className="h-4 w-4 ml-2" />
-              </a>
-            </div>
-          </FadeIn>
-        </div>
-      </section>
-    );
-  }
-
-  // 👉 Layout DESKTOP: mantém o layout absoluto existente com configurações específicas
   return (
-    <section 
+    <section
       id="inicio"
-      className="relative text-white min-h-[calc(100vh-5rem)] hero-container animate-fade-in"
-      style={{
-        background: config.background.gradient,
-        overflow: 'hidden',
-        position: 'relative',
-        minHeight: 'calc(100vh - 5rem)',
-        maxHeight: 'calc(100vh - 5rem)'
-      }}
+      className="relative min-h-screen bg-[#0A0A0C] overflow-hidden flex items-center"
     >
-      {/* Container principal */}
-      <div className="relative z-10 w-full" style={{ height: 'calc(100vh - 5rem)', minHeight: 'calc(100vh - 5rem)', overflow: 'visible' }}>
-        <div className="relative w-full" style={{ height: '100%', overflow: 'visible' }}>
-          
-          {/* Texto "Seu Negócio Seu Sucesso" */}
-          <h1 
-            className="absolute font-light uppercase tracking-wide leading-tight"
-            style={{
-              fontFamily: config.textoNegocio.fontFamily,
-              color: config.textoNegocio.color,
-              fontSize: config.textoNegocio.fontSize,
-              top: config.textoNegocio.top,
-              left: config.textoNegocio.left,
-              transform: 'translate(-50%, -50%)',
-              textAlign: 'center',
-              userSelect: 'none',
-              zIndex: config.textoNegocio.zIndex,
-              pointerEvents: 'none'
-            }}
-          >
-            <div className="text-shine" style={{ display: 'block', width: '100%', textAlign: 'center' }}>Seu Negócio</div>
-            <div className="text-shine" style={{ display: 'block', width: '100%', textAlign: 'center' }}>Seu Sucesso</div>
-          </h1>
-
-          {/* Texto "Conecte" */}
-          <div
-            className="absolute"
-            style={{
-              top: config.textoConecte.top,
-              left: config.textoConecte.left,
-              transform: 'translate(-50%, -50%)',
-              zIndex: config.textoConecte.zIndex,
-              pointerEvents: 'none',
-              overflow: 'visible'
-            }}
-          >
-            <span
-              className="text-shine-safe font-normal italic"
-              style={{
-                fontFamily: config.textoConecte.fontFamily,
-                color: config.textoConecte.color,
-                fontSize: config.textoConecte.fontSize,
-                display: 'inline-block',
-                whiteSpace: 'nowrap',
-                userSelect: 'none'
-              }}
-            >
-              Conecte
-            </span>
-          </div>
-
-          {/* Botão "Conheça nosso trabalho" */}
-      <FadeIn delay={300} duration={0.8} direction="none">
-        <div 
-          className="absolute z-20"
+      {/* Gradient Background */}
+      <div className="absolute inset-0">
+        <div className="absolute inset-0 bg-gradient-to-br from-[#0A0A0C] via-[#111115] to-[#0A0A0C]" />
+        {/* Glowing orbs */}
+        <div className="absolute top-20 left-1/4 w-72 h-72 sm:w-96 sm:h-96 bg-logo/10 rounded-full blur-3xl" />
+        <div className="absolute bottom-20 right-1/4 w-60 h-60 sm:w-80 sm:h-80 bg-logo-light/8 rounded-full blur-3xl" />
+        <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[400px] h-[400px] sm:w-[600px] sm:h-[600px] bg-logo/5 rounded-full blur-3xl" />
+        {/* Grid overlay */}
+        <div
+          className="absolute inset-0 opacity-[0.04]"
           style={{
-                top: config.botao.top,
-                left: config.botao.left,
-            transform: 'translate(-50%, -50%)',
-                pointerEvents: 'auto',
-                zIndex: config.botao.zIndex
+            backgroundImage: `linear-gradient(rgba(172,136,105,0.5) 1px, transparent 1px), linear-gradient(90deg, rgba(172,136,105,0.5) 1px, transparent 1px)`,
+            backgroundSize: '60px 60px',
           }}
-        >
-          <a 
-            href="#servicos"
-            className="bg-gradient-to-r from-logo to-logo-light text-white px-4 py-2 sm:px-6 sm:py-2 rounded-lg font-semibold transition-all duration-300 shadow-md hover:shadow-lg hover:scale-105 flex items-center space-x-2 animate-float text-sm sm:text-base whitespace-nowrap"
-                style={{ fontSize: config.botao.fontSize }}
-          >
-                <span>Conheça nosso trabalho</span>
-            <ArrowRight className="h-4 w-4 sm:h-5 sm:w-5 ml-1 sm:ml-2" />
-          </a>
-        </div>
-      </FadeIn>
+        />
+      </div>
 
-          {/* Imagem das meninas (Thaty_Lara.png) */}
-          <div
-            className="absolute"
-            style={{
-              top: config.imagemMeninas.top,
-              left: config.imagemMeninas.left,
-              transform: 'translate(-50%, -50%)',
-              zIndex: config.imagemMeninas.zIndex,
-              pointerEvents: 'none'
-            }}
-          >
-            <img
-              src="/Thaty_Lara.png"
-              alt="Thaty Lara"
-              style={{
-                width: config.imagemMeninas.width,
-                height: config.imagemMeninas.height,
-                display: 'block',
-                pointerEvents: 'none',
-                userSelect: 'none',
-                maxWidth: 'none',
-                maxHeight: 'none'
-              }}
-            />
+      {/* Content */}
+      <div className="relative z-10 max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 w-full py-16 sm:py-20 lg:py-0 lg:min-h-screen lg:flex lg:items-center">
+        <div className={`w-full grid grid-cols-1 ${isMobile ? '' : 'lg:grid-cols-2'} gap-10 lg:gap-16 items-center`}>
+          {/* Left: Text */}
+          <div className="text-center lg:text-left">
+            <FadeIn delay={0} duration={0.8}>
+              <div className="inline-flex items-center space-x-2 bg-logo/10 border border-logo/20 text-logo-light px-4 py-2 rounded-full text-xs sm:text-sm font-medium mb-6 sm:mb-8">
+                <Sparkles className="h-3 w-3 sm:h-4 sm:w-4" />
+                <span>Agência de Marketing Digital</span>
+              </div>
+            </FadeIn>
+
+            <FadeIn delay={100} duration={0.9}>
+              <h1 className="text-4xl sm:text-5xl md:text-6xl lg:text-7xl font-black text-white leading-[1.05] mb-5 sm:mb-6">
+                <span className="block">Seu Negócio</span>
+                <span className="block text-transparent bg-clip-text bg-gradient-to-r from-logo to-logo-light">
+                  Seu Sucesso
+                </span>
+              </h1>
+            </FadeIn>
+
+            <FadeIn delay={200} duration={0.8}>
+              <p className="text-sm sm:text-base md:text-lg lg:text-xl text-gray-400 leading-relaxed mb-8 sm:mb-10 max-w-lg mx-auto lg:mx-0">
+                Transformamos presença online com criatividade e comprometimento.
+                Estratégias personalizadas que conectam sua marca ao público certo e geram resultados reais.
+              </p>
+            </FadeIn>
+
+            <FadeIn delay={300} duration={0.8}>
+              <div className="flex flex-col sm:flex-row gap-3 sm:gap-4 justify-center lg:justify-start">
+                <a
+                  href="#servicos"
+                  className="inline-flex items-center justify-center space-x-2 bg-gradient-to-r from-logo to-logo-light text-white px-6 sm:px-8 py-3.5 sm:py-4 rounded-xl font-bold text-sm sm:text-base transition-all duration-300 shadow-lg shadow-logo/25 hover:shadow-xl hover:shadow-logo/40 hover:scale-105"
+                >
+                  <span>Conheça Nossos Serviços</span>
+                  <ArrowRight className="h-4 w-4 sm:h-5 sm:w-5" />
+                </a>
+                <a
+                  href="#contato"
+                  className="inline-flex items-center justify-center space-x-2 border border-logo/30 text-logo-light px-6 sm:px-8 py-3.5 sm:py-4 rounded-xl font-semibold text-sm sm:text-base transition-all duration-300 hover:bg-logo/10 hover:border-logo"
+                >
+                  <span>Falar Conosco</span>
+                </a>
+              </div>
+            </FadeIn>
+
+            {/* Stats */}
+            <FadeIn delay={400} duration={0.8}>
+              <div className="flex items-center justify-center lg:justify-start gap-6 sm:gap-8 mt-10 sm:mt-12 pt-8 border-t border-logo/10">
+                <div className="text-center lg:text-left">
+                  <div className="text-2xl sm:text-3xl font-black text-transparent bg-clip-text bg-gradient-to-r from-logo to-logo-light">50+</div>
+                  <div className="text-xs sm:text-sm text-gray-500 mt-0.5">Clientes Ativos</div>
+                </div>
+                <div className="w-px h-10 bg-logo/20" />
+                <div className="text-center lg:text-left">
+                  <div className="text-2xl sm:text-3xl font-black text-transparent bg-clip-text bg-gradient-to-r from-logo to-logo-light">200+</div>
+                  <div className="text-xs sm:text-sm text-gray-500 mt-0.5">Projetos Entregues</div>
+                </div>
+                <div className="w-px h-10 bg-logo/20" />
+                <div className="text-center lg:text-left">
+                  <div className="text-2xl sm:text-3xl font-black text-transparent bg-clip-text bg-gradient-to-r from-logo to-logo-light">5+</div>
+                  <div className="text-xs sm:text-sm text-gray-500 mt-0.5">Anos de Experiência</div>
+                </div>
+              </div>
+            </FadeIn>
           </div>
+
+          {/* Right: Image (desktop only) */}
+          {!isMobile && (
+            <div className="relative hidden lg:flex items-center justify-end">
+              <FadeIn delay={200} duration={1.0} direction="right">
+                {/* Decorative rings */}
+                <div className="absolute inset-0 m-auto w-[440px] h-[440px] rounded-full border border-logo/10 animate-pulse-soft" />
+                <div className="absolute inset-0 m-auto w-[350px] h-[350px] rounded-full border border-logo/8" />
+
+                <div className="relative z-10">
+                  <div className="relative w-[380px] xl:w-[440px] mx-auto">
+                    {/* Gold glow backdrop */}
+                    <div className="absolute -inset-6 bg-gradient-to-b from-logo/15 via-logo/5 to-transparent rounded-3xl blur-2xl" />
+                    <img
+                      src="/Thaty_Lara.png"
+                      alt="Equipe Toda Arte"
+                      className="relative z-10 w-full h-auto object-contain"
+                      style={{ filter: 'drop-shadow(0 20px 60px rgba(172,136,105,0.25))' }}
+                    />
+                  </div>
+                </div>
+              </FadeIn>
+            </div>
+          )}
         </div>
       </div>
 
+      {/* Scroll indicator */}
+      <div className="absolute bottom-6 sm:bottom-8 left-1/2 -translate-x-1/2 flex flex-col items-center space-y-1 animate-bounce opacity-60">
+        <div className="w-px h-8 bg-gradient-to-b from-transparent to-logo/60" />
+        <div className="w-1.5 h-1.5 rounded-full bg-logo/60" />
+      </div>
     </section>
   );
 }
