@@ -19,6 +19,11 @@ function toInputDate(s: string) {
   return d.toISOString().slice(0, 10);
 }
 
+function parseFiltroValor(v: string) {
+  const valor = parseFloat(v.replace(/\./g, '').replace(',', '.'));
+  return Number.isFinite(valor) ? valor : null;
+}
+
 const emptyForm = () => ({
   tipo: 'entrada' as 'entrada' | 'saida',
   data_transacao: new Date().toISOString().slice(0, 10),
@@ -41,13 +46,27 @@ export default function Transacoes() {
   const [form, setForm] = useState(emptyForm());
   const [mes, setMes] = useState<number | ''>('');
   const [ano, setAno] = useState<number | ''>(() => new Date().getFullYear());
+  const [tipoFiltro, setTipoFiltro] = useState<Transacao['tipo'] | ''>('');
   const [metodoFiltro, setMetodoFiltro] = useState<Transacao['metodo_pagamento'] | ''>('');
   const [clienteFiltro, setClienteFiltro] = useState<number | ''>('');
+  const [favorecidoFiltro, setFavorecidoFiltro] = useState<number | ''>('');
+  const [clientePresencaFiltro, setClientePresencaFiltro] = useState<'' | 'com' | 'sem'>('');
+  const [valorMinFiltro, setValorMinFiltro] = useState('');
+  const [valorMaxFiltro, setValorMaxFiltro] = useState('');
+  const [dataInicioFiltro, setDataInicioFiltro] = useState('');
+  const [dataFimFiltro, setDataFimFiltro] = useState('');
+  const [descricaoFiltro, setDescricaoFiltro] = useState('');
+  const [gastoFixoFiltro, setGastoFixoFiltro] = useState<'' | 'sim' | 'nao'>('');
+  const [ordenacao, setOrdenacao] = useState<'data_desc' | 'data_asc' | 'valor_desc' | 'valor_asc'>('data_desc');
   const [selecionados, setSelecionados] = useState<number[]>([]);
 
   const transacoesFiltradas = useMemo(() => {
     const q = query.trim().toLowerCase();
-    return transacoes.filter((t) => {
+    const descricaoBusca = descricaoFiltro.trim().toLowerCase();
+    const valorMin = parseFiltroValor(valorMinFiltro);
+    const valorMax = parseFiltroValor(valorMaxFiltro);
+
+    const filtradas = transacoes.filter((t) => {
       if (q) {
         const okBusca =
           matchSearch(t.descricao, q) ||
@@ -59,11 +78,51 @@ export default function Transacoes() {
           matchSearch(formatDate(t.data_transacao), q);
         if (!okBusca) return false;
       }
+      if (tipoFiltro && t.tipo !== tipoFiltro) return false;
       if (metodoFiltro && t.metodo_pagamento !== metodoFiltro) return false;
       if (clienteFiltro && (t.cliente_id ?? 0) !== clienteFiltro) return false;
+      if (favorecidoFiltro && (t.favorecido_id ?? 0) !== favorecidoFiltro) return false;
+      if (clientePresencaFiltro === 'com' && !t.cliente_id) return false;
+      if (clientePresencaFiltro === 'sem' && t.cliente_id) return false;
+      if (dataInicioFiltro && t.data_transacao < dataInicioFiltro) return false;
+      if (dataFimFiltro && t.data_transacao > dataFimFiltro) return false;
+      if (valorMin !== null && Number(t.valor) < valorMin) return false;
+      if (valorMax !== null && Number(t.valor) > valorMax) return false;
+      if (descricaoBusca && !matchSearch(t.descricao, descricaoBusca)) return false;
+      const ehGastoFixo = (t.descricao ?? '').toLowerCase().includes('pagamento gasto fixo');
+      if (gastoFixoFiltro === 'sim' && !ehGastoFixo) return false;
+      if (gastoFixoFiltro === 'nao' && ehGastoFixo) return false;
       return true;
     });
-  }, [transacoes, query, metodoFiltro, clienteFiltro]);
+
+    return filtradas.slice().sort((a, b) => {
+      if (ordenacao === 'data_asc') {
+        return a.data_transacao.localeCompare(b.data_transacao) || a.id - b.id;
+      }
+      if (ordenacao === 'valor_desc') {
+        return Number(b.valor) - Number(a.valor);
+      }
+      if (ordenacao === 'valor_asc') {
+        return Number(a.valor) - Number(b.valor);
+      }
+      return b.data_transacao.localeCompare(a.data_transacao) || b.id - a.id;
+    });
+  }, [
+    transacoes,
+    query,
+    tipoFiltro,
+    metodoFiltro,
+    clienteFiltro,
+    favorecidoFiltro,
+    clientePresencaFiltro,
+    valorMinFiltro,
+    valorMaxFiltro,
+    dataInicioFiltro,
+    dataFimFiltro,
+    descricaoFiltro,
+    gastoFixoFiltro,
+    ordenacao,
+  ]);
 
   const resumoSelecao = useMemo(() => {
     if (selecionados.length === 0) {
@@ -196,6 +255,22 @@ export default function Transacoes() {
 
   const limparSelecao = () => setSelecionados([]);
 
+  const limparFiltros = () => {
+    setTipoFiltro('');
+    setMetodoFiltro('');
+    setClienteFiltro('');
+    setFavorecidoFiltro('');
+    setClientePresencaFiltro('');
+    setValorMinFiltro('');
+    setValorMaxFiltro('');
+    setDataInicioFiltro('');
+    setDataFimFiltro('');
+    setDescricaoFiltro('');
+    setGastoFixoFiltro('');
+    setOrdenacao('data_desc');
+    setSelecionados([]);
+  };
+
   return (
     <div className="space-y-6">
       <div className="flex flex-wrap items-center justify-between gap-4">
@@ -243,14 +318,26 @@ export default function Transacoes() {
         </div>
       </div>
 
-      <div className="flex flex-wrap items-center justify-between gap-4">
-        <div className="flex flex-wrap items-center gap-3">
+      <div className="rounded-xl border border-gray-200 bg-white p-4 shadow-card">
+        <div className="flex flex-wrap items-end gap-3">
           <label className="text-xs text-gray-600">
-            Método de pagamento:{' '}
+            Tipo
+            <select
+              value={tipoFiltro}
+              onChange={(e) => setTipoFiltro(e.target.value as Transacao['tipo'] | '')}
+              className="mt-1 block rounded-lg border border-gray-200 bg-white px-2 py-1.5 text-xs text-gray-800"
+            >
+              <option value="">Todos</option>
+              <option value="entrada">Entradas</option>
+              <option value="saida">Saídas</option>
+            </select>
+          </label>
+          <label className="text-xs text-gray-600">
+            Método de pagamento
             <select
               value={metodoFiltro}
               onChange={(e) => setMetodoFiltro(e.target.value as Transacao['metodo_pagamento'] | '')}
-              className="ml-1 rounded-lg border border-gray-200 bg-white px-2 py-1 text-xs text-gray-800"
+              className="mt-1 block rounded-lg border border-gray-200 bg-white px-2 py-1.5 text-xs text-gray-800"
             >
               <option value="">Todos</option>
               {METODOS_PAGAMENTO.map((m) => (
@@ -261,11 +348,11 @@ export default function Transacoes() {
             </select>
           </label>
           <label className="text-xs text-gray-600">
-            Cliente:{' '}
+            Cliente
             <select
               value={clienteFiltro}
               onChange={(e) => setClienteFiltro(e.target.value ? Number(e.target.value) : '')}
-              className="ml-1 rounded-lg border border-gray-200 bg-white px-2 py-1 text-xs text-gray-800"
+              className="mt-1 block rounded-lg border border-gray-200 bg-white px-2 py-1.5 text-xs text-gray-800"
             >
               <option value="">Todos</option>
               {clientes.map((c) => (
@@ -275,26 +362,135 @@ export default function Transacoes() {
               ))}
             </select>
           </label>
-        </div>
-
-        {selecionados.length > 0 && (
-          <div className="flex items-center gap-3 text-xs">
-            <div className="px-3 py-1 rounded-full bg-emerald-50 border border-emerald-200 text-emerald-800">
-              <span className="font-semibold mr-1">{selecionados.length}</span>
-              selecionada{selecionados.length > 1 && 's'} · Soma:{' '}
-              <span className="font-semibold">
-                {formatMoney(resumoSelecao.saldo)}
-              </span>
-            </div>
-            <button
-              type="button"
-              onClick={limparSelecao}
-              className="text-[11px] text-gray-500 hover:text-gray-700"
+          <label className="text-xs text-gray-600">
+            Com cliente?
+            <select
+              value={clientePresencaFiltro}
+              onChange={(e) => setClientePresencaFiltro(e.target.value as '' | 'com' | 'sem')}
+              className="mt-1 block rounded-lg border border-gray-200 bg-white px-2 py-1.5 text-xs text-gray-800"
             >
-              Limpar seleção
-            </button>
-          </div>
-        )}
+              <option value="">Todos</option>
+              <option value="com">Somente com cliente</option>
+              <option value="sem">Somente sem cliente</option>
+            </select>
+          </label>
+          <label className="text-xs text-gray-600">
+            Destino/Favorecido
+            <select
+              value={favorecidoFiltro}
+              onChange={(e) => setFavorecidoFiltro(e.target.value ? Number(e.target.value) : '')}
+              className="mt-1 block rounded-lg border border-gray-200 bg-white px-2 py-1.5 text-xs text-gray-800"
+            >
+              <option value="">Todos</option>
+              {favorecidos.map((f) => (
+                <option key={f.id} value={f.id}>
+                  {f.nome}
+                </option>
+              ))}
+            </select>
+          </label>
+          <label className="text-xs text-gray-600">
+            Data inicial
+            <input
+              type="date"
+              value={dataInicioFiltro}
+              onChange={(e) => setDataInicioFiltro(e.target.value)}
+              className="mt-1 block rounded-lg border border-gray-200 bg-white px-2 py-1.5 text-xs text-gray-800"
+            />
+          </label>
+          <label className="text-xs text-gray-600">
+            Data final
+            <input
+              type="date"
+              value={dataFimFiltro}
+              onChange={(e) => setDataFimFiltro(e.target.value)}
+              className="mt-1 block rounded-lg border border-gray-200 bg-white px-2 py-1.5 text-xs text-gray-800"
+            />
+          </label>
+          <label className="text-xs text-gray-600">
+            Valor mínimo
+            <input
+              type="text"
+              inputMode="decimal"
+              placeholder="0,00"
+              value={valorMinFiltro}
+              onChange={(e) => setValorMinFiltro(e.target.value)}
+              className="mt-1 block w-24 rounded-lg border border-gray-200 bg-white px-2 py-1.5 text-xs text-gray-800"
+            />
+          </label>
+          <label className="text-xs text-gray-600">
+            Valor máximo
+            <input
+              type="text"
+              inputMode="decimal"
+              placeholder="0,00"
+              value={valorMaxFiltro}
+              onChange={(e) => setValorMaxFiltro(e.target.value)}
+              className="mt-1 block w-24 rounded-lg border border-gray-200 bg-white px-2 py-1.5 text-xs text-gray-800"
+            />
+          </label>
+          <label className="text-xs text-gray-600">
+            Descrição
+            <input
+              type="text"
+              placeholder="Texto da descrição"
+              value={descricaoFiltro}
+              onChange={(e) => setDescricaoFiltro(e.target.value)}
+              className="mt-1 block w-40 rounded-lg border border-gray-200 bg-white px-2 py-1.5 text-xs text-gray-800"
+            />
+          </label>
+          <label className="text-xs text-gray-600">
+            Gasto fixo
+            <select
+              value={gastoFixoFiltro}
+              onChange={(e) => setGastoFixoFiltro(e.target.value as '' | 'sim' | 'nao')}
+              className="mt-1 block rounded-lg border border-gray-200 bg-white px-2 py-1.5 text-xs text-gray-800"
+            >
+              <option value="">Todos</option>
+              <option value="sim">Somente gasto fixo</option>
+              <option value="nao">Ocultar gasto fixo</option>
+            </select>
+          </label>
+          <label className="text-xs text-gray-600">
+            Ordenar por
+            <select
+              value={ordenacao}
+              onChange={(e) => setOrdenacao(e.target.value as typeof ordenacao)}
+              className="mt-1 block rounded-lg border border-gray-200 bg-white px-2 py-1.5 text-xs text-gray-800"
+            >
+              <option value="data_desc">Mais recentes</option>
+              <option value="data_asc">Mais antigas</option>
+              <option value="valor_desc">Maior valor</option>
+              <option value="valor_asc">Menor valor</option>
+            </select>
+          </label>
+          <button
+            type="button"
+            onClick={limparFiltros}
+            className="rounded-lg border border-gray-200 px-3 py-1.5 text-xs text-gray-600 hover:bg-gray-50 hover:text-gray-800"
+          >
+            Limpar filtros
+          </button>
+
+          {selecionados.length > 0 && (
+            <div className="flex items-center gap-3 text-xs">
+              <div className="px-3 py-1 rounded-full bg-emerald-50 border border-emerald-200 text-emerald-800">
+                <span className="font-semibold mr-1">{selecionados.length}</span>
+                selecionada{selecionados.length > 1 && 's'} · Soma:{' '}
+                <span className="font-semibold">
+                  {formatMoney(resumoSelecao.saldo)}
+                </span>
+              </div>
+              <button
+                type="button"
+                onClick={limparSelecao}
+                className="text-[11px] text-gray-500 hover:text-gray-700"
+              >
+                Limpar seleção
+              </button>
+            </div>
+          )}
+        </div>
       </div>
 
       {error && (

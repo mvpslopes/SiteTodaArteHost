@@ -1,4 +1,4 @@
-import React, { useEffect } from 'react';
+import React from 'react';
 import { Header } from '../components/layout/Header';
 import { Hero } from '../components/landing/Hero';
 import { QuemSomos } from '../components/landing/QuemSomos';
@@ -259,32 +259,6 @@ function DesenvolvimentoSites() {
 
 export function Home() {
   const isLoading = usePageLoader();
-
-  useEffect(() => {
-    const handleAnchorClick = (e: MouseEvent) => {
-      const target = e.target as HTMLElement;
-      const link = target.closest('a[href^="#"]') as HTMLAnchorElement;
-
-      if (link) {
-        const href = link.getAttribute('href');
-        if (href && href !== '#') {
-          e.preventDefault();
-          const targetId = href.substring(1);
-          const targetElement = document.getElementById(targetId);
-
-          if (targetElement) {
-            const headerOffset = 80;
-            const elementPosition = targetElement.getBoundingClientRect().top;
-            const offsetPosition = elementPosition + window.pageYOffset - headerOffset;
-            window.scrollTo({ top: offsetPosition, behavior: 'smooth' });
-          }
-        }
-      }
-    };
-
-    document.addEventListener('click', handleAnchorClick);
-    return () => document.removeEventListener('click', handleAnchorClick);
-  }, []);
 
   return (
     <div className="min-h-screen bg-[#0A0A0C]">

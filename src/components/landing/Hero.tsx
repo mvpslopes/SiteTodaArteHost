@@ -35,8 +35,8 @@ export function Hero() {
       </div>
 
       {/* Content */}
-      <div className="relative z-10 max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 w-full py-16 sm:py-20 lg:py-0 lg:min-h-screen lg:flex lg:items-center">
-        <div className={`w-full grid grid-cols-1 ${isMobile ? '' : 'lg:grid-cols-2'} gap-10 lg:gap-16 items-center`}>
+      <div className="relative z-10 max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 w-full py-16 sm:py-20 lg:py-0 lg:min-h-screen lg:flex lg:items-end">
+        <div className={`w-full grid grid-cols-1 ${isMobile ? '' : 'lg:grid-cols-2'} gap-10 lg:gap-16 lg:items-end`}>
           {/* Left: Text */}
           <div className="text-center lg:text-left">
             <FadeIn delay={0} duration={0.8}>
@@ -103,14 +103,14 @@ export function Hero() {
 
           {/* Right: Image (desktop only) */}
           {!isMobile && (
-            <div className="relative hidden lg:flex items-center justify-end">
+            <div className="relative hidden lg:flex h-full items-end justify-end self-end">
               <FadeIn delay={200} duration={1.0} direction="right">
                 {/* Decorative rings */}
                 <div className="absolute inset-0 m-auto w-[440px] h-[440px] rounded-full border border-logo/10 animate-pulse-soft" />
                 <div className="absolute inset-0 m-auto w-[350px] h-[350px] rounded-full border border-logo/8" />
 
                 <div className="relative z-10">
-                  <div className="relative w-[380px] xl:w-[440px] mx-auto">
+                  <div className="relative w-[460px] xl:w-[540px] mx-auto">
                     {/* Gold glow backdrop */}
                     <div className="absolute -inset-6 bg-gradient-to-b from-logo/15 via-logo/5 to-transparent rounded-3xl blur-2xl" />
                     <img
