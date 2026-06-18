@@ -123,6 +123,41 @@ export interface DashboardData {
   vendas_recentes: VendaEspaco[];
 }
 
+export interface RelatorioEspacoResumo {
+  valor_venda: number;
+  valor_contrato: number;
+  custo: number;
+  margem_prevista: number;
+  total_entradas: number;
+  total_saidas: number;
+  saldo_fluxo: number;
+  recebido_parcelas: number;
+  a_receber: number;
+  atrasado: number;
+  lucro_realizado: number;
+  percentual_recebido: number;
+  parcelas_pagas: number;
+  parcelas_pendentes: number;
+  proxima_parcela: {
+    numero: number;
+    valor: number;
+    data_vencimento: string;
+    atrasada: boolean;
+  } | null;
+}
+
+export interface RelatorioEspacoData {
+  espaco: Espaco;
+  venda: (VendaEspaco & {
+    cliente_telefone?: string | null;
+    cliente_documento?: string | null;
+  }) | null;
+  parcelas: Parcela[];
+  transacoes: Transacao[];
+  resumo: RelatorioEspacoResumo;
+  gerado_em: string;
+}
+
 export const METODOS = [
   { value: 'pix', label: 'Pix' },
   { value: 'boleto', label: 'Boleto' },
@@ -146,6 +181,8 @@ export const api = {
   },
   dashboard: (ano?: number) =>
     request<DashboardData>(`/api/dashboard.php${ano ? `?ano=${ano}` : ''}`),
+  relatorioEspaco: (espacoId: number) =>
+    request<RelatorioEspacoData>(`/api/relatorio-espaco.php?id=${espacoId}`),
   clientes: {
     list: (ativosOnly = true) =>
       request<{ clientes: Cliente[] }>(`/api/clientes.php?ativos=${ativosOnly ? '1' : '0'}`),
@@ -157,14 +194,22 @@ export const api = {
       request<{ success: boolean }>(`/api/clientes.php?id=${id}`, { method: 'DELETE' }),
   },
   espacos: {
-    list: (status?: string) =>
-      request<{ espacos: Espaco[] }>(`/api/espacos.php${status ? `?status=${status}` : ''}`),
+    list: (status?: string, todos = false) => {
+      const q = new URLSearchParams();
+      if (status) q.set('status', status);
+      if (todos) q.set('todos', '1');
+      const query = q.toString();
+      return request<{ espacos: Espaco[] }>(`/api/espacos.php${query ? `?${query}` : ''}`);
+    },
     create: (data: Partial<Espaco>) =>
       request<Espaco>('/api/espacos.php', { method: 'POST', body: JSON.stringify(data) }),
     update: (data: Partial<Espaco> & { id: number }) =>
       request<Espaco>('/api/espacos.php', { method: 'PUT', body: JSON.stringify(data) }),
-    delete: (id: number) =>
-      request<{ success: boolean }>(`/api/espacos.php?id=${id}`, { method: 'DELETE' }),
+    delete: (id: number, permanente = false) =>
+      request<{ success: boolean; tipo: string }>(
+        `/api/espacos.php?id=${id}${permanente ? '&permanente=1' : ''}`,
+        { method: 'DELETE' },
+      ),
   },
   vendas: {
     list: () => request<{ vendas: VendaEspaco[] }>('/api/vendas.php'),

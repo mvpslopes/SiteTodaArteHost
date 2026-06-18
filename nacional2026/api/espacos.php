@@ -30,14 +30,18 @@ if ($_SERVER['REQUEST_METHOD'] === 'GET') {
     }
 
     $status = $_GET['status'] ?? null;
+    $todos = !empty($_GET['todos']);
     $sql = '
         SELECT e.*, c.nome AS cliente_nome, v.id AS venda_id, v.status AS venda_status, v.valor_total
         FROM espacos e
         LEFT JOIN vendas_espaco v ON v.espaco_id = e.id AND v.status != "cancelado"
         LEFT JOIN clientes c ON c.id = v.cliente_id
-        WHERE e.ativo = 1
+        WHERE 1=1
     ';
     $params = [];
+    if (!$todos) {
+        $sql .= ' AND e.ativo = 1';
+    }
     if ($status && in_array($status, ['disponivel','reservado','vendido','cancelado'], true)) {
         $sql .= ' AND e.status = ?';
         $params[] = $status;
@@ -110,9 +114,38 @@ if ($_SERVER['REQUEST_METHOD'] === 'PUT') {
 if ($_SERVER['REQUEST_METHOD'] === 'DELETE') {
     requireAdminOrRoot();
     $id = (int)($_GET['id'] ?? 0);
-    $stmt = $pdo->prepare('UPDATE espacos SET ativo = 0 WHERE id = ?');
+    if ($id < 1) {
+        http_response_code(400);
+        echo json_encode(['error' => 'ID é obrigatório']);
+        exit;
+    }
+
+    $permanente = !empty($_GET['permanente']);
+
+    $stmt = $pdo->prepare('SELECT id, nome, ativo FROM espacos WHERE id = ?');
     $stmt->execute([$id]);
-    echo json_encode(['success' => true]);
+    $espaco = $stmt->fetch();
+    if (!$espaco) {
+        http_response_code(404);
+        echo json_encode(['error' => 'Espaço não encontrado']);
+        exit;
+    }
+
+    if ($permanente) {
+        $stmtV = $pdo->prepare('SELECT COUNT(*) FROM vendas_espaco WHERE espaco_id = ? AND status != "cancelado"');
+        $stmtV->execute([$id]);
+        if ((int)$stmtV->fetchColumn() > 0) {
+            http_response_code(400);
+            echo json_encode(['error' => 'Não é possível excluir permanentemente: espaço possui venda ativa']);
+            exit;
+        }
+        $pdo->prepare('DELETE FROM espacos WHERE id = ?')->execute([$id]);
+        echo json_encode(['success' => true, 'tipo' => 'permanente']);
+        exit;
+    }
+
+    $pdo->prepare('UPDATE espacos SET ativo = 0, status = IF(status = "disponivel", "cancelado", status) WHERE id = ?')->execute([$id]);
+    echo json_encode(['success' => true, 'tipo' => 'desativado']);
     exit;
 }
 

@@ -1,7 +1,9 @@
 import { useEffect, useState } from 'react';
-import { Download, Filter } from 'lucide-react';
+import { Filter } from 'lucide-react';
 import { api, formatMoney, formatDate, MESES, type DashboardData } from '../api';
 import StatCard from '../components/StatCard';
+import ExportMenu from '../components/ExportMenu';
+import { exportDashboardExcel, exportDashboardPdf } from '../utils/exportRelatorio';
 
 function BarChart({ meses }: { meses: DashboardData['meses'] }) {
   const max = Math.max(...meses.flatMap((m) => [m.entradas, m.saidas]), 1);
@@ -82,9 +84,10 @@ export default function Dashboard() {
               <option key={y} value={y}>{y}</option>
             ))}
           </select>
-          <button type="button" className="flex items-center gap-2 rounded-xl border border-gray-200 bg-white px-3 py-2 text-sm text-gray-600 hover:bg-gray-50">
-            <Download className="h-4 w-4" /> Exportar
-          </button>
+          <ExportMenu
+            onExcel={() => exportDashboardExcel(data)}
+            onPdf={() => exportDashboardPdf(data)}
+          />
         </div>
       </div>
 

@@ -10,6 +10,7 @@ import Espacos from './pages/Espacos';
 import Vendas from './pages/Vendas';
 import Parcelas from './pages/Parcelas';
 import Transacoes from './pages/Transacoes';
+import RelatorioEspaco from './pages/RelatorioEspaco';
 import Usuarios from './pages/Usuarios';
 import Configuracoes from './pages/Configuracoes';
 import { SPLASH_MIN_MS } from './constants/branding';
@@ -42,6 +43,7 @@ function AppRoutes() {
         <Route path="vendas" element={<Vendas />} />
         <Route path="parcelas" element={<Parcelas />} />
         <Route path="transacoes" element={<Transacoes />} />
+        <Route path="relatorios/espaco" element={<RelatorioEspaco />} />
         <Route path="usuarios" element={<Usuarios />} />
         <Route path="configuracoes" element={<Configuracoes />} />
       </Route>

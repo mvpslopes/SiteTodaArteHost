@@ -7,6 +7,7 @@ import {
   ShoppingBag,
   CalendarClock,
   ArrowLeftRight,
+  FileBarChart,
   ShieldCheck,
   Settings,
   Search,
@@ -26,6 +27,7 @@ const navMain = [
   { to: '/clientes', label: 'Clientes', Icon: Users },
   { to: '/parcelas', label: 'Parcelas', Icon: CalendarClock },
   { to: '/transacoes', label: 'Transações', Icon: ArrowLeftRight },
+  { to: '/relatorios/espaco', label: 'Relatório por Espaço', Icon: FileBarChart },
 ];
 
 const navSecondary = [
@@ -40,6 +42,7 @@ const titles: Record<string, string> = {
   '/clientes': 'Clientes',
   '/parcelas': 'Parcelas',
   '/transacoes': 'Transações',
+  '/relatorios/espaco': 'Relatório por Espaço',
   '/usuarios': 'Usuários',
   '/configuracoes': 'Configurações',
 };
