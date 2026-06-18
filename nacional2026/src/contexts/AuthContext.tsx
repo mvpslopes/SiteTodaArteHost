@@ -20,6 +20,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
   const login = useCallback(async (loginStr: string, senha: string) => {
     const data = await api.auth.login(loginStr, senha);
+    if (!data.user) throw new Error('Resposta inválida do servidor. Verifique se a API está instalada.');
     setUser(data.user);
   }, []);
 

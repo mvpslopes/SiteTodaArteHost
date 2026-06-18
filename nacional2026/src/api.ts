@@ -1,14 +1,31 @@
 const API_BASE = import.meta.env.VITE_API_URL ?? '';
 
 async function request<T>(path: string, options: RequestInit = {}): Promise<T> {
-  const res = await fetch(`${API_BASE}${path}`, {
-    ...options,
-    credentials: 'include',
-    headers: { 'Content-Type': 'application/json', ...options.headers },
-  });
+  let res: Response;
+  try {
+    res = await fetch(`${API_BASE}${path}`, {
+      ...options,
+      credentials: 'include',
+      headers: { 'Content-Type': 'application/json', ...options.headers },
+    });
+  } catch {
+    throw new Error('Não foi possível conectar à API. Verifique se a pasta api/ foi enviada à hospedagem.');
+  }
+
   const text = await res.text();
-  let data: { error?: string; detail?: string } = {};
-  try { data = text ? JSON.parse(text) : {}; } catch { /* ignore */ }
+  const contentType = res.headers.get('content-type') ?? '';
+
+  if (!contentType.includes('application/json') && text.trimStart().startsWith('<!')) {
+    throw new Error('API indisponível. Envie a pasta api/ junto com o build (dist/) para a hospedagem.');
+  }
+
+  let data: { error?: string; detail?: string; user?: User } = {};
+  try {
+    data = text ? JSON.parse(text) : {};
+  } catch {
+    throw new Error(`Resposta inválida da API (${res.status}). Verifique a pasta api/ no servidor.`);
+  }
+
   if (!res.ok) {
     const msg = data.detail ? `${data.error ?? 'Erro'}: ${data.detail}` : (data.error ?? `Erro ${res.status}`);
     throw new Error(msg);
