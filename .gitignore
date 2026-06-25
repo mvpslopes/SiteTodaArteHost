@@ -3,6 +3,7 @@ node_modules
 .env.local
 .env.production
 dist
+deploy
 .DS_Store
 *.log
 # Arquivos de credenciais do Google Cloud
