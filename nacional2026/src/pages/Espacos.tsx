@@ -1,10 +1,11 @@
 import { useEffect, useState } from 'react';
-import { Plus, Pencil, Trash2, FileBarChart, RotateCcw } from 'lucide-react';
+import { Plus, Pencil, Trash2, FileBarChart, RotateCcw, Package } from 'lucide-react';
 import { Link } from 'react-router-dom';
-import { api, formatMoney, type Espaco } from '../api';
+import { api, formatMoney, type Espaco, type ItemEspaco } from '../api';
 import Modal, { Field, inputClass, btnPrimary, btnSecondary, btnDanger } from '../components/Modal';
 
 const empty: Partial<Espaco> = { nome: '', descricao: '', valor_venda: '', custo: '', status: 'disponivel' };
+const emptyItem: Partial<ItemEspaco> = { nome: '', descricao: '', valor_padrao: '' };
 
 const statusLabel: Record<string, string> = {
   disponivel: 'Disponível',
@@ -26,10 +27,15 @@ export default function Espacos() {
   const [mostrarInativos, setMostrarInativos] = useState(false);
   const [modal, setModal] = useState(false);
   const [deleteModal, setDeleteModal] = useState<Espaco | null>(null);
+  const [itensModal, setItensModal] = useState<Espaco | null>(null);
+  const [itens, setItens] = useState<ItemEspaco[]>([]);
+  const [itemForm, setItemForm] = useState<Partial<ItemEspaco>>(emptyItem);
+  const [itemEditId, setItemEditId] = useState<number | null>(null);
   const [form, setForm] = useState<Partial<Espaco>>(empty);
   const [editId, setEditId] = useState<number | null>(null);
   const [error, setError] = useState('');
   const [deleteError, setDeleteError] = useState('');
+  const [itemError, setItemError] = useState('');
 
   const load = () => {
     setLoading(true);
@@ -41,6 +47,55 @@ export default function Espacos() {
   const openNew = () => { setForm(empty); setEditId(null); setError(''); setModal(true); };
   const openEdit = (e: Espaco) => { setForm(e); setEditId(e.id); setError(''); setModal(true); };
   const openDelete = (e: Espaco) => { setDeleteModal(e); setDeleteError(''); };
+
+  const openItens = async (e: Espaco) => {
+    setItensModal(e);
+    setItemForm(emptyItem);
+    setItemEditId(null);
+    setItemError('');
+    const data = await api.itensEspaco.list(e.id);
+    setItens(data.itens);
+  };
+
+  const saveItem = async (ev: React.FormEvent) => {
+    ev.preventDefault();
+    if (!itensModal) return;
+    setItemError('');
+    try {
+      const payload = {
+        nome: itemForm.nome ?? '',
+        descricao: itemForm.descricao ?? undefined,
+        valor_padrao: Number(itemForm.valor_padrao || 0),
+      };
+      if (itemEditId) {
+        await api.itensEspaco.update({ ...payload, id: itemEditId });
+      } else {
+        await api.itensEspaco.create({ ...payload, espaco_id: itensModal.id });
+      }
+      setItemForm(emptyItem);
+      setItemEditId(null);
+      const data = await api.itensEspaco.list(itensModal.id);
+      setItens(data.itens);
+      load();
+    } catch (err) {
+      setItemError(err instanceof Error ? err.message : 'Erro ao salvar item');
+    }
+  };
+
+  const editItem = (item: ItemEspaco) => {
+    setItemForm(item);
+    setItemEditId(item.id);
+  };
+
+  const removeItem = async (id: number) => {
+    if (!confirm('Desativar este item?')) return;
+    await api.itensEspaco.delete(id);
+    if (itensModal) {
+      const data = await api.itensEspaco.list(itensModal.id);
+      setItens(data.itens);
+      load();
+    }
+  };
 
   const save = async (ev: React.FormEvent) => {
     ev.preventDefault();
@@ -90,7 +145,7 @@ export default function Espacos() {
     load();
   };
 
-  const temVendaAtiva = deleteModal && deleteModal.venda_id && deleteModal.venda_status !== 'cancelado';
+  const temVendaAtiva = deleteModal && (deleteModal.vendas_count ?? 0) > 0;
 
   return (
     <div className="space-y-6">
@@ -111,10 +166,10 @@ export default function Espacos() {
             <thead>
               <tr className="border-b border-gray-50 text-left text-xs uppercase tracking-wide text-gray-400">
                 <th className="px-6 py-3 font-medium">Espaço</th>
-                <th className="px-6 py-3 font-medium">Valor venda</th>
+                <th className="px-6 py-3 font-medium">Itens</th>
+                <th className="px-6 py-3 font-medium">Vendas</th>
                 <th className="px-6 py-3 font-medium">Custo</th>
                 <th className="px-6 py-3 font-medium">Status</th>
-                <th className="px-6 py-3 font-medium">Cliente</th>
                 <th className="px-6 py-3 font-medium">Ações</th>
               </tr>
             </thead>
@@ -130,16 +185,21 @@ export default function Espacos() {
                     {e.descricao && <p className="text-xs text-gray-400">{e.descricao}</p>}
                     {!e.ativo && <span className="mt-1 inline-block text-xs text-gray-400">Inativo</span>}
                   </td>
-                  <td className="px-6 py-4 font-medium">{formatMoney(e.valor_venda)}</td>
+                  <td className="px-6 py-4 text-gray-500">{e.itens_count ?? 0} item(ns)</td>
+                  <td className="px-6 py-4 text-gray-500">{e.vendas_count ?? 0} venda(s)</td>
                   <td className="px-6 py-4 text-gray-500">{formatMoney(e.custo)}</td>
                   <td className="px-6 py-4">
                     <span className={`rounded-full px-2.5 py-1 text-xs font-medium ${statusColor[e.status]}`}>
                       {statusLabel[e.status]}
                     </span>
                   </td>
-                  <td className="px-6 py-4 text-gray-500">{e.cliente_nome ?? '—'}</td>
                   <td className="px-6 py-4">
                     <div className="flex gap-2">
+                      {e.ativo === 1 && (
+                        <button type="button" onClick={() => openItens(e)} className="rounded-lg p-1.5 text-gray-400 hover:bg-nacional-50 hover:text-nacional-800" title="Gerenciar itens">
+                          <Package className="h-4 w-4" />
+                        </button>
+                      )}
                       <Link
                         to={`/relatorios/espaco?id=${e.id}`}
                         className="rounded-lg p-1.5 text-gray-400 hover:bg-nacional-50 hover:text-nacional-800"
@@ -175,13 +235,14 @@ export default function Espacos() {
             <textarea className={inputClass} rows={2} value={form.descricao ?? ''} onChange={(ev) => setForm({ ...form, descricao: ev.target.value })} />
           </Field>
           <div className="grid grid-cols-2 gap-4">
-            <Field label="Valor de venda *">
-              <input type="number" step="0.01" min="0" className={inputClass} value={form.valor_venda ?? ''} onChange={(ev) => setForm({ ...form, valor_venda: ev.target.value })} required />
+            <Field label="Valor referência">
+              <input type="number" step="0.01" min="0" className={inputClass} value={form.valor_venda ?? ''} onChange={(ev) => setForm({ ...form, valor_venda: ev.target.value })} />
             </Field>
             <Field label="Custo">
               <input type="number" step="0.01" min="0" className={inputClass} value={form.custo ?? ''} onChange={(ev) => setForm({ ...form, custo: ev.target.value })} />
             </Field>
           </div>
+          <p className="text-xs text-gray-400">Cadastre os itens vendíveis (pulseira, cota etc.) após criar o espaço.</p>
           {editId && (
             <Field label="Status">
               <select className={inputClass} value={form.status} onChange={(ev) => setForm({ ...form, status: ev.target.value as Espaco['status'] })}>
@@ -194,6 +255,53 @@ export default function Espacos() {
             <button type="submit" className={btnPrimary}>Salvar</button>
           </div>
         </form>
+      </Modal>
+
+      <Modal open={!!itensModal} onClose={() => setItensModal(null)} title={`Itens — ${itensModal?.nome ?? ''}`} wide>
+        {itensModal && (
+          <div className="space-y-6">
+            <form onSubmit={saveItem} className="space-y-4 rounded-xl bg-gray-50 p-4">
+              {itemError && <div className="rounded-xl bg-red-50 px-4 py-3 text-sm text-red-700">{itemError}</div>}
+              <p className="text-sm font-medium text-gray-700">{itemEditId ? 'Editar item' : 'Novo item'}</p>
+              <div className="grid grid-cols-1 gap-4 sm:grid-cols-3">
+                <Field label="Nome *">
+                  <input className={inputClass} value={itemForm.nome ?? ''} onChange={(ev) => setItemForm({ ...itemForm, nome: ev.target.value })} required />
+                </Field>
+                <Field label="Valor padrão *">
+                  <input type="number" step="0.01" min="0" className={inputClass} value={itemForm.valor_padrao ?? ''} onChange={(ev) => setItemForm({ ...itemForm, valor_padrao: ev.target.value })} required />
+                </Field>
+                <Field label="Descrição">
+                  <input className={inputClass} value={itemForm.descricao ?? ''} onChange={(ev) => setItemForm({ ...itemForm, descricao: ev.target.value })} />
+                </Field>
+              </div>
+              <div className="flex gap-2">
+                <button type="submit" className={btnPrimary}>{itemEditId ? 'Atualizar' : 'Adicionar'}</button>
+                {itemEditId && (
+                  <button type="button" className={btnSecondary} onClick={() => { setItemForm(emptyItem); setItemEditId(null); }}>Cancelar edição</button>
+                )}
+              </div>
+            </form>
+
+            {itens.length === 0 ? (
+              <p className="text-center text-sm text-gray-400">Nenhum item cadastrado. Ex.: Pulseira, Cota de patrocínio.</p>
+            ) : (
+              <div className="space-y-2">
+                {itens.map((item) => (
+                  <div key={item.id} className="flex items-center justify-between rounded-xl border border-gray-100 px-4 py-3">
+                    <div>
+                      <p className="font-medium">{item.nome}</p>
+                      <p className="text-sm text-gray-500">{formatMoney(item.valor_padrao)} {item.descricao && `· ${item.descricao}`}</p>
+                    </div>
+                    <div className="flex gap-2">
+                      <button type="button" onClick={() => editItem(item)} className="rounded-lg p-1.5 text-gray-400 hover:bg-gray-100"><Pencil className="h-4 w-4" /></button>
+                      <button type="button" onClick={() => removeItem(item.id)} className="rounded-lg p-1.5 text-gray-400 hover:bg-red-50 hover:text-red-500"><Trash2 className="h-4 w-4" /></button>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            )}
+          </div>
+        )}
       </Modal>
 
       <Modal open={!!deleteModal} onClose={() => setDeleteModal(null)} title="Excluir espaço">
@@ -212,7 +320,7 @@ export default function Espacos() {
                 <p className="font-medium text-gray-800">Excluir permanentemente</p>
                 <p className="text-gray-500">
                   {temVendaAtiva
-                    ? 'Indisponível: este espaço possui venda ativa.'
+                    ? 'Indisponível: este espaço possui vendas ativas.'
                     : 'Remove o espaço do banco de dados. Só use se foi cadastrado por engano.'}
                 </p>
               </div>

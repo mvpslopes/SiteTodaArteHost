@@ -80,10 +80,10 @@ if ($_SERVER['REQUEST_METHOD'] === 'DELETE') {
         echo json_encode(['error' => 'ID é obrigatório']);
         exit;
     }
-    $stmt = $pdo->prepare('SELECT parcela_id FROM transacoes WHERE id = ?');
+    $stmt = $pdo->prepare('SELECT parcela_id, parcela_pagar_id FROM transacoes WHERE id = ?');
     $stmt->execute([$id]);
-    $parcelaId = $stmt->fetchColumn();
-    if ($parcelaId) {
+    $row = $stmt->fetch();
+    if ($row && ($row['parcela_id'] || $row['parcela_pagar_id'])) {
         http_response_code(400);
         echo json_encode(['error' => 'Transação vinculada a parcela não pode ser excluída diretamente']);
         exit;

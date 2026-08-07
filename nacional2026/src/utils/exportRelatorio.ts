@@ -203,29 +203,45 @@ export async function exportRelatorioEspacoExcel(data: RelatorioEspacoData) {
   );
 
   const cliente = sheetFromRows(
-    data.venda
+    data.vendas.length > 0
       ? [
-          ['COMPRADOR E VENDA'],
-          ['Cliente', data.venda.cliente_nome ?? ''],
-          ['Email', data.venda.cliente_email ?? ''],
-          ['Telefone', data.venda.cliente_telefone ?? ''],
-          ['Documento', data.venda.cliente_documento ?? ''],
-          ['Valor venda', Number(data.venda.valor_total)],
-          ['Data venda', formatDate(data.venda.data_venda)],
-          ['Status', data.venda.status],
-          ['Parcelado', data.venda.parcelado ? 'Sim' : 'Não'],
-          ['Qtd parcelas', data.venda.qtd_parcelas],
+          ['VENDAS POR CLIENTE/ITEM'],
+          ['Cliente', 'Item', 'Qtd', 'Valor', 'Data', 'Status', 'Parcelado', 'Qtd parcelas'],
+          ...data.vendas.map((v) => [
+            v.cliente_nome ?? '',
+            v.item_nome ?? '',
+            v.quantidade ?? 1,
+            Number(v.valor_total),
+            formatDate(v.data_venda),
+            v.status,
+            v.parcelado ? 'Sim' : 'Não',
+            v.qtd_parcelas,
+          ]),
         ]
-      : [['Sem venda registrada']],
-    'Cliente',
-    [20, 30],
+      : [['Sem vendas registradas']],
+    'Vendas',
+    [22, 18, 8, 14, 12, 12, 10, 12],
+  );
+
+  const itensSheet = sheetFromRows(
+    data.itens.length > 0
+      ? [
+          ['ITENS DO ESPAÇO'],
+          ['Nome', 'Valor padrão', 'Descrição'],
+          ...data.itens.map((i) => [i.nome, Number(i.valor_padrao), i.descricao ?? '']),
+        ]
+      : [['Sem itens cadastrados']],
+    'Itens',
+    [22, 14, 30],
   );
 
   const parcelas = sheetFromRows(
     [
       ['CRONOGRAMA DE PARCELAS'],
-      ['#', 'Vencimento', 'Pagamento', 'Valor', 'Status'],
+      ['Cliente', 'Item', '#', 'Vencimento', 'Pagamento', 'Valor', 'Status'],
       ...data.parcelas.map((p) => [
+        p.cliente_nome ?? '',
+        p.item_nome ?? '',
         p.numero,
         formatDate(p.data_vencimento),
         p.data_pagamento ? formatDate(p.data_pagamento) : '—',
@@ -234,7 +250,7 @@ export async function exportRelatorioEspacoExcel(data: RelatorioEspacoData) {
       ]),
     ],
     'Parcelas',
-    [6, 14, 14, 14, 12],
+    [18, 16, 6, 14, 14, 14, 12],
   );
 
   const transacoes = sheetFromRows(
@@ -254,7 +270,7 @@ export async function exportRelatorioEspacoExcel(data: RelatorioEspacoData) {
   );
 
   writeWorkbook(
-    [resumo, cliente, parcelas, transacoes],
+    [resumo, itensSheet, cliente, parcelas, transacoes],
     `relatorio-espaco-${safeName(nome)}.xlsx`,
   );
 }
@@ -298,30 +314,33 @@ export async function exportRelatorioEspacoPdf(data: RelatorioEspacoData) {
 
   let y = (doc as jsPDF & { lastAutoTable: { finalY: number } }).lastAutoTable.finalY + 18;
 
-  if (data.venda) {
-    doc.setFont('helvetica', 'bold');
-    doc.setFontSize(11);
-    doc.setTextColor(...GREEN);
-    doc.text('Comprador e venda', 36, y);
-    y += 14;
-    doc.setFont('helvetica', 'normal');
-    doc.setFontSize(10);
-    doc.setTextColor(60, 60, 60);
-    const lines = [
-      `Cliente: ${data.venda.cliente_nome}`,
-      data.venda.cliente_email ? `Email: ${data.venda.cliente_email}` : '',
-      data.venda.cliente_telefone ? `Telefone: ${data.venda.cliente_telefone}` : '',
-      `Valor: ${formatMoney(data.venda.valor_total)} · ${formatDate(data.venda.data_venda)} · ${data.venda.status}`,
-    ].filter(Boolean);
-    lines.forEach((line) => { doc.text(line, 36, y); y += 14; });
-    y += 6;
+  if (data.vendas.length > 0) {
+    autoTable(doc, {
+      startY: y,
+      head: [['Cliente', 'Item', 'Qtd', 'Valor', 'Data', 'Status']],
+      body: data.vendas.map((v) => [
+        v.cliente_nome ?? '',
+        v.item_nome ?? '',
+        String(v.quantidade ?? 1),
+        formatMoney(v.valor_total),
+        formatDate(v.data_venda),
+        v.status,
+      ]),
+      theme: 'grid',
+      headStyles: { fillColor: GREEN, textColor: GOLD, fontStyle: 'bold' },
+      styles: { fontSize: 9 },
+      margin: { left: 36, right: 36 },
+    });
+    y = (doc as jsPDF & { lastAutoTable: { finalY: number } }).lastAutoTable.finalY + 18;
   }
 
   if (data.parcelas.length > 0) {
     autoTable(doc, {
       startY: y,
-      head: [['#', 'Vencimento', 'Pagamento', 'Valor', 'Status']],
+      head: [['Cliente', 'Item', '#', 'Vencimento', 'Pagamento', 'Valor', 'Status']],
       body: data.parcelas.map((p) => [
+        p.cliente_nome ?? '',
+        p.item_nome ?? '',
         String(p.numero),
         formatDate(p.data_vencimento),
         p.data_pagamento ? formatDate(p.data_pagamento) : '—',

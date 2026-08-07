@@ -64,6 +64,19 @@ export interface Espaco {
   venda_id?: number | null;
   venda_status?: string | null;
   valor_total?: string | number | null;
+  vendas_count?: number;
+  itens_count?: number;
+  itens?: ItemEspaco[];
+  vendas?: VendaEspaco[];
+}
+
+export interface ItemEspaco {
+  id: number;
+  espaco_id: number;
+  nome: string;
+  descricao: string | null;
+  valor_padrao: string | number;
+  ativo: number;
 }
 
 export interface Parcela {
@@ -77,13 +90,19 @@ export interface Parcela {
   espaco_nome?: string;
   cliente_nome?: string;
   cliente_email?: string;
+  item_nome?: string;
+  item_quantidade?: number;
+  parcelado?: number;
+  qtd_parcelas?: number;
 }
 
 export interface VendaEspaco {
   id: number;
   espaco_id: number;
+  item_espaco_id: number | null;
   cliente_id: number;
   valor_total: string | number;
+  quantidade: number;
   parcelado: number;
   qtd_parcelas: number;
   status: 'aberto' | 'parcial' | 'quitado' | 'cancelado';
@@ -92,6 +111,7 @@ export interface VendaEspaco {
   espaco_nome?: string;
   cliente_nome?: string;
   cliente_email?: string;
+  item_nome?: string;
   parcelas?: Parcela[];
 }
 
@@ -105,8 +125,39 @@ export interface Transacao {
   cliente_id: number | null;
   espaco_id: number | null;
   parcela_id: number | null;
+  parcela_pagar_id?: number | null;
   cliente_nome?: string | null;
   espaco_nome?: string | null;
+}
+
+export interface ContaPagar {
+  id: number;
+  descricao: string;
+  fornecedor: string | null;
+  espaco_id: number | null;
+  valor_total: string | number;
+  parcelado: number;
+  qtd_parcelas: number;
+  status: 'aberto' | 'parcial' | 'quitado' | 'cancelado';
+  data_competencia: string;
+  observacoes: string | null;
+  parcelas?: ParcelaPagar[];
+}
+
+export interface ParcelaPagar {
+  id: number;
+  conta_pagar_id: number;
+  numero: number;
+  valor: string | number;
+  data_vencimento: string;
+  data_pagamento: string | null;
+  status: 'pendente' | 'paga' | 'atrasada' | 'cancelada';
+  descricao?: string;
+  fornecedor?: string | null;
+  espaco_id?: number | null;
+  espaco_nome?: string | null;
+  parcelado?: number;
+  qtd_parcelas?: number;
 }
 
 export interface DashboardData {
@@ -124,7 +175,6 @@ export interface DashboardData {
 }
 
 export interface RelatorioEspacoResumo {
-  valor_venda: number;
   valor_contrato: number;
   custo: number;
   margem_prevista: number;
@@ -138,21 +188,26 @@ export interface RelatorioEspacoResumo {
   percentual_recebido: number;
   parcelas_pagas: number;
   parcelas_pendentes: number;
+  vendas_count: number;
+  itens_count: number;
   proxima_parcela: {
     numero: number;
     valor: number;
     data_vencimento: string;
     atrasada: boolean;
+    cliente_nome?: string | null;
+    item_nome?: string | null;
   } | null;
 }
 
 export interface RelatorioEspacoData {
   espaco: Espaco;
-  venda: (VendaEspaco & {
+  itens: ItemEspaco[];
+  vendas: (VendaEspaco & {
     cliente_telefone?: string | null;
     cliente_documento?: string | null;
-  }) | null;
-  parcelas: Parcela[];
+  })[];
+  parcelas: (Parcela & { cliente_nome?: string; item_nome?: string; quantidade?: number })[];
   transacoes: Transacao[];
   resumo: RelatorioEspacoResumo;
   gerado_em: string;
@@ -210,13 +265,26 @@ export const api = {
         `/api/espacos.php?id=${id}${permanente ? '&permanente=1' : ''}`,
         { method: 'DELETE' },
       ),
+    get: (id: number) => request<Espaco>(`/api/espacos.php?id=${id}`),
+  },
+  itensEspaco: {
+    list: (espacoId: number) =>
+      request<{ itens: ItemEspaco[] }>(`/api/itens-espaco.php?espaco_id=${espacoId}`),
+    create: (data: { espaco_id: number; nome: string; descricao?: string; valor_padrao: number }) =>
+      request<ItemEspaco>('/api/itens-espaco.php', { method: 'POST', body: JSON.stringify(data) }),
+    update: (data: { id: number; nome: string; descricao?: string; valor_padrao: number; ativo?: number }) =>
+      request<ItemEspaco>('/api/itens-espaco.php', { method: 'PUT', body: JSON.stringify(data) }),
+    delete: (id: number) =>
+      request<{ success: boolean }>(`/api/itens-espaco.php?id=${id}`, { method: 'DELETE' }),
   },
   vendas: {
     list: () => request<{ vendas: VendaEspaco[] }>('/api/vendas.php'),
     get: (id: number) => request<VendaEspaco>(`/api/vendas.php?id=${id}`),
     create: (data: {
       espaco_id: number;
+      item_espaco_id: number;
       cliente_id: number;
+      quantidade: number;
       valor_total: number;
       parcelado: boolean;
       data_venda: string;
@@ -237,6 +305,36 @@ export const api = {
       request<Parcela>('/api/parcelas.php', {
         method: 'PUT',
         body: JSON.stringify({ id, acao: 'pagar', data_pagamento, metodo_pagamento }),
+      }),
+    desfazer: (id: number) =>
+      request<Parcela>('/api/parcelas.php', {
+        method: 'PUT',
+        body: JSON.stringify({ id, acao: 'desfazer' }),
+      }),
+  },
+  contasPagar: {
+    list: (status?: string) =>
+      request<{ parcelas: ParcelaPagar[] }>(`/api/contas-pagar.php${status ? `?status=${status}` : ''}`),
+    create: (data: {
+      descricao: string;
+      fornecedor?: string;
+      espaco_id?: number | null;
+      valor_total: number;
+      parcelado: boolean;
+      data_competencia: string;
+      datas_parcelas: string[];
+      valores_parcelas?: number[];
+      observacoes?: string;
+    }) => request<ContaPagar>('/api/contas-pagar.php', { method: 'POST', body: JSON.stringify(data) }),
+    pagar: (id: number, data_pagamento: string, metodo_pagamento: string) =>
+      request<ParcelaPagar>('/api/contas-pagar.php', {
+        method: 'PUT',
+        body: JSON.stringify({ id, acao: 'pagar', data_pagamento, metodo_pagamento }),
+      }),
+    desfazer: (id: number) =>
+      request<ParcelaPagar>('/api/contas-pagar.php', {
+        method: 'PUT',
+        body: JSON.stringify({ id, acao: 'desfazer' }),
       }),
   },
   transacoes: {

@@ -10,14 +10,7 @@ $pdo = getDBConnection();
 if ($_SERVER['REQUEST_METHOD'] === 'GET') {
     $id = isset($_GET['id']) ? (int)$_GET['id'] : null;
     if ($id) {
-        $stmt = $pdo->prepare('
-            SELECT e.*, c.nome AS cliente_nome, v.id AS venda_id, v.status AS venda_status
-            FROM espacos e
-            LEFT JOIN vendas_espaco v ON v.espaco_id = e.id AND v.status != "cancelado"
-            LEFT JOIN clientes c ON c.id = v.cliente_id
-            WHERE e.id = ?
-            ORDER BY v.id DESC LIMIT 1
-        ');
+        $stmt = $pdo->prepare('SELECT * FROM espacos WHERE id = ?');
         $stmt->execute([$id]);
         $row = $stmt->fetch();
         if (!$row) {
@@ -25,6 +18,23 @@ if ($_SERVER['REQUEST_METHOD'] === 'GET') {
             echo json_encode(['error' => 'Espaço não encontrado']);
             exit;
         }
+
+        $stmtItens = $pdo->prepare('SELECT * FROM itens_espaco WHERE espaco_id = ? AND ativo = 1 ORDER BY nome ASC');
+        $stmtItens->execute([$id]);
+        $row['itens'] = $stmtItens->fetchAll();
+
+        $stmtVendas = $pdo->prepare('
+            SELECT v.*, c.nome AS cliente_nome, i.nome AS item_nome
+            FROM vendas_espaco v
+            JOIN clientes c ON c.id = v.cliente_id
+            LEFT JOIN itens_espaco i ON i.id = v.item_espaco_id
+            WHERE v.espaco_id = ? AND v.status != "cancelado"
+            ORDER BY v.data_venda DESC, v.id DESC
+        ');
+        $stmtVendas->execute([$id]);
+        $row['vendas'] = $stmtVendas->fetchAll();
+        $row['vendas_count'] = count($row['vendas']);
+
         echo json_encode($row);
         exit;
     }
@@ -32,10 +42,10 @@ if ($_SERVER['REQUEST_METHOD'] === 'GET') {
     $status = $_GET['status'] ?? null;
     $todos = !empty($_GET['todos']);
     $sql = '
-        SELECT e.*, c.nome AS cliente_nome, v.id AS venda_id, v.status AS venda_status, v.valor_total
+        SELECT e.*,
+            (SELECT COUNT(*) FROM vendas_espaco v WHERE v.espaco_id = e.id AND v.status != "cancelado") AS vendas_count,
+            (SELECT COUNT(*) FROM itens_espaco i WHERE i.espaco_id = e.id AND i.ativo = 1) AS itens_count
         FROM espacos e
-        LEFT JOIN vendas_espaco v ON v.espaco_id = e.id AND v.status != "cancelado"
-        LEFT JOIN clientes c ON c.id = v.cliente_id
         WHERE 1=1
     ';
     $params = [];

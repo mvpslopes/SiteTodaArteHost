@@ -29,23 +29,38 @@ if (!$espaco) {
     exit;
 }
 
-$valorVenda = (float)$espaco['valor_venda'];
 $custo = (float)$espaco['custo'];
 
+$stmtItens = $pdo->prepare('SELECT * FROM itens_espaco WHERE espaco_id = ? AND ativo = 1 ORDER BY nome ASC');
+$stmtItens->execute([$id]);
+$itens = $stmtItens->fetchAll();
+
 $stmtV = $pdo->prepare('
-    SELECT v.*, c.nome AS cliente_nome, c.email AS cliente_email, c.telefone AS cliente_telefone, c.documento AS cliente_documento
+    SELECT v.*, c.nome AS cliente_nome, c.email AS cliente_email, c.telefone AS cliente_telefone,
+           c.documento AS cliente_documento, i.nome AS item_nome
     FROM vendas_espaco v
     JOIN clientes c ON c.id = v.cliente_id
+    LEFT JOIN itens_espaco i ON i.id = v.item_espaco_id
     WHERE v.espaco_id = ? AND v.status != "cancelado"
-    ORDER BY v.id DESC LIMIT 1
+    ORDER BY v.data_venda DESC, v.id DESC
 ');
 $stmtV->execute([$id]);
-$venda = $stmtV->fetch() ?: null;
+$vendas = $stmtV->fetchAll();
 
 $parcelas = [];
-if ($venda) {
-    $stmtP = $pdo->prepare('SELECT * FROM parcelas WHERE venda_espaco_id = ? ORDER BY numero ASC');
-    $stmtP->execute([(int)$venda['id']]);
+$vendaIds = array_map(fn($v) => (int)$v['id'], $vendas);
+if ($vendaIds) {
+    $placeholders = implode(',', array_fill(0, count($vendaIds), '?'));
+    $stmtP = $pdo->prepare("
+        SELECT p.*, v.cliente_id, c.nome AS cliente_nome, i.nome AS item_nome, v.quantidade
+        FROM parcelas p
+        JOIN vendas_espaco v ON v.id = p.venda_espaco_id
+        JOIN clientes c ON c.id = v.cliente_id
+        LEFT JOIN itens_espaco i ON i.id = v.item_espaco_id
+        WHERE p.venda_espaco_id IN ($placeholders)
+        ORDER BY p.data_vencimento ASC, p.numero ASC
+    ");
+    $stmtP->execute($vendaIds);
     $parcelas = $stmtP->fetchAll();
 }
 
@@ -68,7 +83,11 @@ foreach ($transacoes as $t) {
     else $totalSaidas += $v;
 }
 
-$valorContrato = $venda ? (float)$venda['valor_total'] : $valorVenda;
+$valorContrato = 0.0;
+foreach ($vendas as $v) {
+    $valorContrato += (float)$v['valor_total'];
+}
+
 $recebidoParcelas = 0.0;
 $aReceber = 0.0;
 $atrasado = 0.0;
@@ -102,6 +121,8 @@ foreach ($parcelas as $p) {
             'valor' => (float)$p['valor'],
             'data_vencimento' => $p['data_vencimento'],
             'atrasada' => $p['data_vencimento'] < $hoje,
+            'cliente_nome' => $p['cliente_nome'] ?? null,
+            'item_nome' => $p['item_nome'] ?? null,
         ];
         break;
     }
@@ -109,11 +130,11 @@ foreach ($parcelas as $p) {
 
 echo json_encode([
     'espaco' => $espaco,
-    'venda' => $venda,
+    'itens' => $itens,
+    'vendas' => $vendas,
     'parcelas' => $parcelas,
     'transacoes' => $transacoes,
     'resumo' => [
-        'valor_venda' => $valorVenda,
         'valor_contrato' => $valorContrato,
         'custo' => $custo,
         'margem_prevista' => $margemPrevista,
@@ -127,6 +148,8 @@ echo json_encode([
         'percentual_recebido' => $percentualRecebido,
         'parcelas_pagas' => $parcelasPagas,
         'parcelas_pendentes' => $parcelasPendentes,
+        'vendas_count' => count($vendas),
+        'itens_count' => count($itens),
         'proxima_parcela' => $proximaParcela,
     ],
     'gerado_em' => date('c'),

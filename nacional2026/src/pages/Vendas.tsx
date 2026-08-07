@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react';
 import { Plus, Eye, XCircle } from 'lucide-react';
-import { api, formatMoney, formatDate, type VendaEspaco, type Cliente, type Espaco } from '../api';
+import { api, formatMoney, formatDate, type VendaEspaco, type Cliente, type Espaco, type ItemEspaco } from '../api';
 import Modal, { Field, inputClass, btnPrimary, btnSecondary, btnDanger } from '../components/Modal';
 
 const statusColor: Record<string, string> = {
@@ -14,12 +14,15 @@ export default function Vendas() {
   const [vendas, setVendas] = useState<VendaEspaco[]>([]);
   const [clientes, setClientes] = useState<Cliente[]>([]);
   const [espacos, setEspacos] = useState<Espaco[]>([]);
+  const [itens, setItens] = useState<ItemEspaco[]>([]);
   const [loading, setLoading] = useState(true);
   const [modal, setModal] = useState(false);
   const [detail, setDetail] = useState<VendaEspaco | null>(null);
   const [error, setError] = useState('');
 
   const [espacoId, setEspacoId] = useState('');
+  const [itemId, setItemId] = useState('');
+  const [quantidade, setQuantidade] = useState('1');
   const [clienteId, setClienteId] = useState('');
   const [valorTotal, setValorTotal] = useState('');
   const [parcelado, setParcelado] = useState(false);
@@ -30,11 +33,11 @@ export default function Vendas() {
 
   const load = () => {
     setLoading(true);
-    Promise.all([api.vendas.list(), api.clientes.list(), api.espacos.list('disponivel')])
+    Promise.all([api.vendas.list(), api.clientes.list(), api.espacos.list()])
       .then(([v, c, e]) => {
         setVendas(v.vendas);
         setClientes(c.clientes);
-        setEspacos(e.espacos);
+        setEspacos(e.espacos.filter((esp) => esp.ativo === 1));
       })
       .finally(() => setLoading(false));
   };
@@ -42,16 +45,41 @@ export default function Vendas() {
   useEffect(load, []);
 
   const openNew = () => {
-    setEspacoId(''); setClienteId(''); setValorTotal(''); setParcelado(false);
+    setEspacoId(''); setItemId(''); setQuantidade('1'); setClienteId('');
+    setValorTotal(''); setParcelado(false); setItens([]);
     setDataVenda(new Date().toISOString().slice(0, 10));
     setQtdParcelas(2); setDatasParcelas(['', '']); setObservacoes(''); setError('');
     setModal(true);
   };
 
-  const onEspacoChange = (id: string) => {
+  const onEspacoChange = async (id: string) => {
     setEspacoId(id);
-    const esp = espacos.find((e) => e.id === Number(id));
-    if (esp) setValorTotal(String(esp.valor_venda));
+    setItemId('');
+    setValorTotal('');
+    if (!id) {
+      setItens([]);
+      return;
+    }
+    const data = await api.itensEspaco.list(Number(id));
+    setItens(data.itens);
+  };
+
+  const onItemChange = (id: string) => {
+    setItemId(id);
+    const item = itens.find((i) => i.id === Number(id));
+    if (item) {
+      const qtd = Math.max(1, Number(quantidade) || 1);
+      setValorTotal(String(Number(item.valor_padrao) * qtd));
+    }
+  };
+
+  const onQuantidadeChange = (qtd: string) => {
+    setQuantidade(qtd);
+    const item = itens.find((i) => i.id === Number(itemId));
+    if (item) {
+      const n = Math.max(1, Number(qtd) || 1);
+      setValorTotal(String(Number(item.valor_padrao) * n));
+    }
   };
 
   const onQtdChange = (n: number) => {
@@ -65,7 +93,9 @@ export default function Vendas() {
     try {
       await api.vendas.create({
         espaco_id: Number(espacoId),
+        item_espaco_id: Number(itemId),
         cliente_id: Number(clienteId),
+        quantidade: Math.max(1, Number(quantidade) || 1),
         valor_total: Number(valorTotal),
         parcelado,
         data_venda: dataVenda,
@@ -104,7 +134,9 @@ export default function Vendas() {
             <thead>
               <tr className="border-b border-gray-50 text-left text-xs uppercase tracking-wide text-gray-400">
                 <th className="px-6 py-3 font-medium">Espaço</th>
+                <th className="px-6 py-3 font-medium">Item</th>
                 <th className="px-6 py-3 font-medium">Cliente</th>
+                <th className="px-6 py-3 font-medium">Qtd</th>
                 <th className="px-6 py-3 font-medium">Valor</th>
                 <th className="px-6 py-3 font-medium">Pagamento</th>
                 <th className="px-6 py-3 font-medium">Data</th>
@@ -114,13 +146,15 @@ export default function Vendas() {
             </thead>
             <tbody>
               {loading ? (
-                <tr><td colSpan={7} className="px-6 py-10 text-center text-gray-400">Carregando...</td></tr>
+                <tr><td colSpan={9} className="px-6 py-10 text-center text-gray-400">Carregando...</td></tr>
               ) : vendas.length === 0 ? (
-                <tr><td colSpan={7} className="px-6 py-10 text-center text-gray-400">Nenhuma venda</td></tr>
+                <tr><td colSpan={9} className="px-6 py-10 text-center text-gray-400">Nenhuma venda</td></tr>
               ) : vendas.map((v) => (
                 <tr key={v.id} className="border-b border-gray-50 hover:bg-gray-50/50">
                   <td className="px-6 py-4 font-medium">{v.espaco_nome}</td>
+                  <td className="px-6 py-4">{v.item_nome ?? '—'}</td>
                   <td className="px-6 py-4">{v.cliente_nome}</td>
+                  <td className="px-6 py-4 text-gray-500">{v.quantidade ?? 1}</td>
                   <td className="px-6 py-4 font-medium">{formatMoney(v.valor_total)}</td>
                   <td className="px-6 py-4 text-gray-500">{v.parcelado ? `${v.qtd_parcelas}x parcelado` : 'À vista'}</td>
                   <td className="px-6 py-4 text-gray-500">{formatDate(v.data_venda)}</td>
@@ -141,11 +175,26 @@ export default function Vendas() {
         <form onSubmit={save} className="space-y-4">
           {error && <div className="rounded-xl bg-red-50 px-4 py-3 text-sm text-red-700">{error}</div>}
           <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
-            <Field label="Espaço *">
+            <Field label="Camarote / Espaço *">
               <select className={inputClass} value={espacoId} onChange={(e) => onEspacoChange(e.target.value)} required>
                 <option value="">Selecione...</option>
-                {espacos.map((e) => <option key={e.id} value={e.id}>{e.nome} — {formatMoney(e.valor_venda)}</option>)}
+                {espacos.map((e) => <option key={e.id} value={e.id}>{e.nome}</option>)}
               </select>
+            </Field>
+            <Field label="Item *">
+              <select className={inputClass} value={itemId} onChange={(e) => onItemChange(e.target.value)} required disabled={!espacoId}>
+                <option value="">{itens.length ? 'Selecione...' : 'Cadastre itens no espaço'}</option>
+                {itens.map((i) => <option key={i.id} value={i.id}>{i.nome} — ref. {formatMoney(i.valor_padrao)}</option>)}
+              </select>
+            </Field>
+          </div>
+          <div className="grid grid-cols-1 gap-4 sm:grid-cols-3">
+            <Field label="Quantidade *">
+              <input type="number" min={1} className={inputClass} value={quantidade} onChange={(e) => onQuantidadeChange(e.target.value)} required />
+            </Field>
+            <Field label="Valor total (negociado) *">
+              <input type="number" step="0.01" className={inputClass} value={valorTotal} onChange={(e) => setValorTotal(e.target.value)} required />
+              <p className="mt-1 text-xs text-gray-400">Valor de referência; pode ser alterado por cliente</p>
             </Field>
             <Field label="Cliente *">
               <select className={inputClass} value={clienteId} onChange={(e) => setClienteId(e.target.value)} required>
@@ -154,14 +203,9 @@ export default function Vendas() {
               </select>
             </Field>
           </div>
-          <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
-            <Field label="Valor total *">
-              <input type="number" step="0.01" className={inputClass} value={valorTotal} onChange={(e) => setValorTotal(e.target.value)} required />
-            </Field>
-            <Field label="Data da venda">
-              <input type="date" className={inputClass} value={dataVenda} onChange={(e) => setDataVenda(e.target.value)} />
-            </Field>
-          </div>
+          <Field label="Data da venda">
+            <input type="date" className={inputClass} value={dataVenda} onChange={(e) => setDataVenda(e.target.value)} />
+          </Field>
           <label className="flex items-center gap-2 text-sm text-gray-700">
             <input type="checkbox" checked={parcelado} onChange={(e) => setParcelado(e.target.checked)} className="rounded" />
             Pagamento parcelado
@@ -186,7 +230,7 @@ export default function Vendas() {
           </Field>
           <div className="flex justify-end gap-2 pt-2">
             <button type="button" onClick={() => setModal(false)} className={btnSecondary}>Cancelar</button>
-            <button type="submit" className={btnPrimary}>Registrar venda</button>
+            <button type="submit" className={btnPrimary} disabled={!itemId}>Registrar venda</button>
           </div>
         </form>
       </Modal>
@@ -196,7 +240,9 @@ export default function Vendas() {
           <div className="space-y-4">
             <div className="grid grid-cols-2 gap-4 text-sm">
               <div><p className="text-gray-400">Espaço</p><p className="font-medium">{detail.espaco_nome}</p></div>
+              <div><p className="text-gray-400">Item</p><p className="font-medium">{detail.item_nome ?? '—'}</p></div>
               <div><p className="text-gray-400">Cliente</p><p className="font-medium">{detail.cliente_nome}</p></div>
+              <div><p className="text-gray-400">Quantidade</p><p className="font-medium">{detail.quantidade ?? 1}</p></div>
               <div><p className="text-gray-400">Valor total</p><p className="font-medium">{formatMoney(detail.valor_total)}</p></div>
               <div><p className="text-gray-400">Status</p><p className="font-medium capitalize">{detail.status}</p></div>
             </div>

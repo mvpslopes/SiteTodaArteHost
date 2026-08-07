@@ -1,14 +1,20 @@
 import { useEffect, useState } from 'react';
 import { Plus, Trash2 } from 'lucide-react';
-import { api, formatMoney, formatDate, METODOS, type Transacao } from '../api';
+import { api, formatMoney, formatDate, METODOS, type Transacao, type Espaco } from '../api';
 import Modal, { Field, inputClass, btnPrimary, btnSecondary } from '../components/Modal';
 
-const empty: { tipo: 'entrada' | 'saida'; data_transacao: string; valor: string; descricao: string; metodo_pagamento: string } = {
-  tipo: 'saida', data_transacao: new Date().toISOString().slice(0, 10), valor: '', descricao: '', metodo_pagamento: 'pix',
+const empty = {
+  tipo: 'saida' as 'entrada' | 'saida',
+  data_transacao: new Date().toISOString().slice(0, 10),
+  valor: '',
+  descricao: '',
+  metodo_pagamento: 'pix',
+  espaco_id: '',
 };
 
 export default function Transacoes() {
   const [transacoes, setTransacoes] = useState<Transacao[]>([]);
+  const [espacos, setEspacos] = useState<Espaco[]>([]);
   const [loading, setLoading] = useState(true);
   const [filtroTipo, setFiltroTipo] = useState('');
   const [modal, setModal] = useState(false);
@@ -17,7 +23,15 @@ export default function Transacoes() {
 
   const load = () => {
     setLoading(true);
-    api.transacoes.list({ tipo: filtroTipo || undefined }).then((d) => setTransacoes(d.transacoes)).finally(() => setLoading(false));
+    Promise.all([
+      api.transacoes.list({ tipo: filtroTipo || undefined }),
+      api.espacos.list(),
+    ])
+      .then(([t, e]) => {
+        setTransacoes(t.transacoes);
+        setEspacos(e.espacos.filter((esp) => esp.ativo === 1));
+      })
+      .finally(() => setLoading(false));
   };
 
   useEffect(load, [filtroTipo]);
@@ -26,7 +40,14 @@ export default function Transacoes() {
     e.preventDefault();
     setError('');
     try {
-      await api.transacoes.create({ ...form, valor: Number(form.valor) });
+      await api.transacoes.create({
+        tipo: form.tipo,
+        data_transacao: form.data_transacao,
+        valor: Number(form.valor),
+        descricao: form.descricao || null,
+        metodo_pagamento: form.metodo_pagamento,
+        espaco_id: form.espaco_id ? Number(form.espaco_id) : null,
+      });
       setModal(false);
       setForm(empty);
       load();
@@ -67,7 +88,9 @@ export default function Transacoes() {
           <option value="entrada">Entradas</option>
           <option value="saida">Saídas</option>
         </select>
-        <button type="button" onClick={() => { setForm(empty); setError(''); setModal(true); }} className={btnPrimary}><Plus className="h-4 w-4" /> Nova transação</button>
+        <button type="button" onClick={() => { setForm({ ...empty, data_transacao: new Date().toISOString().slice(0, 10) }); setError(''); setModal(true); }} className={btnPrimary}>
+          <Plus className="h-4 w-4" /> Nova transação
+        </button>
       </div>
 
       <div className="overflow-hidden rounded-2xl border border-gray-100 bg-white shadow-card">
@@ -77,6 +100,7 @@ export default function Transacoes() {
               <tr className="border-b border-gray-50 text-left text-xs uppercase tracking-wide text-gray-400">
                 <th className="px-6 py-3 font-medium">Data</th>
                 <th className="px-6 py-3 font-medium">Tipo</th>
+                <th className="px-6 py-3 font-medium">Espaço</th>
                 <th className="px-6 py-3 font-medium">Descrição</th>
                 <th className="px-6 py-3 font-medium">Valor</th>
                 <th className="px-6 py-3 font-medium">Método</th>
@@ -85,23 +109,22 @@ export default function Transacoes() {
             </thead>
             <tbody>
               {loading ? (
-                <tr><td colSpan={6} className="px-6 py-10 text-center text-gray-400">Carregando...</td></tr>
+                <tr><td colSpan={7} className="px-6 py-10 text-center text-gray-400">Carregando...</td></tr>
               ) : transacoes.length === 0 ? (
-                <tr><td colSpan={6} className="px-6 py-10 text-center text-gray-400">Nenhuma transação</td></tr>
+                <tr><td colSpan={7} className="px-6 py-10 text-center text-gray-400">Nenhuma transação</td></tr>
               ) : transacoes.map((t) => (
                 <tr key={t.id} className="border-b border-gray-50 hover:bg-gray-50/50">
                   <td className="px-6 py-4 text-gray-500">{formatDate(t.data_transacao)}</td>
                   <td className="px-6 py-4">
                     <span className={`rounded-full px-2.5 py-1 text-xs font-medium capitalize ${t.tipo === 'entrada' ? 'bg-nacional-gold/30 text-nacional-800' : 'bg-nacional-100 text-nacional-700'}`}>{t.tipo}</span>
+                    {t.parcela_id ? <span className="ml-1 text-xs text-gray-400">(parcela)</span> : null}
                   </td>
-                  <td className="px-6 py-4">
-                    <p>{t.descricao ?? '—'}</p>
-                    {t.espaco_nome && <p className="text-xs text-gray-400">{t.espaco_nome}</p>}
-                  </td>
+                  <td className="px-6 py-4 text-gray-500">{t.espaco_nome ?? '—'}</td>
+                  <td className="px-6 py-4">{t.descricao ?? '—'}</td>
                   <td className={`px-6 py-4 font-medium ${t.tipo === 'entrada' ? 'text-nacional-800' : 'text-nacional-700'}`}>{formatMoney(t.valor)}</td>
                   <td className="px-6 py-4 text-gray-500 capitalize">{t.metodo_pagamento ?? '—'}</td>
                   <td className="px-6 py-4">
-                    {!t.parcela_id && (
+                    {!t.parcela_id && !t.parcela_pagar_id && (
                       <button type="button" onClick={() => remove(t.id)} className="rounded-lg p-1.5 text-gray-400 hover:bg-red-50 hover:text-red-500"><Trash2 className="h-4 w-4" /></button>
                     )}
                   </td>
@@ -119,6 +142,14 @@ export default function Transacoes() {
             <select className={inputClass} value={form.tipo} onChange={(e) => setForm({ ...form, tipo: e.target.value as 'entrada' | 'saida' })}>
               <option value="entrada">Entrada</option>
               <option value="saida">Saída</option>
+            </select>
+          </Field>
+          <Field label="Espaço">
+            <select className={inputClass} value={form.espaco_id} onChange={(e) => setForm({ ...form, espaco_id: e.target.value })}>
+              <option value="">Sem espaço (geral)</option>
+              {espacos.map((esp) => (
+                <option key={esp.id} value={esp.id}>{esp.nome}</option>
+              ))}
             </select>
           </Field>
           <Field label="Data">

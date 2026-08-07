@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react';
 import { useSearchParams, Link } from 'react-router-dom';
-import { Printer, ChevronLeft, TrendingUp, AlertCircle, CheckCircle2 } from 'lucide-react';
+import { Printer, ChevronLeft, TrendingUp, AlertCircle } from 'lucide-react';
 import { api, formatMoney, formatDate, type RelatorioEspacoData } from '../api';
 import StatCard from '../components/StatCard';
 import ExportMenu from '../components/ExportMenu';
@@ -97,7 +97,7 @@ export default function RelatorioEspaco() {
         <div className="rounded-2xl border border-nacional-100 bg-white p-12 text-center shadow-card">
           <TrendingUp className="mx-auto h-12 w-12 text-nacional-300" />
           <p className="mt-4 text-lg font-medium text-nacional-800">Relatório por Espaço</p>
-          <p className="mt-2 text-sm text-gray-500">Selecione um espaço para ver o fluxo financeiro, parcelas, cliente e lucratividade.</p>
+          <p className="mt-2 text-sm text-gray-500">Selecione um espaço para ver vendas por item/cliente, parcelas e lucratividade.</p>
         </div>
       )}
 
@@ -177,48 +177,78 @@ export default function RelatorioEspaco() {
             </div>
           </div>
 
-          {/* Cliente e venda */}
-          {relatorio.venda ? (
+          {/* Itens e vendas */}
+          {relatorio.itens.length > 0 && (
             <div className="rounded-2xl border border-gray-100 bg-white p-6 shadow-card">
-              <h3 className="font-semibold text-gray-900">Comprador e venda</h3>
-              <div className="mt-4 grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
-                <div>
-                  <p className="text-xs uppercase tracking-wide text-gray-400">Cliente</p>
-                  <p className="font-medium">{relatorio.venda.cliente_nome}</p>
-                  {relatorio.venda.cliente_email && <p className="text-sm text-gray-500">{relatorio.venda.cliente_email}</p>}
-                  {relatorio.venda.cliente_telefone && <p className="text-sm text-gray-500">{relatorio.venda.cliente_telefone}</p>}
-                </div>
-                <div>
-                  <p className="text-xs uppercase tracking-wide text-gray-400">Venda</p>
-                  <p className="font-medium">{formatMoney(relatorio.venda.valor_total)}</p>
-                  <p className="text-sm text-gray-500">
-                    {relatorio.venda.parcelado ? `${relatorio.venda.qtd_parcelas}x parcelado` : 'À vista'} · {formatDate(relatorio.venda.data_venda)}
-                  </p>
-                  <span className={`mt-1 inline-block rounded-full px-2.5 py-0.5 text-xs font-medium capitalize ${statusColor[relatorio.venda.status]}`}>
-                    {relatorio.venda.status}
+              <h3 className="font-semibold text-gray-900">Itens do camarote</h3>
+              <div className="mt-4 flex flex-wrap gap-2">
+                {relatorio.itens.map((item) => (
+                  <span key={item.id} className="rounded-full bg-nacional-50 px-3 py-1 text-sm text-nacional-800">
+                    {item.nome} — ref. {formatMoney(item.valor_padrao)}
                   </span>
-                </div>
-                <div>
-                  <p className="text-xs uppercase tracking-wide text-gray-400">Próxima parcela</p>
-                  {relatorio.resumo.proxima_parcela ? (
-                    <>
-                      <p className="font-medium">
-                        #{relatorio.resumo.proxima_parcela.numero} — {formatMoney(relatorio.resumo.proxima_parcela.valor)}
-                      </p>
-                      <p className={`text-sm ${relatorio.resumo.proxima_parcela.atrasada ? 'text-red-600 font-medium' : 'text-gray-500'}`}>
-                        Vencimento: {formatDate(relatorio.resumo.proxima_parcela.data_vencimento)}
-                        {relatorio.resumo.proxima_parcela.atrasada && ' (atrasada)'}
-                      </p>
-                    </>
-                  ) : (
-                    <p className="flex items-center gap-1 text-sm text-emerald-600"><CheckCircle2 className="h-4 w-4" /> Sem parcelas pendentes</p>
-                  )}
-                </div>
+                ))}
+              </div>
+            </div>
+          )}
+
+          {relatorio.vendas.length > 0 ? (
+            <div className="overflow-hidden rounded-2xl border border-gray-100 bg-white shadow-card">
+              <div className="border-b border-gray-50 px-6 py-4">
+                <h3 className="font-semibold text-gray-900">Vendas ({relatorio.resumo.vendas_count})</h3>
+              </div>
+              <div className="overflow-x-auto">
+                <table className="w-full text-sm">
+                  <thead>
+                    <tr className="border-b border-gray-50 text-left text-xs uppercase tracking-wide text-gray-400">
+                      <th className="px-6 py-3">Cliente</th>
+                      <th className="px-6 py-3">Item</th>
+                      <th className="px-6 py-3">Qtd</th>
+                      <th className="px-6 py-3">Valor</th>
+                      <th className="px-6 py-3">Pagamento</th>
+                      <th className="px-6 py-3">Data</th>
+                      <th className="px-6 py-3">Status</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {relatorio.vendas.map((v) => (
+                      <tr key={v.id} className="border-b border-gray-50">
+                        <td className="px-6 py-3">
+                          <p className="font-medium">{v.cliente_nome}</p>
+                          {v.cliente_email && <p className="text-xs text-gray-400">{v.cliente_email}</p>}
+                        </td>
+                        <td className="px-6 py-3">{v.item_nome ?? '—'}</td>
+                        <td className="px-6 py-3">{v.quantidade ?? 1}</td>
+                        <td className="px-6 py-3 font-medium">{formatMoney(v.valor_total)}</td>
+                        <td className="px-6 py-3 text-gray-500">{v.parcelado ? `${v.qtd_parcelas}x` : 'À vista'}</td>
+                        <td className="px-6 py-3 text-gray-500">{formatDate(v.data_venda)}</td>
+                        <td className="px-6 py-3">
+                          <span className={`rounded-full px-2.5 py-0.5 text-xs font-medium capitalize ${statusColor[v.status]}`}>{v.status}</span>
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
               </div>
             </div>
           ) : (
             <div className="rounded-2xl border border-dashed border-nacional-200 bg-nacional-50/50 p-6 text-center text-sm text-gray-500">
-              Espaço ainda sem venda registrada. Margem prevista com base no valor de venda cadastrado.
+              Espaço ainda sem vendas. Cadastre itens e registre vendas por cliente.
+            </div>
+          )}
+
+          {/* Próxima parcela */}
+          {relatorio.resumo.proxima_parcela && (
+            <div className="rounded-2xl border border-amber-100 bg-amber-50/50 p-5 shadow-card">
+              <p className="text-xs uppercase tracking-wide text-gray-400">Próxima parcela</p>
+              <p className="mt-1 font-medium">
+                #{relatorio.resumo.proxima_parcela.numero} — {formatMoney(relatorio.resumo.proxima_parcela.valor)}
+                {relatorio.resumo.proxima_parcela.cliente_nome && ` · ${relatorio.resumo.proxima_parcela.cliente_nome}`}
+                {relatorio.resumo.proxima_parcela.item_nome && ` · ${relatorio.resumo.proxima_parcela.item_nome}`}
+              </p>
+              <p className={`text-sm ${relatorio.resumo.proxima_parcela.atrasada ? 'text-red-600 font-medium' : 'text-gray-500'}`}>
+                Vencimento: {formatDate(relatorio.resumo.proxima_parcela.data_vencimento)}
+                {relatorio.resumo.proxima_parcela.atrasada && ' (atrasada)'}
+              </p>
             </div>
           )}
 
@@ -232,6 +262,8 @@ export default function RelatorioEspaco() {
                 <table className="w-full text-sm">
                   <thead>
                     <tr className="border-b border-gray-50 text-left text-xs uppercase tracking-wide text-gray-400">
+                      <th className="px-6 py-3">Cliente</th>
+                      <th className="px-6 py-3">Item</th>
                       <th className="px-6 py-3">#</th>
                       <th className="px-6 py-3">Vencimento</th>
                       <th className="px-6 py-3">Pagamento</th>
@@ -244,6 +276,8 @@ export default function RelatorioEspaco() {
                       const atrasada = p.status === 'pendente' && p.data_vencimento < new Date().toISOString().slice(0, 10);
                       return (
                         <tr key={p.id} className="border-b border-gray-50">
+                          <td className="px-6 py-3">{p.cliente_nome ?? '—'}</td>
+                          <td className="px-6 py-3">{p.item_nome ?? '—'}</td>
                           <td className="px-6 py-3 font-medium">{p.numero}</td>
                           <td className="px-6 py-3">{formatDate(p.data_vencimento)}</td>
                           <td className="px-6 py-3">{p.data_pagamento ? formatDate(p.data_pagamento) : '—'}</td>

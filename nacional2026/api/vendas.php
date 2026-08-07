@@ -17,13 +17,11 @@ function atualizarStatusVenda(PDO $pdo, int $vendaId): void {
     if ($pagas > 0 && $pagas < $total) $status = 'parcial';
     if ($total > 0 && $pagas >= $total) $status = 'quitado';
     $pdo->prepare('UPDATE vendas_espaco SET status = ? WHERE id = ?')->execute([$status, $vendaId]);
-    if ($status === 'quitado') {
-        $stmt = $pdo->prepare('SELECT espaco_id FROM vendas_espaco WHERE id = ?');
-        $stmt->execute([$vendaId]);
-        $espacoId = (int)$stmt->fetchColumn();
-        if ($espacoId) {
-            $pdo->prepare('UPDATE espacos SET status = "vendido" WHERE id = ?')->execute([$espacoId]);
-        }
+    $stmt = $pdo->prepare('SELECT espaco_id FROM vendas_espaco WHERE id = ?');
+    $stmt->execute([$vendaId]);
+    $espacoId = (int)$stmt->fetchColumn();
+    if ($espacoId) {
+        atualizarStatusEspaco($pdo, $espacoId);
     }
 }
 
@@ -31,10 +29,11 @@ if ($_SERVER['REQUEST_METHOD'] === 'GET') {
     $id = isset($_GET['id']) ? (int)$_GET['id'] : null;
     if ($id) {
         $stmt = $pdo->prepare('
-            SELECT v.*, e.nome AS espaco_nome, c.nome AS cliente_nome
+            SELECT v.*, e.nome AS espaco_nome, c.nome AS cliente_nome, i.nome AS item_nome
             FROM vendas_espaco v
             JOIN espacos e ON e.id = v.espaco_id
             JOIN clientes c ON c.id = v.cliente_id
+            LEFT JOIN itens_espaco i ON i.id = v.item_espaco_id
             WHERE v.id = ?
         ');
         $stmt->execute([$id]);
@@ -52,10 +51,12 @@ if ($_SERVER['REQUEST_METHOD'] === 'GET') {
     }
 
     $stmt = $pdo->query('
-        SELECT v.*, e.nome AS espaco_nome, c.nome AS cliente_nome, c.email AS cliente_email
+        SELECT v.*, e.nome AS espaco_nome, c.nome AS cliente_nome, c.email AS cliente_email,
+               i.nome AS item_nome
         FROM vendas_espaco v
         JOIN espacos e ON e.id = v.espaco_id
         JOIN clientes c ON c.id = v.cliente_id
+        LEFT JOIN itens_espaco i ON i.id = v.item_espaco_id
         WHERE v.status != "cancelado"
         ORDER BY v.data_venda DESC, v.id DESC
     ');
@@ -67,25 +68,34 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     requireAdminOrRoot();
     $input = json_decode(file_get_contents('php://input'), true) ?: [];
     $espacoId = (int)($input['espaco_id'] ?? 0);
+    $itemEspacoId = (int)($input['item_espaco_id'] ?? 0);
     $clienteId = (int)($input['cliente_id'] ?? 0);
+    $quantidade = max(1, (int)($input['quantidade'] ?? 1));
     $valorTotal = (float)str_replace(',', '.', (string)($input['valor_total'] ?? 0));
     $parcelado = !empty($input['parcelado']);
     $datasParcelas = $input['datas_parcelas'] ?? [];
     $valoresParcelas = $input['valores_parcelas'] ?? [];
     $dataVenda = normalizarData($input['data_venda'] ?? '') ?: date('Y-m-d');
 
-    if ($espacoId < 1 || $clienteId < 1 || $valorTotal <= 0) {
+    if ($espacoId < 1 || $itemEspacoId < 1 || $clienteId < 1 || $valorTotal <= 0) {
         http_response_code(400);
-        echo json_encode(['error' => 'Espaço, cliente e valor total são obrigatórios']);
+        echo json_encode(['error' => 'Espaço, item, cliente e valor total são obrigatórios']);
         exit;
     }
 
-    $stmt = $pdo->prepare('SELECT id, status FROM espacos WHERE id = ? AND ativo = 1');
+    $stmt = $pdo->prepare('SELECT id FROM espacos WHERE id = ? AND ativo = 1');
     $stmt->execute([$espacoId]);
-    $espaco = $stmt->fetch();
-    if (!$espaco || $espaco['status'] === 'vendido') {
+    if (!$stmt->fetch()) {
         http_response_code(400);
-        echo json_encode(['error' => 'Espaço indisponível para venda']);
+        echo json_encode(['error' => 'Espaço não encontrado ou inativo']);
+        exit;
+    }
+
+    $stmt = $pdo->prepare('SELECT id FROM itens_espaco WHERE id = ? AND espaco_id = ? AND ativo = 1');
+    $stmt->execute([$itemEspacoId, $espacoId]);
+    if (!$stmt->fetch()) {
+        http_response_code(400);
+        echo json_encode(['error' => 'Item inválido para este espaço']);
         exit;
     }
 
@@ -99,11 +109,13 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     try {
         $pdo->beginTransaction();
 
-        $stmt = $pdo->prepare('INSERT INTO vendas_espaco (espaco_id, cliente_id, valor_total, parcelado, qtd_parcelas, status, data_venda, observacoes) VALUES (?, ?, ?, ?, ?, "aberto", ?, ?)');
+        $stmt = $pdo->prepare('INSERT INTO vendas_espaco (espaco_id, item_espaco_id, cliente_id, valor_total, quantidade, parcelado, qtd_parcelas, status, data_venda, observacoes) VALUES (?, ?, ?, ?, ?, ?, ?, "aberto", ?, ?)');
         $stmt->execute([
             $espacoId,
+            $itemEspacoId,
             $clienteId,
             $valorTotal,
+            $quantidade,
             $parcelado ? 1 : 0,
             $qtdParcelas,
             $dataVenda,
@@ -126,12 +138,13 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 ->execute([$vendaId, $valorTotal, $dataVenda]);
         }
 
-        $pdo->prepare('UPDATE espacos SET status = "reservado" WHERE id = ?')->execute([$espacoId]);
+        atualizarStatusEspaco($pdo, $espacoId);
         $pdo->commit();
 
         $stmt = $pdo->prepare('
-            SELECT v.*, e.nome AS espaco_nome, c.nome AS cliente_nome
+            SELECT v.*, e.nome AS espaco_nome, c.nome AS cliente_nome, i.nome AS item_nome
             FROM vendas_espaco v JOIN espacos e ON e.id = v.espaco_id JOIN clientes c ON c.id = v.cliente_id
+            LEFT JOIN itens_espaco i ON i.id = v.item_espaco_id
             WHERE v.id = ?
         ');
         $stmt->execute([$vendaId]);
@@ -163,7 +176,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'PUT') {
         $stmt->execute([$id]);
         $espacoId = (int)$stmt->fetchColumn();
         if ($espacoId) {
-            $pdo->prepare('UPDATE espacos SET status = "disponivel" WHERE id = ?')->execute([$espacoId]);
+            atualizarStatusEspaco($pdo, $espacoId);
         }
         $pdo->prepare('UPDATE parcelas SET status = "cancelada" WHERE venda_espaco_id = ?')->execute([$id]);
         echo json_encode(['success' => true]);

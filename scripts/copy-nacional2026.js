@@ -63,11 +63,25 @@ mkdirSync(distNacionalDir, { recursive: true });
 copyRecursive(nacionalBuildDir, distNacionalDir);
 console.log('   ✅ Frontend do nacional2026 copiado');
 
-if (existsSync(nacionalApiDir)) {
-  copyRecursive(nacionalApiDir, join(distNacionalDir, 'api'));
-  console.log('   ✅ API PHP do nacional2026 copiada');
-} else {
-  console.warn('   ⚠️  Pasta nacional2026/api não encontrada');
+if (!existsSync(nacionalApiDir)) {
+  console.error('❌ Pasta nacional2026/api não encontrada.');
+  process.exit(1);
 }
+
+const apiDest = join(distNacionalDir, 'api');
+if (existsSync(apiDest)) {
+  rmSync(apiDest, { recursive: true, force: true });
+}
+copyRecursive(nacionalApiDir, apiDest);
+
+const required = ['auth.php', 'db_config.php', 'vendas.php', 'parcelas.php'];
+const missing = required.filter((f) => !existsSync(join(apiDest, f)));
+if (missing.length) {
+  console.error(`❌ API incompleta em dist/nacional2026/api/. Faltam: ${missing.join(', ')}`);
+  process.exit(1);
+}
+
+const phpCount = readdirSync(apiDest).filter((f) => f.endsWith('.php')).length;
+console.log(`   ✅ API PHP do nacional2026 copiada (${phpCount} arquivos .php)`);
 
 console.log('✅ Nacional 2026 disponível em dist/nacional2026\n');

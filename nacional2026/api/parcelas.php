@@ -17,30 +17,42 @@ function atualizarStatusVenda(PDO $pdo, int $vendaId): void {
     if ($pagas > 0 && $pagas < $total) $status = 'parcial';
     if ($total > 0 && $pagas >= $total) $status = 'quitado';
     $pdo->prepare('UPDATE vendas_espaco SET status = ? WHERE id = ?')->execute([$status, $vendaId]);
-    if ($status === 'quitado') {
-        $stmt = $pdo->prepare('SELECT espaco_id FROM vendas_espaco WHERE id = ?');
-        $stmt->execute([$vendaId]);
-        $espacoId = (int)$stmt->fetchColumn();
-        if ($espacoId) {
-            $pdo->prepare('UPDATE espacos SET status = "vendido" WHERE id = ?')->execute([$espacoId]);
-        }
+    $stmt = $pdo->prepare('SELECT espaco_id FROM vendas_espaco WHERE id = ?');
+    $stmt->execute([$vendaId]);
+    $espacoId = (int)$stmt->fetchColumn();
+    if ($espacoId) {
+        atualizarStatusEspaco($pdo, $espacoId);
     }
 }
 
 if ($_SERVER['REQUEST_METHOD'] === 'GET') {
     $status = $_GET['status'] ?? null;
     $sql = '
-        SELECT p.*, v.espaco_id, v.cliente_id, e.nome AS espaco_nome, c.nome AS cliente_nome, c.email AS cliente_email
+        SELECT p.*, v.espaco_id, v.cliente_id, e.nome AS espaco_nome, c.nome AS cliente_nome, c.email AS cliente_email,
+               i.nome AS item_nome, v.quantidade AS item_quantidade,
+               v.parcelado, v.qtd_parcelas
         FROM parcelas p
         JOIN vendas_espaco v ON v.id = p.venda_espaco_id
         JOIN espacos e ON e.id = v.espaco_id
         JOIN clientes c ON c.id = v.cliente_id
+        LEFT JOIN itens_espaco i ON i.id = v.item_espaco_id
         WHERE v.status != "cancelado"
     ';
     $params = [];
-    if ($status && in_array($status, ['pendente','paga','atrasada','cancelada'], true)) {
+    $hoje = date('Y-m-d');
+    if ($status === 'atrasada') {
+        $sql .= ' AND p.status = "pendente" AND p.data_vencimento < ?';
+        $params[] = $hoje;
+    } elseif ($status === 'pendente') {
+        $sql .= ' AND p.status = "pendente" AND p.data_vencimento >= ?';
+        $params[] = $hoje;
+    } elseif ($status && in_array($status, ['paga', 'cancelada'], true)) {
         $sql .= ' AND p.status = ?';
         $params[] = $status;
+    } elseif ($status === 'todas') {
+        $sql .= ' AND p.status != "cancelada"';
+    } else {
+        $sql .= ' AND p.status = "pendente"';
     }
     $sql .= ' ORDER BY p.data_vencimento ASC, p.numero ASC';
     $stmt = $pdo->prepare($sql);
@@ -68,10 +80,11 @@ if ($_SERVER['REQUEST_METHOD'] === 'PUT') {
     }
 
     $stmt = $pdo->prepare('
-        SELECT p.*, v.espaco_id, v.cliente_id, e.nome AS espaco_nome
+        SELECT p.*, v.espaco_id, v.cliente_id, e.nome AS espaco_nome, i.nome AS item_nome
         FROM parcelas p
         JOIN vendas_espaco v ON v.id = p.venda_espaco_id
         JOIN espacos e ON e.id = v.espaco_id
+        LEFT JOIN itens_espaco i ON i.id = v.item_espaco_id
         WHERE p.id = ?
     ');
     $stmt->execute([$id]);
@@ -83,6 +96,12 @@ if ($_SERVER['REQUEST_METHOD'] === 'PUT') {
     }
 
     if (($input['acao'] ?? '') === 'pagar') {
+        if ($parcela['status'] !== 'pendente') {
+            http_response_code(400);
+            echo json_encode(['error' => 'Esta parcela já foi paga ou está cancelada']);
+            exit;
+        }
+
         $dataPag = normalizarData($input['data_pagamento'] ?? '') ?: date('Y-m-d');
         $metodo = $input['metodo_pagamento'] ?? 'pix';
         $metodos = ['pix','boleto','ted','dinheiro','transferencia','cheque'];
@@ -91,7 +110,11 @@ if ($_SERVER['REQUEST_METHOD'] === 'PUT') {
         try {
             $pdo->beginTransaction();
             $pdo->prepare('UPDATE parcelas SET status = "paga", data_pagamento = ? WHERE id = ?')->execute([$dataPag, $id]);
-            $desc = 'Pagamento parcela ' . $parcela['numero'] . ' — ' . $parcela['espaco_nome'];
+            $desc = 'Pagamento parcela ' . $parcela['numero'];
+            if (!empty($parcela['item_nome'])) {
+                $desc .= ' — ' . $parcela['item_nome'];
+            }
+            $desc .= ' — ' . $parcela['espaco_nome'];
             $pdo->prepare('INSERT INTO transacoes (tipo, data_transacao, valor, descricao, metodo_pagamento, cliente_id, espaco_id, parcela_id, created_by) VALUES ("entrada", ?, ?, ?, ?, ?, ?, ?, ?)')
                 ->execute([
                     $dataPag,
@@ -112,6 +135,30 @@ if ($_SERVER['REQUEST_METHOD'] === 'PUT') {
             $pdo->rollBack();
             http_response_code(500);
             echo json_encode(['error' => 'Erro ao registrar pagamento', 'detail' => $e->getMessage()]);
+        }
+        exit;
+    }
+
+    if (($input['acao'] ?? '') === 'desfazer') {
+        if ($parcela['status'] !== 'paga') {
+            http_response_code(400);
+            echo json_encode(['error' => 'Só é possível desfazer parcelas já pagas']);
+            exit;
+        }
+
+        try {
+            $pdo->beginTransaction();
+            $pdo->prepare('UPDATE parcelas SET status = "pendente", data_pagamento = NULL WHERE id = ?')->execute([$id]);
+            $pdo->prepare('DELETE FROM transacoes WHERE parcela_id = ? AND tipo = "entrada"')->execute([$id]);
+            atualizarStatusVenda($pdo, (int)$parcela['venda_espaco_id']);
+            $pdo->commit();
+            $stmt = $pdo->prepare('SELECT * FROM parcelas WHERE id = ?');
+            $stmt->execute([$id]);
+            echo json_encode($stmt->fetch());
+        } catch (Throwable $e) {
+            $pdo->rollBack();
+            http_response_code(500);
+            echo json_encode(['error' => 'Erro ao desfazer pagamento', 'detail' => $e->getMessage()]);
         }
         exit;
     }

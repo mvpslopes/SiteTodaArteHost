@@ -9,6 +9,7 @@ import Clientes from './pages/Clientes';
 import Espacos from './pages/Espacos';
 import Vendas from './pages/Vendas';
 import Parcelas from './pages/Parcelas';
+import ContasPagar from './pages/ContasPagar';
 import Transacoes from './pages/Transacoes';
 import RelatorioEspaco from './pages/RelatorioEspaco';
 import Usuarios from './pages/Usuarios';
@@ -42,6 +43,7 @@ function AppRoutes() {
         <Route path="espacos" element={<Espacos />} />
         <Route path="vendas" element={<Vendas />} />
         <Route path="parcelas" element={<Parcelas />} />
+        <Route path="contas-pagar" element={<ContasPagar />} />
         <Route path="transacoes" element={<Transacoes />} />
         <Route path="relatorios/espaco" element={<RelatorioEspaco />} />
         <Route path="usuarios" element={<Usuarios />} />

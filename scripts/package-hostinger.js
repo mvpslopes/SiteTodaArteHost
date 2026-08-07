@@ -25,6 +25,7 @@ const targets = [
     source: join(dist, 'financeiro'),
     exclude: new Set(),
     mustContain: 'Sistema Financeiro',
+    requireApi: true,
   },
   {
     name: 'nacional2026',
@@ -32,6 +33,7 @@ const targets = [
     exclude: new Set(),
     mustContain: 'Nacional 2026',
     mustNotContain: 'Toda Arte - Transformamos',
+    requireApi: true,
   },
 ];
 
@@ -69,6 +71,16 @@ function verifyIndexHtml(destDir, mustContain, mustNotContain) {
   }
 }
 
+function verifyApi(destDir) {
+  const apiDir = join(destDir, 'api');
+  const auth = join(apiDir, 'auth.php');
+  if (!existsSync(apiDir) || !existsSync(auth)) {
+    console.error(`❌ ${destDir}: pasta api/ ausente ou incompleta (falta api/auth.php)`);
+    process.exit(1);
+  }
+  const phpCount = readdirSync(apiDir).filter((f) => f.endsWith('.php')).length;
+  console.log(`      · api/ ok (${phpCount} .php)`);
+}
 console.log('\n📦 Empacotando deploys para Hostinger...\n');
 
 if (!existsSync(dist)) {
@@ -90,8 +102,8 @@ for (const t of targets) {
   copyRecursive(t.source, dest, t.exclude);
   verifyIndexHtml(dest, t.mustContain, t.mustNotContain);
   console.log(`   ✅ ${t.name}/`);
+  if (t.requireApi) verifyApi(dest);
 }
-
 console.log(`
 ✅ Pacotes prontos em deploy/hostinger/
 

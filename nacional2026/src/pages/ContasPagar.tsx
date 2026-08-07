@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react';
-import { CheckCircle, Undo2 } from 'lucide-react';
-import { api, formatMoney, formatDate, METODOS, type Parcela } from '../api';
+import { Plus, CheckCircle, Undo2 } from 'lucide-react';
+import { api, formatMoney, formatDate, METODOS, type ParcelaPagar, type Espaco } from '../api';
 import Modal, { Field, inputClass, btnPrimary, btnSecondary } from '../components/Modal';
 
 const statusColor: Record<string, string> = {
@@ -10,26 +10,45 @@ const statusColor: Record<string, string> = {
   cancelada: 'bg-gray-100 text-gray-500',
 };
 
-/** No banco o status continua "pendente"; "atrasada" é só visual na API. */
 function podePagar(status: string) {
   return status === 'pendente' || status === 'atrasada';
 }
 
-export default function Parcelas() {
-  const [parcelas, setParcelas] = useState<Parcela[]>([]);
+export default function ContasPagar() {
+  const [parcelas, setParcelas] = useState<ParcelaPagar[]>([]);
+  const [espacos, setEspacos] = useState<Espaco[]>([]);
   const [loading, setLoading] = useState(true);
   const [filtro, setFiltro] = useState('');
   const [modal, setModal] = useState(false);
+  const [modalNova, setModalNova] = useState(false);
   const [modalTodas, setModalTodas] = useState(false);
-  const [selected, setSelected] = useState<Parcela | null>(null);
+  const [selected, setSelected] = useState<ParcelaPagar | null>(null);
   const [dataPagamento, setDataPagamento] = useState(new Date().toISOString().slice(0, 10));
   const [metodo, setMetodo] = useState('pix');
   const [error, setError] = useState('');
   const [saving, setSaving] = useState(false);
 
+  const [descricao, setDescricao] = useState('');
+  const [fornecedor, setFornecedor] = useState('');
+  const [espacoId, setEspacoId] = useState('');
+  const [valorTotal, setValorTotal] = useState('');
+  const [parcelado, setParcelado] = useState(false);
+  const [dataCompetencia, setDataCompetencia] = useState(new Date().toISOString().slice(0, 10));
+  const [qtdParcelas, setQtdParcelas] = useState(2);
+  const [datasParcelas, setDatasParcelas] = useState<string[]>(['', '']);
+  const [observacoes, setObservacoes] = useState('');
+
   const load = () => {
     setLoading(true);
-    api.parcelas.list(filtro || undefined).then((d) => setParcelas(d.parcelas)).finally(() => setLoading(false));
+    Promise.all([
+      api.contasPagar.list(filtro || undefined),
+      api.espacos.list(),
+    ])
+      .then(([p, e]) => {
+        setParcelas(p.parcelas);
+        setEspacos(e.espacos.filter((esp) => esp.ativo === 1));
+      })
+      .finally(() => setLoading(false));
   };
 
   useEffect(load, [filtro]);
@@ -37,7 +56,50 @@ export default function Parcelas() {
   const emAberto = parcelas.filter((p) => podePagar(p.status));
   const totalEmAberto = emAberto.reduce((s, p) => s + Number(p.valor), 0);
 
-  const openPagar = (p: Parcela) => {
+  const openNova = () => {
+    setDescricao('');
+    setFornecedor('');
+    setEspacoId('');
+    setValorTotal('');
+    setParcelado(false);
+    setDataCompetencia(new Date().toISOString().slice(0, 10));
+    setQtdParcelas(2);
+    setDatasParcelas(['', '']);
+    setObservacoes('');
+    setError('');
+    setModalNova(true);
+  };
+
+  const onQtdChange = (n: number) => {
+    setQtdParcelas(n);
+    setDatasParcelas(Array.from({ length: n }, (_, i) => datasParcelas[i] ?? ''));
+  };
+
+  const salvarNova = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setError('');
+    setSaving(true);
+    try {
+      await api.contasPagar.create({
+        descricao,
+        fornecedor: fornecedor || undefined,
+        espaco_id: espacoId ? Number(espacoId) : null,
+        valor_total: Number(valorTotal),
+        parcelado,
+        data_competencia: dataCompetencia,
+        datas_parcelas: parcelado ? datasParcelas.filter(Boolean) : [dataCompetencia],
+        observacoes: observacoes || undefined,
+      });
+      setModalNova(false);
+      load();
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Erro ao salvar');
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  const openPagar = (p: ParcelaPagar) => {
     setSelected(p);
     setDataPagamento(new Date().toISOString().slice(0, 10));
     setMetodo('pix');
@@ -53,12 +115,12 @@ export default function Parcelas() {
     setModalTodas(true);
   };
 
-  const desfazer = async (p: Parcela) => {
-    if (!confirm(`Desfazer o pagamento da parcela #${p.numero} (${formatMoney(p.valor)})?\n\nA parcela volta a ficar em aberto e a entrada no fluxo de caixa é removida.`)) {
+  const desfazer = async (p: ParcelaPagar) => {
+    if (!confirm(`Desfazer o pagamento da saída #${p.numero} (${formatMoney(p.valor)})?\n\nA parcela volta a ficar em aberto e a saída no fluxo de caixa é removida.`)) {
       return;
     }
     try {
-      await api.parcelas.desfazer(p.id);
+      await api.contasPagar.desfazer(p.id);
       load();
     } catch (err) {
       alert(err instanceof Error ? err.message : 'Erro ao desfazer pagamento');
@@ -71,7 +133,7 @@ export default function Parcelas() {
     setError('');
     setSaving(true);
     try {
-      await api.parcelas.pagar(selected.id, dataPagamento, metodo);
+      await api.contasPagar.pagar(selected.id, dataPagamento, metodo);
       setModal(false);
       load();
     } catch (err) {
@@ -88,7 +150,7 @@ export default function Parcelas() {
     setSaving(true);
     try {
       for (const p of emAberto) {
-        await api.parcelas.pagar(p.id, dataPagamento, metodo);
+        await api.contasPagar.pagar(p.id, dataPagamento, metodo);
       }
       setModalTodas(false);
       load();
@@ -111,12 +173,15 @@ export default function Parcelas() {
           <option value="paga">Pagas</option>
         </select>
         <div className="flex flex-wrap items-center gap-3">
-          <p className="text-sm text-gray-500">{parcelas.length} parcelas</p>
+          <p className="text-sm text-gray-500">{parcelas.length} parcela(s) · a pagar {formatMoney(totalEmAberto)}</p>
           {emAberto.length > 1 && (
             <button type="button" onClick={openPagarTodas} className={btnPrimary}>
               <CheckCircle className="h-4 w-4" /> Pagar todas ({emAberto.length})
             </button>
           )}
+          <button type="button" onClick={openNova} className={btnPrimary}>
+            <Plus className="h-4 w-4" /> Nova conta a pagar
+          </button>
         </div>
       </div>
 
@@ -125,9 +190,9 @@ export default function Parcelas() {
           <table className="w-full text-sm">
             <thead>
               <tr className="border-b border-gray-50 text-left text-xs uppercase tracking-wide text-gray-400">
+                <th className="px-6 py-3 font-medium">Descrição</th>
+                <th className="px-6 py-3 font-medium">Fornecedor</th>
                 <th className="px-6 py-3 font-medium">Espaço</th>
-                <th className="px-6 py-3 font-medium">Item</th>
-                <th className="px-6 py-3 font-medium">Cliente</th>
                 <th className="px-6 py-3 font-medium">Parcela</th>
                 <th className="px-6 py-3 font-medium">Valor</th>
                 <th className="px-6 py-3 font-medium">Vencimento</th>
@@ -139,23 +204,18 @@ export default function Parcelas() {
               {loading ? (
                 <tr><td colSpan={8} className="px-6 py-10 text-center text-gray-400">Carregando...</td></tr>
               ) : parcelas.length === 0 ? (
-                <tr><td colSpan={8} className="px-6 py-10 text-center text-gray-400">Nenhuma parcela</td></tr>
+                <tr><td colSpan={8} className="px-6 py-10 text-center text-gray-400">Nenhuma conta a pagar</td></tr>
               ) : parcelas.map((p) => (
                 <tr key={p.id} className="border-b border-gray-50 hover:bg-gray-50/50">
-                  <td className="px-6 py-4 font-medium">{p.espaco_nome}</td>
-                  <td className="px-6 py-4 text-gray-500">
-                    <p>{p.item_nome ?? '—'}</p>
-                    {(p.item_quantidade ?? 0) > 1 && (
-                      <p className="text-xs text-gray-400">Qtd: {p.item_quantidade}</p>
-                    )}
-                  </td>
-                  <td className="px-6 py-4">{p.cliente_nome}</td>
+                  <td className="px-6 py-4 font-medium">{p.descricao}</td>
+                  <td className="px-6 py-4 text-gray-500">{p.fornecedor ?? '—'}</td>
+                  <td className="px-6 py-4 text-gray-500">{p.espaco_nome ?? '—'}</td>
                   <td className="px-6 py-4 text-gray-500">
                     {!p.parcelado || Number(p.qtd_parcelas) <= 1
                       ? 'À vista'
                       : `${p.numero}/${p.qtd_parcelas}`}
                   </td>
-                  <td className="px-6 py-4 font-medium">{formatMoney(p.valor)}</td>
+                  <td className="px-6 py-4 font-medium text-nacional-700">{formatMoney(p.valor)}</td>
                   <td className="px-6 py-4 text-gray-500">{formatDate(p.data_vencimento)}</td>
                   <td className="px-6 py-4">
                     <span className={`rounded-full px-2.5 py-1 text-xs font-medium capitalize ${statusColor[p.status] ?? statusColor.pendente}`}>{p.status}</span>
@@ -181,21 +241,75 @@ export default function Parcelas() {
         </div>
       </div>
 
-      <Modal open={modal} onClose={() => setModal(false)} title="Registrar pagamento">
+      <Modal open={modalNova} onClose={() => setModalNova(false)} title="Nova conta a pagar" wide>
+        <form onSubmit={salvarNova} className="space-y-4">
+          {error && <div className="rounded-xl bg-red-50 px-4 py-3 text-sm text-red-700">{error}</div>}
+          <Field label="O que tem que ser pago *">
+            <input className={inputClass} value={descricao} onChange={(e) => setDescricao(e.target.value)} required placeholder="Ex.: Aluguel do camarote, fornecedor X..." />
+          </Field>
+          <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
+            <Field label="Fornecedor / Beneficiário">
+              <input className={inputClass} value={fornecedor} onChange={(e) => setFornecedor(e.target.value)} />
+            </Field>
+            <Field label="Espaço (opcional)">
+              <select className={inputClass} value={espacoId} onChange={(e) => setEspacoId(e.target.value)}>
+                <option value="">Sem espaço</option>
+                {espacos.map((esp) => <option key={esp.id} value={esp.id}>{esp.nome}</option>)}
+              </select>
+            </Field>
+          </div>
+          <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
+            <Field label="Valor total *">
+              <input type="number" step="0.01" min="0" className={inputClass} value={valorTotal} onChange={(e) => setValorTotal(e.target.value)} required />
+            </Field>
+            <Field label="Data de referência">
+              <input type="date" className={inputClass} value={dataCompetencia} onChange={(e) => setDataCompetencia(e.target.value)} required />
+            </Field>
+          </div>
+          <label className="flex items-center gap-2 text-sm text-gray-700">
+            <input type="checkbox" checked={parcelado} onChange={(e) => setParcelado(e.target.checked)} className="rounded" />
+            Pagamento parcelado
+          </label>
+          {parcelado && (
+            <div className="space-y-3 rounded-xl bg-gray-50 p-4">
+              <Field label="Quantidade de parcelas">
+                <input type="number" min={2} max={24} className={inputClass} value={qtdParcelas} onChange={(e) => onQtdChange(Number(e.target.value))} />
+              </Field>
+              {datasParcelas.map((d, i) => (
+                <Field key={i} label={`Vencimento parcela ${i + 1}`}>
+                  <input type="date" className={inputClass} value={d} onChange={(e) => {
+                    const next = [...datasParcelas]; next[i] = e.target.value; setDatasParcelas(next);
+                  }} required />
+                </Field>
+              ))}
+              <p className="text-xs text-gray-400">Valor por parcela: {formatMoney(Number(valorTotal || 0) / qtdParcelas)}</p>
+            </div>
+          )}
+          <Field label="Observações">
+            <textarea className={inputClass} rows={2} value={observacoes} onChange={(e) => setObservacoes(e.target.value)} />
+          </Field>
+          <div className="flex justify-end gap-2 pt-2">
+            <button type="button" onClick={() => setModalNova(false)} className={btnSecondary}>Cancelar</button>
+            <button type="submit" className={btnPrimary} disabled={saving}>{saving ? 'Salvando...' : 'Salvar'}</button>
+          </div>
+        </form>
+      </Modal>
+
+      <Modal open={modal} onClose={() => setModal(false)} title="Registrar pagamento (saída)">
         {selected && (
           <form onSubmit={pagar} className="space-y-4">
             {error && <div className="rounded-xl bg-red-50 px-4 py-3 text-sm text-red-700">{error}</div>}
             <div className="rounded-xl bg-gray-50 p-4 text-sm">
-              <p><span className="text-gray-400">Espaço:</span> {selected.espaco_nome}</p>
-              {selected.item_nome && <p><span className="text-gray-400">Item:</span> {selected.item_nome}</p>}
-              <p><span className="text-gray-400">Cliente:</span> {selected.cliente_nome}</p>
+              <p><span className="text-gray-400">Descrição:</span> {selected.descricao}</p>
+              {selected.fornecedor && <p><span className="text-gray-400">Fornecedor:</span> {selected.fornecedor}</p>}
+              {selected.espaco_nome && <p><span className="text-gray-400">Espaço:</span> {selected.espaco_nome}</p>}
               <p>
                 <span className="text-gray-400">Pagamento:</span>{' '}
                 {!selected.parcelado || Number(selected.qtd_parcelas) <= 1
                   ? 'À vista'
                   : `Parcela ${selected.numero} de ${selected.qtd_parcelas}`}
               </p>
-              <p className="mt-1 text-lg font-bold">{formatMoney(selected.valor)}</p>
+              <p className="mt-1 text-lg font-bold text-nacional-700">{formatMoney(selected.valor)}</p>
             </div>
             <Field label="Data do pagamento">
               <input type="date" className={inputClass} value={dataPagamento} onChange={(e) => setDataPagamento(e.target.value)} required />
@@ -217,12 +331,12 @@ export default function Parcelas() {
         <form onSubmit={pagarTodas} className="space-y-4">
           {error && <div className="rounded-xl bg-red-50 px-4 py-3 text-sm text-red-700">{error}</div>}
           <div className="rounded-xl bg-gray-50 p-4 text-sm">
-            <p className="font-medium text-gray-800">{emAberto.length} parcela(s) serão marcadas como pagas</p>
-            <p className="mt-1 text-lg font-bold">{formatMoney(totalEmAberto)}</p>
+            <p className="font-medium text-gray-800">{emAberto.length} parcela(s) serão pagas (saídas)</p>
+            <p className="mt-1 text-lg font-bold text-nacional-700">{formatMoney(totalEmAberto)}</p>
             <ul className="mt-3 max-h-48 space-y-1 overflow-y-auto text-gray-600">
               {emAberto.map((p) => (
                 <li key={p.id}>
-                  #{p.numero} · {p.espaco_nome} · {p.cliente_nome} · {formatMoney(p.valor)}
+                  #{p.numero} · {p.descricao} · {formatMoney(p.valor)}
                   {p.status === 'atrasada' ? ' (atrasada)' : ''}
                 </li>
               ))}

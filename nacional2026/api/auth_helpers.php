@@ -68,3 +68,20 @@ function normalizarData($data) {
     }
     return null;
 }
+
+function atualizarStatusEspaco(PDO $pdo, int $espacoId): void {
+    $stmt = $pdo->prepare('SELECT COUNT(*) FROM vendas_espaco WHERE espaco_id = ? AND status != "cancelado"');
+    $stmt->execute([$espacoId]);
+    $ativas = (int)$stmt->fetchColumn();
+    if ($ativas === 0) {
+        $pdo->prepare('UPDATE espacos SET status = "disponivel" WHERE id = ?')->execute([$espacoId]);
+        return;
+    }
+    $stmt = $pdo->prepare('SELECT COUNT(*) FROM vendas_espaco WHERE espaco_id = ? AND status NOT IN ("cancelado", "quitado")');
+    $stmt->execute([$espacoId]);
+    $abertas = (int)$stmt->fetchColumn();
+    $pdo->prepare('UPDATE espacos SET status = ? WHERE id = ?')->execute([
+        $abertas === 0 ? 'vendido' : 'reservado',
+        $espacoId,
+    ]);
+}
