@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react';
-import { Filter } from 'lucide-react';
+import { Link } from 'react-router-dom';
+import { AlertCircle, ArrowRight, CalendarClock, Wallet } from 'lucide-react';
 import { api, formatMoney, formatDate, MESES, type DashboardData } from '../api';
 import StatCard from '../components/StatCard';
 import ExportMenu from '../components/ExportMenu';
@@ -69,11 +70,13 @@ export default function Dashboard() {
   const mesAtual = new Date().getMonth();
   const entradasMes = data.meses[mesAtual]?.entradas ?? 0;
   const saidasMes = data.meses[mesAtual]?.saidas ?? 0;
+  const receber = data.a_receber_resumo;
+  const pagar = data.a_pagar_resumo;
 
   return (
     <div className="space-y-6">
       <div className="flex flex-wrap items-center justify-between gap-3">
-        <p className="text-sm text-gray-500">Última atualização: agora</p>
+        <p className="text-sm text-gray-500">Resumo financeiro · {ano}</p>
         <div className="flex gap-2">
           <select
             value={ano}
@@ -94,25 +97,135 @@ export default function Dashboard() {
       <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
         <StatCard title="Total Entradas" value={data.total_entradas} accent="gold" />
         <StatCard title="Total Saídas" value={data.total_saidas} accent="blue" />
-        <StatCard title="Saldo" value={data.saldo} accent="green" />
-        <StatCard title="Espaços Vendidos" value={`${data.espacos_vendidos} / ${data.total_espacos}`} accent="forest" />
+        <StatCard title="Saldo realizado" value={data.saldo} accent="green" />
+        <StatCard title="Saldo previsto" value={data.saldo_previsto} accent="forest" />
+      </div>
+
+      {/* A Receber x Contas a Pagar */}
+      <div className="grid gap-6 lg:grid-cols-2">
+        <div className="rounded-2xl border border-nacional-gold/30 bg-white p-6 shadow-card">
+          <div className="flex items-start justify-between gap-3">
+            <div className="flex items-center gap-3">
+              <div className="rounded-xl bg-nacional-gold/20 p-2.5 text-nacional-800">
+                <CalendarClock className="h-5 w-5" />
+              </div>
+              <div>
+                <h3 className="font-semibold text-gray-900">A Receber</h3>
+                <p className="text-sm text-gray-400">Parcelas de clientes</p>
+              </div>
+            </div>
+            <Link to="/parcelas" className="flex items-center gap-1 text-sm font-medium text-nacional-700 hover:text-nacional-900">
+              Ver tudo <ArrowRight className="h-4 w-4" />
+            </Link>
+          </div>
+
+          <p className="mt-5 text-3xl font-bold text-nacional-800">{formatMoney(receber.em_aberto)}</p>
+          <p className="mt-1 text-sm text-gray-500">{receber.qtd_em_aberto} parcela(s) em aberto</p>
+
+          <div className="mt-5 grid grid-cols-2 gap-3">
+            <div className="rounded-xl bg-nacional-50 p-3">
+              <p className="text-xs text-gray-400">A vencer</p>
+              <p className="mt-1 font-bold text-nacional-800">{formatMoney(receber.a_vencer)}</p>
+              <p className="text-xs text-gray-400">{receber.qtd_a_vencer} parcela(s)</p>
+            </div>
+            <div className="rounded-xl bg-red-50 p-3">
+              <p className="text-xs text-gray-400">Em atraso</p>
+              <p className="mt-1 font-bold text-red-600">{formatMoney(receber.atrasado)}</p>
+              <p className="text-xs text-gray-400">{receber.qtd_atrasadas} parcela(s)</p>
+            </div>
+          </div>
+
+          <div className="mt-3 rounded-xl border border-gray-100 bg-gray-50 p-3">
+            <p className="text-xs text-gray-400">Recebido no ano</p>
+            <p className="font-semibold text-gray-900">{formatMoney(receber.recebido_ano)}</p>
+          </div>
+
+          {receber.proxima ? (
+            <div className={`mt-4 rounded-xl border p-3 text-sm ${receber.proxima.atrasada ? 'border-red-200 bg-red-50' : 'border-nacional-100 bg-nacional-50/50'}`}>
+              <p className="text-xs uppercase tracking-wide text-gray-400">
+                {receber.proxima.atrasada ? (
+                  <span className="inline-flex items-center gap-1 text-red-600"><AlertCircle className="h-3 w-3" /> Próxima (atrasada)</span>
+                ) : 'Próxima a receber'}
+              </p>
+              <p className="mt-1 font-medium text-gray-900">
+                #{receber.proxima.numero} · {formatMoney(receber.proxima.valor)} · {formatDate(receber.proxima.data_vencimento)}
+              </p>
+              <p className="text-xs text-gray-500">
+                {[receber.proxima.cliente_nome, receber.proxima.espaco_nome, receber.proxima.item_nome].filter(Boolean).join(' · ')}
+              </p>
+            </div>
+          ) : (
+            <p className="mt-4 text-sm text-emerald-600">Nenhuma parcela a receber</p>
+          )}
+        </div>
+
+        <div className="rounded-2xl border border-nacional-200 bg-white p-6 shadow-card">
+          <div className="flex items-start justify-between gap-3">
+            <div className="flex items-center gap-3">
+              <div className="rounded-xl bg-nacional-100 p-2.5 text-nacional-700">
+                <Wallet className="h-5 w-5" />
+              </div>
+              <div>
+                <h3 className="font-semibold text-gray-900">Contas a Pagar</h3>
+                <p className="text-sm text-gray-400">Saídas e fornecedores</p>
+              </div>
+            </div>
+            <Link to="/contas-pagar" className="flex items-center gap-1 text-sm font-medium text-nacional-700 hover:text-nacional-900">
+              Ver tudo <ArrowRight className="h-4 w-4" />
+            </Link>
+          </div>
+
+          <p className="mt-5 text-3xl font-bold text-nacional-700">{formatMoney(pagar.em_aberto)}</p>
+          <p className="mt-1 text-sm text-gray-500">{pagar.qtd_em_aberto} parcela(s) em aberto</p>
+
+          <div className="mt-5 grid grid-cols-2 gap-3">
+            <div className="rounded-xl bg-nacional-50 p-3">
+              <p className="text-xs text-gray-400">A vencer</p>
+              <p className="mt-1 font-bold text-nacional-800">{formatMoney(pagar.a_vencer)}</p>
+              <p className="text-xs text-gray-400">{pagar.qtd_a_vencer} parcela(s)</p>
+            </div>
+            <div className="rounded-xl bg-red-50 p-3">
+              <p className="text-xs text-gray-400">Em atraso</p>
+              <p className="mt-1 font-bold text-red-600">{formatMoney(pagar.atrasado)}</p>
+              <p className="text-xs text-gray-400">{pagar.qtd_atrasadas} parcela(s)</p>
+            </div>
+          </div>
+
+          <div className="mt-3 rounded-xl border border-gray-100 bg-gray-50 p-3">
+            <p className="text-xs text-gray-400">Pago no ano</p>
+            <p className="font-semibold text-gray-900">{formatMoney(pagar.pago_ano)}</p>
+          </div>
+
+          {pagar.proxima ? (
+            <div className={`mt-4 rounded-xl border p-3 text-sm ${pagar.proxima.atrasada ? 'border-red-200 bg-red-50' : 'border-nacional-100 bg-nacional-50/50'}`}>
+              <p className="text-xs uppercase tracking-wide text-gray-400">
+                {pagar.proxima.atrasada ? (
+                  <span className="inline-flex items-center gap-1 text-red-600"><AlertCircle className="h-3 w-3" /> Próxima (atrasada)</span>
+                ) : 'Próxima a pagar'}
+              </p>
+              <p className="mt-1 font-medium text-gray-900">
+                #{pagar.proxima.numero} · {formatMoney(pagar.proxima.valor)} · {formatDate(pagar.proxima.data_vencimento)}
+              </p>
+              <p className="text-xs text-gray-500">
+                {[pagar.proxima.descricao, pagar.proxima.fornecedor, pagar.proxima.espaco_nome].filter(Boolean).join(' · ')}
+              </p>
+            </div>
+          ) : (
+            <p className="mt-4 text-sm text-emerald-600">Nenhuma conta a pagar</p>
+          )}
+        </div>
       </div>
 
       <div className="grid gap-6 lg:grid-cols-5">
         <div className="rounded-2xl border border-gray-100 bg-white p-6 shadow-card lg:col-span-3">
-          <div className="flex items-start justify-between">
-            <div>
-              <h3 className="font-semibold text-gray-900">Entradas e Saídas</h3>
-              <p className="mt-1 text-sm text-gray-400">Fluxo financeiro mensal — {ano}</p>
-            </div>
-            <select className="rounded-lg border border-gray-200 px-2 py-1 text-xs text-gray-500">
-              <option>Este ano</option>
-            </select>
+          <div>
+            <h3 className="font-semibold text-gray-900">Entradas e Saídas</h3>
+            <p className="mt-1 text-sm text-gray-400">Fluxo financeiro mensal — {ano}</p>
           </div>
           <div className="mt-4 flex gap-6 text-sm">
             <div>
               <p className="text-gray-400">Entradas (mês)</p>
-              <p className="font-bold text-nacional-cream">{formatMoney(entradasMes)}</p>
+              <p className="font-bold text-nacional-800">{formatMoney(entradasMes)}</p>
             </div>
             <div>
               <p className="text-gray-400">Saídas (mês)</p>
@@ -128,8 +241,8 @@ export default function Dashboard() {
           <div className="mt-6 space-y-5">
             {[
               { label: 'Espaços vendidos', pct: data.total_espacos ? (data.espacos_vendidos / data.total_espacos) * 100 : 0, color: 'bg-nacional-600', sub: `${data.espacos_vendidos} de ${data.total_espacos}` },
-              { label: 'A receber', pct: data.a_receber > 0 ? Math.min(100, (data.a_receber / (data.total_entradas || 1)) * 100) : 0, color: 'bg-nacional-gold', sub: formatMoney(data.a_receber) },
-              { label: 'Em atraso', pct: data.atrasado > 0 ? Math.min(100, (data.atrasado / (data.a_receber || 1)) * 100) : 0, color: 'bg-red-400', sub: formatMoney(data.atrasado) },
+              { label: 'A receber em aberto', pct: receber.em_aberto > 0 ? Math.min(100, (receber.em_aberto / (data.total_entradas + receber.em_aberto || 1)) * 100) : 0, color: 'bg-nacional-gold', sub: formatMoney(receber.em_aberto) },
+              { label: 'A pagar em aberto', pct: pagar.em_aberto > 0 ? Math.min(100, (pagar.em_aberto / (data.total_saidas + pagar.em_aberto || 1)) * 100) : 0, color: 'bg-nacional-700', sub: formatMoney(pagar.em_aberto) },
             ].map((item) => (
               <div key={item.label}>
                 <div className="mb-1.5 flex justify-between text-sm">
@@ -137,14 +250,20 @@ export default function Dashboard() {
                   <span className="text-gray-400">{item.sub}</span>
                 </div>
                 <div className="h-2 overflow-hidden rounded-full bg-gray-100">
-                  <div className={`h-full rounded-full ${item.color}`} style={{ width: `${Math.max(item.pct, 4)}%` }} />
+                  <div className={`h-full rounded-full ${item.color}`} style={{ width: `${Math.max(item.pct, item.pct > 0 ? 4 : 0)}%` }} />
                 </div>
               </div>
             ))}
           </div>
-          <div className="mt-6 rounded-xl bg-nacional-50 p-4">
-            <p className="text-xs text-gray-400">Total de clientes</p>
-            <p className="text-2xl font-bold text-gray-900">{data.total_clientes}</p>
+          <div className="mt-6 grid grid-cols-2 gap-3">
+            <div className="rounded-xl bg-nacional-50 p-4">
+              <p className="text-xs text-gray-400">Clientes</p>
+              <p className="text-2xl font-bold text-gray-900">{data.total_clientes}</p>
+            </div>
+            <div className="rounded-xl bg-nacional-50 p-4">
+              <p className="text-xs text-gray-400">Espaços</p>
+              <p className="text-2xl font-bold text-gray-900">{data.total_espacos}</p>
+            </div>
           </div>
         </div>
       </div>
@@ -153,17 +272,16 @@ export default function Dashboard() {
         <div className="flex flex-wrap items-center justify-between gap-3 border-b border-gray-100 px-6 py-4">
           <div>
             <h3 className="font-semibold text-gray-900">Vendas Recentes</h3>
-            <p className="text-sm text-gray-400">Últimas negociações de espaços</p>
+            <p className="text-sm text-gray-400">Últimas negociações</p>
           </div>
-          <button type="button" className="flex items-center gap-2 rounded-xl border border-gray-200 px-3 py-2 text-sm text-gray-600 hover:bg-gray-50">
-            <Filter className="h-4 w-4" /> Filtrar
-          </button>
+          <Link to="/vendas" className="text-sm font-medium text-nacional-700 hover:text-nacional-900">Ver vendas</Link>
         </div>
         <div className="overflow-x-auto">
           <table className="w-full text-sm">
             <thead>
               <tr className="border-b border-gray-50 text-left text-xs uppercase tracking-wide text-gray-400">
                 <th className="px-6 py-3 font-medium">Espaço</th>
+                <th className="px-6 py-3 font-medium">Item</th>
                 <th className="px-6 py-3 font-medium">Cliente</th>
                 <th className="px-6 py-3 font-medium">Valor</th>
                 <th className="px-6 py-3 font-medium">Data</th>
@@ -172,11 +290,12 @@ export default function Dashboard() {
             </thead>
             <tbody>
               {data.vendas_recentes.length === 0 ? (
-                <tr><td colSpan={5} className="px-6 py-10 text-center text-gray-400">Nenhuma venda registrada</td></tr>
+                <tr><td colSpan={6} className="px-6 py-10 text-center text-gray-400">Nenhuma venda registrada</td></tr>
               ) : (
                 data.vendas_recentes.map((v) => (
                   <tr key={v.id} className="border-b border-gray-50 hover:bg-gray-50/50">
                     <td className="px-6 py-4 font-medium text-gray-900">{v.espaco_nome}</td>
+                    <td className="px-6 py-4 text-gray-500">{v.item_nome ?? '—'}</td>
                     <td className="px-6 py-4">
                       <p className="text-gray-800">{v.cliente_nome}</p>
                       {v.cliente_email && <p className="text-xs text-gray-400">{v.cliente_email}</p>}

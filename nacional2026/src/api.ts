@@ -160,6 +160,40 @@ export interface ParcelaPagar {
   qtd_parcelas?: number;
 }
 
+export interface DashboardParcelaProxima {
+  numero: number;
+  valor: number;
+  data_vencimento: string;
+  atrasada: boolean;
+  espaco_nome?: string | null;
+  cliente_nome?: string | null;
+  item_nome?: string | null;
+  descricao?: string | null;
+  fornecedor?: string | null;
+}
+
+export interface DashboardReceberResumo {
+  a_vencer: number;
+  atrasado: number;
+  em_aberto: number;
+  recebido_ano: number;
+  qtd_a_vencer: number;
+  qtd_atrasadas: number;
+  qtd_em_aberto: number;
+  proxima: DashboardParcelaProxima | null;
+}
+
+export interface DashboardPagarResumo {
+  a_vencer: number;
+  atrasado: number;
+  em_aberto: number;
+  pago_ano: number;
+  qtd_a_vencer: number;
+  qtd_atrasadas: number;
+  qtd_em_aberto: number;
+  proxima: DashboardParcelaProxima | null;
+}
+
 export interface DashboardData {
   ano: number;
   total_entradas: number;
@@ -170,6 +204,9 @@ export interface DashboardData {
   espacos_vendidos: number;
   a_receber: number;
   atrasado: number;
+  saldo_previsto: number;
+  a_receber_resumo: DashboardReceberResumo;
+  a_pagar_resumo: DashboardPagarResumo;
   meses: Array<{ mes: number; entradas: number; saidas: number }>;
   vendas_recentes: VendaEspaco[];
 }
