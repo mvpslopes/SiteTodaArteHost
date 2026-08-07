@@ -336,6 +336,16 @@ export const api = {
         method: 'PUT',
         body: JSON.stringify({ id, acao: 'desfazer' }),
       }),
+    editar: (id: number, data: { data_vencimento: string; valor: number }) =>
+      request<ParcelaPagar>('/api/contas-pagar.php', {
+        method: 'PUT',
+        body: JSON.stringify({ id, acao: 'editar', ...data }),
+      }),
+    excluir: (id: number) =>
+      request<{ success: boolean }>('/api/contas-pagar.php', {
+        method: 'PUT',
+        body: JSON.stringify({ id, acao: 'excluir' }),
+      }),
   },
   transacoes: {
     list: (params?: { mes?: number; ano?: number; tipo?: string }) => {

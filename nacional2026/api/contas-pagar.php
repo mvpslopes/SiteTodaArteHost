@@ -14,10 +14,23 @@ function atualizarStatusContaPagar(PDO $pdo, int $contaId): void {
     $r = $stmt->fetch();
     $total = (int)$r['total'];
     $pagas = (int)$r['pagas'];
+    if ($total === 0) {
+        $pdo->prepare('UPDATE contas_pagar SET status = "cancelado", qtd_parcelas = 0, valor_total = 0 WHERE id = ?')->execute([$contaId]);
+        return;
+    }
+    $stmt = $pdo->prepare('SELECT COALESCE(SUM(valor), 0) FROM parcelas_pagar WHERE conta_pagar_id = ? AND status != "cancelada"');
+    $stmt->execute([$contaId]);
+    $valorTotal = (float)$stmt->fetchColumn();
     $status = 'aberto';
     if ($pagas > 0 && $pagas < $total) $status = 'parcial';
     if ($total > 0 && $pagas >= $total) $status = 'quitado';
-    $pdo->prepare('UPDATE contas_pagar SET status = ? WHERE id = ?')->execute([$status, $contaId]);
+    $pdo->prepare('UPDATE contas_pagar SET status = ?, qtd_parcelas = ?, valor_total = ?, parcelado = ? WHERE id = ?')->execute([
+        $status,
+        $total,
+        $valorTotal,
+        $total > 1 ? 1 : 0,
+        $contaId,
+    ]);
 }
 
 if ($_SERVER['REQUEST_METHOD'] === 'GET') {
@@ -230,6 +243,75 @@ if ($_SERVER['REQUEST_METHOD'] === 'PUT') {
             $pdo->rollBack();
             http_response_code(500);
             echo json_encode(['error' => 'Erro ao desfazer pagamento', 'detail' => $e->getMessage()]);
+        }
+        exit;
+    }
+
+    if ($acao === 'editar') {
+        if ($parcela['status'] === 'paga' || $parcela['status'] === 'cancelada') {
+            http_response_code(400);
+            echo json_encode(['error' => 'Só é possível editar parcelas em aberto']);
+            exit;
+        }
+        $dataVenc = normalizarData($input['data_vencimento'] ?? '');
+        $valor = isset($input['valor'])
+            ? (float)str_replace(',', '.', (string)$input['valor'])
+            : (float)$parcela['valor'];
+        if (!$dataVenc || $valor <= 0) {
+            http_response_code(400);
+            echo json_encode(['error' => 'Vencimento e valor são obrigatórios']);
+            exit;
+        }
+        try {
+            $pdo->beginTransaction();
+            $pdo->prepare('UPDATE parcelas_pagar SET data_vencimento = ?, valor = ? WHERE id = ?')
+                ->execute([$dataVenc, $valor, $id]);
+            atualizarStatusContaPagar($pdo, (int)$parcela['conta_pagar_id']);
+            $pdo->commit();
+            $stmt = $pdo->prepare('
+                SELECT p.*, c.descricao, c.fornecedor, c.espaco_id, c.parcelado, c.qtd_parcelas, e.nome AS espaco_nome
+                FROM parcelas_pagar p
+                JOIN contas_pagar c ON c.id = p.conta_pagar_id
+                LEFT JOIN espacos e ON e.id = c.espaco_id
+                WHERE p.id = ?
+            ');
+            $stmt->execute([$id]);
+            echo json_encode($stmt->fetch());
+        } catch (Throwable $e) {
+            $pdo->rollBack();
+            http_response_code(500);
+            echo json_encode(['error' => 'Erro ao editar parcela', 'detail' => $e->getMessage()]);
+        }
+        exit;
+    }
+
+    if ($acao === 'excluir') {
+        if ($parcela['status'] === 'paga') {
+            http_response_code(400);
+            echo json_encode(['error' => 'Não é possível excluir parcela já paga. Desfaça o pagamento primeiro.']);
+            exit;
+        }
+        try {
+            $pdo->beginTransaction();
+            $contaId = (int)$parcela['conta_pagar_id'];
+            $pdo->prepare('DELETE FROM parcelas_pagar WHERE id = ?')->execute([$id]);
+            $stmtRestantes = $pdo->prepare('SELECT id FROM parcelas_pagar WHERE conta_pagar_id = ? AND status != "cancelada" ORDER BY numero ASC');
+            $stmtRestantes->execute([$contaId]);
+            $restantes = $stmtRestantes->fetchAll();
+            if (!$restantes) {
+                $pdo->prepare('DELETE FROM contas_pagar WHERE id = ?')->execute([$contaId]);
+            } else {
+                foreach ($restantes as $i => $row) {
+                    $pdo->prepare('UPDATE parcelas_pagar SET numero = ? WHERE id = ?')->execute([$i + 1, $row['id']]);
+                }
+                atualizarStatusContaPagar($pdo, $contaId);
+            }
+            $pdo->commit();
+            echo json_encode(['success' => true]);
+        } catch (Throwable $e) {
+            $pdo->rollBack();
+            http_response_code(500);
+            echo json_encode(['error' => 'Erro ao excluir parcela', 'detail' => $e->getMessage()]);
         }
         exit;
     }

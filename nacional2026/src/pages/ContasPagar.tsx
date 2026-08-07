@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react';
-import { Plus, CheckCircle, Undo2 } from 'lucide-react';
+import { Plus, CheckCircle, Undo2, Pencil, Trash2 } from 'lucide-react';
 import { api, formatMoney, formatDate, METODOS, type ParcelaPagar, type Espaco } from '../api';
 import Modal, { Field, inputClass, btnPrimary, btnSecondary } from '../components/Modal';
 
@@ -22,9 +22,12 @@ export default function ContasPagar() {
   const [modal, setModal] = useState(false);
   const [modalNova, setModalNova] = useState(false);
   const [modalTodas, setModalTodas] = useState(false);
+  const [modalEditar, setModalEditar] = useState(false);
   const [selected, setSelected] = useState<ParcelaPagar | null>(null);
   const [dataPagamento, setDataPagamento] = useState(new Date().toISOString().slice(0, 10));
   const [metodo, setMetodo] = useState('pix');
+  const [editVencimento, setEditVencimento] = useState('');
+  const [editValor, setEditValor] = useState('');
   const [error, setError] = useState('');
   const [saving, setSaving] = useState(false);
 
@@ -105,6 +108,45 @@ export default function ContasPagar() {
     setMetodo('pix');
     setError('');
     setModal(true);
+  };
+
+  const openEditar = (p: ParcelaPagar) => {
+    setSelected(p);
+    setEditVencimento(p.data_vencimento);
+    setEditValor(String(p.valor));
+    setError('');
+    setModalEditar(true);
+  };
+
+  const salvarEditar = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!selected) return;
+    setError('');
+    setSaving(true);
+    try {
+      await api.contasPagar.editar(selected.id, {
+        data_vencimento: editVencimento,
+        valor: Number(editValor),
+      });
+      setModalEditar(false);
+      load();
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Erro ao editar');
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  const excluir = async (p: ParcelaPagar) => {
+    if (!confirm(`Excluir a parcela ${!p.parcelado || Number(p.qtd_parcelas) <= 1 ? 'à vista' : `#${p.numero}`} de "${p.descricao}" (${formatMoney(p.valor)})?\n\nSe for a última parcela, a conta inteira será removida.`)) {
+      return;
+    }
+    try {
+      await api.contasPagar.excluir(p.id);
+      load();
+    } catch (err) {
+      alert(err instanceof Error ? err.message : 'Erro ao excluir');
+    }
   };
 
   const openPagarTodas = () => {
@@ -223,9 +265,17 @@ export default function ContasPagar() {
                   <td className="px-6 py-4">
                     <div className="flex flex-wrap gap-2">
                       {podePagar(p.status) && (
-                        <button type="button" onClick={() => openPagar(p)} className="flex items-center gap-1 rounded-lg bg-emerald-50 px-3 py-1.5 text-xs font-medium text-emerald-700 hover:bg-emerald-100">
-                          <CheckCircle className="h-3.5 w-3.5" /> Pagar
-                        </button>
+                        <>
+                          <button type="button" onClick={() => openPagar(p)} className="flex items-center gap-1 rounded-lg bg-emerald-50 px-3 py-1.5 text-xs font-medium text-emerald-700 hover:bg-emerald-100">
+                            <CheckCircle className="h-3.5 w-3.5" /> Pagar
+                          </button>
+                          <button type="button" onClick={() => openEditar(p)} className="rounded-lg p-1.5 text-gray-400 hover:bg-gray-100 hover:text-gray-700" title="Editar">
+                            <Pencil className="h-4 w-4" />
+                          </button>
+                          <button type="button" onClick={() => excluir(p)} className="rounded-lg p-1.5 text-gray-400 hover:bg-red-50 hover:text-red-500" title="Excluir">
+                            <Trash2 className="h-4 w-4" />
+                          </button>
+                        </>
                       )}
                       {p.status === 'paga' && (
                         <button type="button" onClick={() => desfazer(p)} className="flex items-center gap-1 rounded-lg bg-amber-50 px-3 py-1.5 text-xs font-medium text-amber-700 hover:bg-amber-100">
@@ -293,6 +343,32 @@ export default function ContasPagar() {
             <button type="submit" className={btnPrimary} disabled={saving}>{saving ? 'Salvando...' : 'Salvar'}</button>
           </div>
         </form>
+      </Modal>
+
+      <Modal open={modalEditar} onClose={() => setModalEditar(false)} title="Editar parcela">
+        {selected && (
+          <form onSubmit={salvarEditar} className="space-y-4">
+            {error && <div className="rounded-xl bg-red-50 px-4 py-3 text-sm text-red-700">{error}</div>}
+            <div className="rounded-xl bg-gray-50 p-4 text-sm">
+              <p className="font-medium">{selected.descricao}</p>
+              <p className="text-gray-500">
+                {!selected.parcelado || Number(selected.qtd_parcelas) <= 1
+                  ? 'À vista'
+                  : `Parcela ${selected.numero} de ${selected.qtd_parcelas}`}
+              </p>
+            </div>
+            <Field label="Vencimento *">
+              <input type="date" className={inputClass} value={editVencimento} onChange={(e) => setEditVencimento(e.target.value)} required />
+            </Field>
+            <Field label="Valor *">
+              <input type="number" step="0.01" min="0" className={inputClass} value={editValor} onChange={(e) => setEditValor(e.target.value)} required />
+            </Field>
+            <div className="flex justify-end gap-2 pt-2">
+              <button type="button" onClick={() => setModalEditar(false)} className={btnSecondary}>Cancelar</button>
+              <button type="submit" className={btnPrimary} disabled={saving}>{saving ? 'Salvando...' : 'Salvar'}</button>
+            </div>
+          </form>
+        )}
       </Modal>
 
       <Modal open={modal} onClose={() => setModal(false)} title="Registrar pagamento (saída)">
