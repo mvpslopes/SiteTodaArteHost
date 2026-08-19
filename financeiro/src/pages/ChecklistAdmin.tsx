@@ -49,6 +49,8 @@ export default function ChecklistAdmin() {
     periodicidade: 'diaria' as ChecklistTarefaFixa['periodicidade'],
     ordem: 1,
     ativo: 1 as 0 | 1,
+    responsavel_id: 0 as number,
+    dia_mes: 10,
   });
 
   useEffect(() => {
@@ -102,6 +104,8 @@ export default function ChecklistAdmin() {
       periodicidade: 'diaria',
       ordem: 1,
       ativo: 1,
+      responsavel_id: 0,
+      dia_mes: 10,
     });
     setModalOpen(true);
   };
@@ -114,6 +118,8 @@ export default function ChecklistAdmin() {
       periodicidade: t.periodicidade,
       ordem: t.ordem,
       ativo: t.ativo as 0 | 1,
+      responsavel_id: t.responsavel_id ?? 0,
+      dia_mes: t.dia_mes ?? 10,
     });
     setModalOpen(true);
   };
@@ -129,24 +135,35 @@ export default function ChecklistAdmin() {
       setError('Informe o título da tarefa.');
       return;
     }
+    if (form.periodicidade === 'mensal' && (form.dia_mes < 1 || form.dia_mes > 31)) {
+      setError('Informe o dia do mês entre 1 e 31.');
+      return;
+    }
     setError(null);
     try {
+      const payload = {
+        titulo: form.titulo.trim(),
+        descricao: form.descricao.trim() || null,
+        periodicidade: form.periodicidade,
+        ordem: form.ordem,
+        ativo: form.ativo,
+        responsavel_id: form.responsavel_id || null,
+        dia_mes: form.periodicidade === 'mensal' ? form.dia_mes : null,
+      };
       if (editing) {
         await api.checklistConfig.update({
           id: editing.id,
-          titulo: form.titulo.trim(),
-          descricao: form.descricao.trim() || null,
-          periodicidade: form.periodicidade,
-          ordem: form.ordem,
-          ativo: form.ativo,
+          ...payload,
         });
       } else {
         await api.checklistConfig.create({
-          titulo: form.titulo.trim(),
-          descricao: form.descricao.trim() || undefined,
-          periodicidade: form.periodicidade,
-          ordem: form.ordem,
-          ativo: form.ativo,
+          titulo: payload.titulo,
+          descricao: payload.descricao || undefined,
+          periodicidade: payload.periodicidade,
+          ordem: payload.ordem,
+          ativo: payload.ativo,
+          responsavel_id: payload.responsavel_id,
+          dia_mes: payload.dia_mes,
         });
       }
       fecharModal();
@@ -184,6 +201,7 @@ export default function ChecklistAdmin() {
       quarta: 'Quarta',
       quinta: 'Quinta',
       sexta: 'Sexta',
+      mensal: 'Todo dia do mês',
     };
     const result: Array<{ chave: string; label: string; esp: number; conc: number }> = [];
     for (const key of Object.keys(resumo.por_periodicidade.esperadas)) {
@@ -373,6 +391,7 @@ export default function ChecklistAdmin() {
               <thead className="bg-gray-50 border-b border-gray-200">
                 <tr className="text-gray-500">
                   <th className="text-left py-3 px-4 font-medium">Título</th>
+                  <th className="text-left py-3 px-4 font-medium">Quem faz</th>
                   <th className="text-left py-3 px-4 font-medium">Tipo</th>
                   <th className="text-left py-3 px-4 font-medium">Ordem</th>
                   <th className="text-left py-3 px-4 font-medium">Status</th>
@@ -388,9 +407,14 @@ export default function ChecklistAdmin() {
                         <p className="text-xs text-gray-500 truncate max-w-xs">{t.descricao}</p>
                       )}
                     </td>
-                    <td className="py-3 px-4 text-xs text-gray-600 capitalize">
+                    <td className="py-3 px-4 text-xs text-gray-700">
+                      {t.responsavel_nome || 'Todos'}
+                    </td>
+                    <td className="py-3 px-4 text-xs text-gray-600">
                       {t.periodicidade === 'diaria'
                         ? 'Rotina diária'
+                        : t.periodicidade === 'mensal'
+                        ? `Todo dia ${t.dia_mes ?? '?'}`
                         : t.periodicidade.charAt(0).toUpperCase() + t.periodicidade.slice(1)}
                     </td>
                     <td className="py-3 px-4 text-xs text-gray-600">{t.ordem}</td>
@@ -492,6 +516,7 @@ export default function ChecklistAdmin() {
                     <option value="quarta">Quarta-feira</option>
                     <option value="quinta">Quinta-feira</option>
                     <option value="sexta">Sexta-feira</option>
+                    <option value="mensal">Todo mês, em um dia fixo</option>
                   </select>
                 </div>
                 <div>
@@ -506,6 +531,44 @@ export default function ChecklistAdmin() {
                     className="w-full rounded-lg border border-gray-200 bg-white px-3 py-2 text-sm text-gray-800"
                   />
                 </div>
+              </div>
+              {form.periodicidade === 'mensal' && (
+                <div>
+                  <label className="block text-sm text-gray-700 mb-1">Dia do mês</label>
+                  <input
+                    type="number"
+                    min={1}
+                    max={31}
+                    value={form.dia_mes}
+                    onChange={(e) =>
+                      setForm((f) => ({ ...f, dia_mes: Number(e.target.value) || 1 }))
+                    }
+                    className="w-full rounded-lg border border-gray-200 bg-white px-3 py-2 text-sm text-gray-800"
+                  />
+                  <p className="mt-1 text-[11px] text-gray-500">
+                    Ex.: 10 ou 15. Se o mês não tiver esse dia, cai no último dia.
+                  </p>
+                </div>
+              )}
+              <div>
+                <label className="block text-sm text-gray-700 mb-1">Quem deve fazer</label>
+                <select
+                  value={form.responsavel_id}
+                  onChange={(e) =>
+                    setForm((f) => ({ ...f, responsavel_id: Number(e.target.value) || 0 }))
+                  }
+                  className="w-full rounded-lg border border-gray-200 bg-white px-3 py-2 text-sm text-gray-800"
+                >
+                  <option value={0}>Todos (qualquer pessoa do checklist)</option>
+                  {usuarios.filter((u) => u.ativo).map((u) => (
+                    <option key={u.id} value={u.id}>
+                      {u.nome || u.email}
+                    </option>
+                  ))}
+                </select>
+                <p className="mt-1 text-[11px] text-gray-500">
+                  Se escolher uma pessoa, a tarefa só aparece no checklist dela.
+                </p>
               </div>
               <div className="flex items-center justify-between">
                 <label className="inline-flex items-center gap-2 text-sm text-gray-700">

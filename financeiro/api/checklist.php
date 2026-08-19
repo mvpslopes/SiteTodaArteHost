@@ -8,6 +8,8 @@ require_once 'db_helpers.php';
 try {
     $currentUser = requireAuth();
     $pdo = getDBConnection();
+    $hasResponsavel = ensureChecklistResponsavelColumn($pdo);
+    $hasMensal = ensureChecklistMensalSupport($pdo);
 } catch (Throwable $e) {
     http_response_code(500);
     echo json_encode(['error' => 'Erro interno', 'detail' => $e->getMessage()]);
@@ -43,16 +45,43 @@ if ($_SERVER['REQUEST_METHOD'] === 'GET') {
     }
 
     $placeholders = implode(',', array_fill(0, count($periodicidades), '?'));
+    $selectResponsavel = $hasResponsavel
+        ? ', t.responsavel_id, u.nome AS responsavel_nome'
+        : ', NULL AS responsavel_id, NULL AS responsavel_nome';
+    $selectDiaMes = $hasMensal ? ', t.dia_mes' : ', NULL AS dia_mes';
+    $joinResponsavel = $hasResponsavel ? 'LEFT JOIN usuarios u ON u.id = t.responsavel_id' : '';
+    $filtroResponsavel = $hasResponsavel
+        ? 'AND (t.responsavel_id IS NULL OR t.responsavel_id = ?)'
+        : '';
+    $diaMesAtual = (int)date('j', strtotime($dataRef));
+    $ultimoDiaMes = (int)date('t', strtotime($dataRef));
+    $filtroMensal = '';
+    $paramsMensal = [];
+    if ($hasMensal) {
+        $filtroMensal = "OR (
+            t.periodicidade = 'mensal'
+            AND t.dia_mes IS NOT NULL
+            AND (t.dia_mes = ? OR (t.dia_mes > ? AND ? = ?))
+        )";
+        $paramsMensal = [$diaMesAtual, $ultimoDiaMes, $diaMesAtual, $ultimoDiaMes];
+    }
     $sql = "
-        SELECT t.id, t.titulo, t.descricao, t.periodicidade, t.ordem,
+        SELECT t.id, t.titulo, t.descricao, t.periodicidade, t.ordem
+               $selectResponsavel
+               $selectDiaMes,
                e.id AS exec_id, e.concluida, e.observacao
         FROM checklist_tarefas_fixas t
+        $joinResponsavel
         LEFT JOIN checklist_execucoes e
           ON e.tarefa_fixa_id = t.id
          AND e.user_id = ?
          AND e.data_referencia = ?
         WHERE t.ativo = 1
-          AND t.periodicidade IN ($placeholders)
+          AND (
+            t.periodicidade IN ($placeholders)
+            $filtroMensal
+          )
+          $filtroResponsavel
         ORDER BY
           CASE t.periodicidade
             WHEN 'diaria' THEN 0
@@ -61,11 +90,15 @@ if ($_SERVER['REQUEST_METHOD'] === 'GET') {
             WHEN 'quarta' THEN 3
             WHEN 'quinta' THEN 4
             WHEN 'sexta' THEN 5
+            WHEN 'mensal' THEN 6
             ELSE 9
           END,
           t.ordem ASC, t.id ASC
     ";
-    $params = array_merge([$currentUser['id'], $dataRef], $periodicidades);
+    $params = array_merge([$currentUser['id'], $dataRef], $periodicidades, $paramsMensal);
+    if ($hasResponsavel) {
+        $params[] = $currentUser['id'];
+    }
     $stmt = $pdo->prepare($sql);
     $stmt->execute($params);
     $rows = $stmt->fetchAll();
@@ -90,11 +123,18 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' || $_SERVER['REQUEST_METHOD'] === 'PUT
         exit;
     }
 
-    $stmt = $pdo->prepare("SELECT id FROM checklist_tarefas_fixas WHERE id = ? AND ativo = 1");
+    $cols = $hasResponsavel ? 'id, responsavel_id' : 'id';
+    $stmt = $pdo->prepare("SELECT $cols FROM checklist_tarefas_fixas WHERE id = ? AND ativo = 1");
     $stmt->execute([$tarefaId]);
-    if (!$stmt->fetch()) {
+    $tarefa = $stmt->fetch();
+    if (!$tarefa) {
         http_response_code(404);
         echo json_encode(['error' => 'Tarefa não encontrada ou inativa']);
+        exit;
+    }
+    if ($hasResponsavel && !empty($tarefa['responsavel_id']) && (int)$tarefa['responsavel_id'] !== (int)$currentUser['id']) {
+        http_response_code(403);
+        echo json_encode(['error' => 'Esta tarefa está atribuída a outro usuário']);
         exit;
     }
 

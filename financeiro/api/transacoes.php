@@ -20,6 +20,7 @@ $metodosPermitidos = ['pix', 'boleto', 'ted', 'dinheiro', 'cheque', 'pix_nota_fi
 $tiposPermitidos = ['entrada', 'saida'];
 $hasClienteId = columnExists($pdo, 'transacoes', 'cliente_id');
 $hasClientes = tableExists($pdo, 'clientes');
+$hasGastoFixoId = ensureTransacaoGastoFixoColumn($pdo);
 
 // GET: listar com filtros (ou um por id)
 if ($_SERVER['REQUEST_METHOD'] === 'GET') {
@@ -129,6 +130,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     if ($cliente_id < 1) $cliente_id = null;
     $descricao = trim($input['descricao'] ?? '');
     $conciliada = array_key_exists('conciliada', $input) ? (int)(bool)$input['conciliada'] : null;
+    $gastoFixoId = isset($input['gasto_fixo_id']) ? (int)$input['gasto_fixo_id'] : 0;
+    if ($gastoFixoId < 1) $gastoFixoId = null;
 
     if (!in_array($tipo, $tiposPermitidos, true)) {
         http_response_code(400);
@@ -163,7 +166,13 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     }
 
     try {
-        if ($hasClienteId) {
+        if ($hasGastoFixoId && $hasClienteId) {
+            $stmt = $pdo->prepare("INSERT INTO transacoes (tipo, data_transacao, valor, metodo_pagamento, favorecido_id, cliente_id, descricao, gasto_fixo_id) VALUES (?, ?, ?, ?, ?, ?, ?, ?)");
+            $stmt->execute([$tipo, $dataObj, $valor, $metodo, $favorecido_id, $cliente_id, $descricao ?: null, $gastoFixoId]);
+        } elseif ($hasGastoFixoId) {
+            $stmt = $pdo->prepare("INSERT INTO transacoes (tipo, data_transacao, valor, metodo_pagamento, favorecido_id, descricao, gasto_fixo_id) VALUES (?, ?, ?, ?, ?, ?, ?)");
+            $stmt->execute([$tipo, $dataObj, $valor, $metodo, $favorecido_id, $descricao ?: null, $gastoFixoId]);
+        } elseif ($hasClienteId) {
             $stmt = $pdo->prepare("INSERT INTO transacoes (tipo, data_transacao, valor, metodo_pagamento, favorecido_id, cliente_id, descricao) VALUES (?, ?, ?, ?, ?, ?, ?)");
             $stmt->execute([$tipo, $dataObj, $valor, $metodo, $favorecido_id, $cliente_id, $descricao ?: null]);
         } else {

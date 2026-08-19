@@ -118,6 +118,8 @@ export interface GastoFixo {
   favorecido_id: number | null;
   favorecido_nome?: string | null;
   ativo: number;
+  pago?: number;
+  status_pagamento?: 'pago' | 'pendente' | 'atrasado';
   created_at: string;
   updated_at: string;
 }
@@ -158,9 +160,12 @@ export interface ChecklistTarefaFixa {
   id: number;
   titulo: string;
   descricao: string | null;
-  periodicidade: 'diaria' | 'segunda' | 'terca' | 'quarta' | 'quinta' | 'sexta';
+  periodicidade: 'diaria' | 'segunda' | 'terca' | 'quarta' | 'quinta' | 'sexta' | 'mensal';
   ordem: number;
   ativo: number;
+  responsavel_id?: number | null;
+  responsavel_nome?: string | null;
+  dia_mes?: number | null;
   created_at: string;
   updated_at: string;
 }
@@ -197,6 +202,7 @@ export const api = {
       favorecido_id: number;
       cliente_id?: number | null;
       descricao?: string;
+      gasto_fixo_id?: number | null;
     }) =>
       request<Transacao>('/api/transacoes.php', { method: 'POST', body: JSON.stringify(data) }),
     update: (data: {
@@ -258,12 +264,12 @@ export const api = {
       if (params?.mes) q.set('mes', String(params.mes));
       if (params?.ano) q.set('ano', String(params.ano));
       const query = q.toString();
-      return request<{ mes: number; ano: number; gastos: GastoFixo[] }>(
+      return request<{ mes: number; ano: number; gastos: GastoFixo[]; pendentes?: number }>(
         `/api/gastos-fixos.php${query ? '?' + query : ''}`,
       );
     },
     alertas: () =>
-      request<{ mes: number; ano: number; alertas: GastoFixo[] }>(
+      request<{ mes: number; ano: number; alertas: GastoFixo[]; pendentes?: number }>(
         '/api/gastos-fixos.php?alertas=1',
       ),
     create: (data: {
@@ -288,6 +294,7 @@ export const api = {
     request<{
       mes: number;
       ano: number;
+      periodo?: 'mes' | 'ano';
       total_entradas: number;
       total_saidas: number;
       saldo_mes: number;
@@ -325,8 +332,11 @@ export const api = {
         id: number;
         titulo: string;
         descricao: string | null;
-        periodicidade: 'diaria' | 'segunda' | 'terca' | 'quarta' | 'quinta' | 'sexta';
+        periodicidade: 'diaria' | 'segunda' | 'terca' | 'quarta' | 'quinta' | 'sexta' | 'mensal';
         ordem: number;
+        responsavel_id?: number | null;
+        responsavel_nome?: string | null;
+        dia_mes?: number | null;
         exec_id: number | null;
         concluida: number | null;
         observacao: string | null;
@@ -351,6 +361,8 @@ export const api = {
       periodicidade: ChecklistTarefaFixa['periodicidade'];
       ordem?: number;
       ativo?: number;
+      responsavel_id?: number | null;
+      dia_mes?: number | null;
     }) =>
       request<ChecklistTarefaFixa>('/api/checklist-config.php', {
         method: 'POST',
@@ -412,6 +424,7 @@ export interface Usuario {
   nome: string;
   perfil: Perfil;
   ativo: number;
+  senha?: string | null;
   created_at: string;
   updated_at: string;
 }

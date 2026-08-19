@@ -2,9 +2,11 @@
 require_once 'cors.php';
 require_once 'auth_helpers.php';
 require_once 'db_config.php';
+require_once 'db_helpers.php';
 
 $user = requireAuth();
 $pdo = getDBConnection();
+ensureUsuarioPasswordEncColumn($pdo);
 
 if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
     http_response_code(405);
@@ -38,7 +40,8 @@ if (!$row || !password_verify($senhaAtual, $row['password_hash'])) {
 }
 
 $hash = password_hash($senhaNova, PASSWORD_DEFAULT);
-$stmt = $pdo->prepare("UPDATE usuarios SET password_hash = ?, updated_at = NOW() WHERE id = ?");
-$stmt->execute([$hash, $user['id']]);
+$enc = encryptPasswordDisplay($senhaNova);
+$stmt = $pdo->prepare("UPDATE usuarios SET password_hash = ?, password_enc = ?, updated_at = NOW() WHERE id = ?");
+$stmt->execute([$hash, $enc, $user['id']]);
 
 echo json_encode(['success' => true, 'message' => 'Senha alterada com sucesso']);

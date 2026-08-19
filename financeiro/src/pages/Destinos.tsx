@@ -2,12 +2,13 @@ import { useEffect, useState, useMemo } from 'react';
 import { MapPin, Plus } from 'lucide-react';
 import { api, type Favorecido } from '../api';
 import { useSearch, matchSearch } from '../contexts/SearchContext';
+import { useToast } from '../contexts/ToastContext';
 
 export default function Destinos() {
   const { query } = useSearch();
+  const toast = useToast();
   const [destinos, setDestinos] = useState<Favorecido[]>([]);
   const [loading, setLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
   const [modal, setModal] = useState<'add' | 'edit' | null>(null);
   const [editingId, setEditingId] = useState<number | null>(null);
   const [nome, setNome] = useState('');
@@ -22,7 +23,7 @@ export default function Destinos() {
     setLoading(true);
     api.favorecidos.list(!mostrarInativos)
       .then((r) => setDestinos(r.favorecidos))
-      .catch((e) => setError(e.message))
+      .catch((e) => toast.error(e.message))
       .finally(() => setLoading(false));
   };
 
@@ -49,7 +50,6 @@ export default function Destinos() {
     e.preventDefault();
     const n = nome.trim();
     if (!n) return;
-    setError(null);
     try {
       if (modal === 'add') {
         await api.favorecidos.create({ nome: n });
@@ -57,9 +57,10 @@ export default function Destinos() {
         await api.favorecidos.update({ id: editingId, nome: n });
       }
       closeModal();
+      toast.success(modal === 'add' ? 'Destino cadastrado.' : 'Destino atualizado.');
       load();
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'Erro ao salvar');
+      toast.error(err instanceof Error ? err.message : 'Erro ao salvar');
     }
   };
 
@@ -67,9 +68,10 @@ export default function Destinos() {
     if (!confirm('Inativar este destino? Ele não aparecerá na lista ao lançar transações.')) return;
     try {
       await api.favorecidos.delete(id);
+      toast.success('Destino inativado.');
       load();
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'Erro ao inativar');
+      toast.error(err instanceof Error ? err.message : 'Erro ao inativar');
     }
   };
 
@@ -100,12 +102,6 @@ export default function Destinos() {
           </button>
         </div>
       </div>
-
-      {error && (
-        <div className="rounded-lg bg-red-50 border border-red-200 text-red-700 p-3 text-sm">
-          {error}
-        </div>
-      )}
 
       {loading ? (
         <div className="text-gray-500 py-8">Carregando...</div>

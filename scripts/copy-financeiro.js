@@ -5,7 +5,7 @@ const rootDir = process.cwd();
 const financeiroDir = join(rootDir, 'financeiro');
 const financeiroBuildDir = join(financeiroDir, 'dist');
 const financeiroApiDir = join(financeiroDir, 'api');
-const distFinanceiroDir = join(rootDir, 'dist', 'financeiro');
+const distFinanceiroDir = join(rootDir, 'dist', 'gestao');
 
 const ignoredNames = new Set([
   'node_modules',
@@ -53,7 +53,7 @@ function copyRecursive(source, destination) {
   copyFileSync(source, destination);
 }
 
-console.log('\n💼 Copiando subdomínio financeiro para dist/financeiro...');
+console.log('\n💼 Copiando sistema financeiro para dist/gestao (subdomínio gestao.todaarte.com.br)...');
 
 if (!existsSync(financeiroDir)) {
   console.error('❌ Pasta financeiro/ não encontrada.');
@@ -78,4 +78,4 @@ if (existsSync(financeiroApiDir)) {
   console.warn('   ⚠️  Pasta financeiro/api não encontrada');
 }
 
-console.log('✅ Financeiro disponível em dist/financeiro\n');
+console.log('✅ Financeiro disponível em dist/gestao\n');

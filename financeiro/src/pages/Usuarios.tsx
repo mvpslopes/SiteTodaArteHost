@@ -3,23 +3,33 @@ import { ShieldCheck, Plus } from 'lucide-react';
 import { useAuth } from '../contexts/AuthContext';
 import { api, type Usuario, type Perfil } from '../api';
 import { useSearch, matchSearch } from '../contexts/SearchContext';
+import { useToast } from '../contexts/ToastContext';
 
 const PERFIS: { value: Perfil; label: string }[] = [
   { value: 'root', label: 'Root' },
   { value: 'administrador', label: 'Administrador' },
-  { value: 'usuario', label: 'Usuário' },
+  { value: 'usuario', label: 'Operador' },
   { value: 'cliente', label: 'Cliente' },
 ];
+
+function labelPerfil(perfil: Perfil) {
+  if (perfil === 'root') return 'Root';
+  if (perfil === 'administrador') return 'Administrador';
+  if (perfil === 'usuario') return 'Operador';
+  return 'Cliente';
+}
 
 export default function Usuarios() {
   const { user: currentUser } = useAuth();
   const { query } = useSearch();
+  const toast = useToast();
   const [usuarios, setUsuarios] = useState<Usuario[]>([]);
   const [loading, setLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
   const [modal, setModal] = useState<'add' | 'edit' | null>(null);
   const [editing, setEditing] = useState<Usuario | null>(null);
   const [form, setForm] = useState({ email: '', senha: '', nome: '', perfil: 'usuario' as Perfil });
+  const [senhaAlvo, setSenhaAlvo] = useState<Usuario | null>(null);
+  const [senhaNova, setSenhaNova] = useState('');
 
   const usuariosFiltrados = useMemo(() => {
     if (!query.trim()) return usuarios;
@@ -31,7 +41,7 @@ export default function Usuarios() {
     api.usuarios
       .list()
       .then((r) => setUsuarios(r.usuarios))
-      .catch((e) => setError(e.message))
+      .catch((e) => toast.error(e.message))
       .finally(() => setLoading(false));
   };
 
@@ -58,11 +68,10 @@ export default function Usuarios() {
 
   const submit = async (e: React.FormEvent) => {
     e.preventDefault();
-    setError(null);
     try {
       if (modal === 'add') {
         if (!form.senha || form.senha.length < 8) {
-          setError('Senha deve ter no mínimo 8 caracteres');
+          toast.error('Senha deve ter no mínimo 8 caracteres');
           return;
         }
         await api.usuarios.create({
@@ -81,9 +90,10 @@ export default function Usuarios() {
         await api.usuarios.update(payload);
       }
       closeModal();
+      toast.success(modal === 'add' ? 'Usuário cadastrado.' : 'Usuário atualizado.');
       load();
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'Erro ao salvar');
+      toast.error(err instanceof Error ? err.message : 'Erro ao salvar');
     }
   };
 
@@ -91,13 +101,43 @@ export default function Usuarios() {
     if (!confirm('Inativar este usuário?')) return;
     try {
       await api.usuarios.delete(id);
+      toast.success('Usuário inativado.');
       load();
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'Erro ao inativar');
+      toast.error(err instanceof Error ? err.message : 'Erro ao inativar');
     }
   };
 
+  const definirSenha = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!senhaAlvo) return;
+    if (senhaNova.length < 8) {
+      toast.error('Senha deve ter no mínimo 8 caracteres');
+      return;
+    }
+    try {
+      await api.usuarios.update({
+        id: senhaAlvo.id,
+        nome: senhaAlvo.nome,
+        senha: senhaNova,
+      });
+      setSenhaAlvo(null);
+      setSenhaNova('');
+      toast.success(`Senha de ${senhaAlvo.nome || senhaAlvo.email} atualizada.`);
+      load();
+    } catch (err) {
+      toast.error(err instanceof Error ? err.message : 'Erro ao definir senha');
+    }
+  };
+
+  const podeDefinirSenha = (u: Usuario) => {
+    if (u.perfil === 'usuario') return false;
+    if (u.perfil === 'root' && currentUser?.perfil !== 'root') return false;
+    return currentUser?.perfil === 'root' || currentUser?.perfil === 'administrador';
+  };
+
   const isRoot = currentUser?.perfil === 'root';
+  const colSpan = isRoot ? 6 : 5;
 
   return (
     <div className="space-y-6">
@@ -118,12 +158,6 @@ export default function Usuarios() {
         )}
       </div>
 
-      {error && (
-        <div className="rounded-lg bg-red-50 border border-red-200 text-red-700 p-3 text-sm">
-          {error}
-        </div>
-      )}
-
       {loading ? (
         <div className="text-gray-500 py-8">Carregando...</div>
       ) : (
@@ -134,6 +168,7 @@ export default function Usuarios() {
                 <th className="text-left py-3 px-4">Nome</th>
                 <th className="text-left py-3 px-4">Email</th>
                 <th className="text-left py-3 px-4">Perfil</th>
+                <th className="text-left py-3 px-4">Senha</th>
                 <th className="text-left py-3 px-4">Status</th>
                 {isRoot && <th className="w-24 py-3 px-4"></th>}
               </tr>
@@ -141,7 +176,7 @@ export default function Usuarios() {
             <tbody>
               {usuariosFiltrados.length === 0 ? (
                 <tr>
-                  <td colSpan={isRoot ? 5 : 4} className="py-8 text-gray-500 text-center">
+                  <td colSpan={colSpan} className="py-8 text-gray-500 text-center">
                     {usuarios.length === 0 ? 'Nenhum usuário.' : 'Nenhum usuário encontrado para esta pesquisa.'}
                   </td>
                 </tr>
@@ -151,15 +186,28 @@ export default function Usuarios() {
                   <td className="py-3 px-4 text-gray-800 font-medium">{u.nome || '—'}</td>
                   <td className="py-3 px-4 text-gray-500">{u.email}</td>
                   <td className="py-3 px-4">
-                    <span className="text-gray-600">
-                      {u.perfil === 'root'
-                        ? 'Root'
-                        : u.perfil === 'administrador'
-                        ? 'Administrador'
-                        : u.perfil === 'usuario'
-                        ? 'Usuário'
-                        : 'Cliente'}
-                    </span>
+                    <span className="text-gray-600">{labelPerfil(u.perfil)}</span>
+                  </td>
+                  <td className="py-3 px-4">
+                    {u.perfil === 'usuario' ? (
+                      <span className="text-gray-400 text-xs">—</span>
+                    ) : (
+                      <div className="flex items-center gap-2">
+                        <span className="font-mono text-gray-800">{u.senha || '—'}</span>
+                        {podeDefinirSenha(u) && (
+                          <button
+                            type="button"
+                            onClick={() => {
+                              setSenhaAlvo(u);
+                              setSenhaNova('');
+                            }}
+                            className="text-xs text-primary-600 hover:text-primary-700 shrink-0"
+                          >
+                            alterar
+                          </button>
+                        )}
+                      </div>
+                    )}
                   </td>
                   <td className="py-3 px-4">
                     <span className={`inline-flex px-2 py-0.5 rounded-full text-xs font-medium ${u.ativo ? 'bg-emerald-50 text-emerald-700' : 'text-gray-500'}`}>
@@ -262,6 +310,48 @@ export default function Usuarios() {
                 </button>
                 <button type="submit" className="flex-1 py-2 rounded-lg bg-primary-600 hover:bg-primary-500 text-white font-medium">
                   Salvar
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
+
+      {senhaAlvo && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60" onClick={() => setSenhaAlvo(null)}>
+          <div
+            className="bg-white border border-gray-200 rounded-xl shadow-lg w-full max-w-sm"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <h2 className="px-5 py-4 border-b border-gray-200 text-lg font-medium text-gray-900">
+              Definir senha — {senhaAlvo.nome || senhaAlvo.email}
+            </h2>
+            <form onSubmit={definirSenha} className="p-5 space-y-4">
+              <p className="text-xs text-gray-500">
+                A senha passa a aparecer na coluna depois de salvar. Informe a senha atual deste acesso (mínimo 8 caracteres).
+              </p>
+              <div>
+                <label className="block text-sm text-gray-600 mb-1">Nova senha</label>
+                <input
+                  type="password"
+                  value={senhaNova}
+                  onChange={(e) => setSenhaNova(e.target.value)}
+                  className="w-full rounded-lg border border-gray-200 bg-white px-3 py-2 text-gray-800"
+                  minLength={8}
+                  required
+                  autoFocus
+                />
+              </div>
+              <div className="flex gap-3 pt-2">
+                <button
+                  type="button"
+                  onClick={() => setSenhaAlvo(null)}
+                  className="flex-1 py-2 rounded-lg border border-gray-300 text-gray-700 hover:bg-gray-50"
+                >
+                  Cancelar
+                </button>
+                <button type="submit" className="flex-1 py-2 rounded-lg bg-primary-600 hover:bg-primary-500 text-white font-medium">
+                  Salvar senha
                 </button>
               </div>
             </form>

@@ -9,6 +9,7 @@ try {
     $currentUser = requireAuth();
     requireAdminOrRoot();
     $pdo = getDBConnection();
+    ensureChecklistMensalSupport($pdo);
 } catch (Throwable $e) {
     http_response_code(500);
     echo json_encode(['error' => 'Erro interno', 'detail' => $e->getMessage()]);
@@ -65,7 +66,7 @@ foreach ($tarefas as $t) {
     $tarefasById[$t['id']] = $t;
 }
 
-$periodos = ['diaria','segunda','terca','quarta','quinta','sexta'];
+$periodos = ['diaria','segunda','terca','quarta','quinta','sexta','mensal'];
 $diaMap = [
     1 => 'segunda',
     2 => 'terca',
@@ -85,10 +86,22 @@ for ($ts = $startTs; $ts <= $endTs; $ts += 86400) {
     if (isset($diaMap[$diaSemana])) {
         $periodicidadesDia[] = $diaMap[$diaSemana];
     }
+    $diaAtual = (int)date('j', $ts);
+    $ultimoDia = (int)date('t', $ts);
     foreach ($tarefas as $t) {
-        if (!in_array($t['periodicidade'], $periodicidadesDia, true)) continue;
+        $p = $t['periodicidade'];
+        if ($p === 'mensal') {
+            $diaMes = (int)($t['dia_mes'] ?? 0);
+            if ($diaMes < 1 || !checklistMensalCaiNoDia($diaMes, $diaAtual, $ultimoDia)) {
+                continue;
+            }
+        } elseif (!in_array($p, $periodicidadesDia, true)) {
+            continue;
+        }
         $esperadasTotal++;
-        $esperadasPorPeriodo[$t['periodicidade']]++;
+        if (isset($esperadasPorPeriodo[$p])) {
+            $esperadasPorPeriodo[$p]++;
+        }
         $id = (int)$t['id'];
         if (!isset($esperadasPorTarefa[$id])) {
             $esperadasPorTarefa[$id] = 0;

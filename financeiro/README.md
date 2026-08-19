@@ -40,16 +40,16 @@ O frontend sobe em `http://localhost:5174`. Para a API responder em `/api`, use 
    npm run build
    ```
 
-2. No servidor (Hostinger), o subdomínio deve apontar para a pasta:
-   `/home/u179630068/domains/todaarte.com.br/public_html/financeiro`
+2. No servidor (Hostinger), o subdomínio **gestao** deve apontar para a pasta:
+   `/home/u179630068/domains/todaarte.com.br/public_html/gestao`
 
 3. Enviar os arquivos:
-   - Conteúdo de **financeiro/dist/** → para **public_html/financeiro/** (index.html, assets/, .htaccess).
-   - Conteúdo de **financeiro/api/** → para **public_html/financeiro/api/** (todos os .php e o .htaccess da api).
+   - Conteúdo de **financeiro/dist/** → para **public_html/gestao/** (index.html, assets/, .htaccess).
+   - Conteúdo de **financeiro/api/** → para **public_html/gestao/api/** (todos os .php e o .htaccess da api).
 
 4. Garantir que o **schema.sql** já foi executado no banco `u179630068_todaarte_bd`.
 
-Acesso: `https://financeiro.todaarte.com.br` (ou o endereço que você configurou para o subdomínio).
+Acesso: `https://gestao.todaarte.com.br`
 
 ## Funcionalidades
 

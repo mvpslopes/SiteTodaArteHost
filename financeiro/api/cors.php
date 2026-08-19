@@ -1,7 +1,7 @@
 <?php
 // CORS para o front consumir a API (mesmo domínio ou subdomínio)
 $origin = $_SERVER['HTTP_ORIGIN'] ?? '';
-$allowed = ['https://financeiro.todaarte.com.br', 'https://todaarte.com.br', 'http://localhost:5174', 'http://localhost:5173', 'http://127.0.0.1:5174', 'http://127.0.0.1:5173'];
+$allowed = ['https://gestao.todaarte.com.br', 'https://financeiro.todaarte.com.br', 'https://todaarte.com.br', 'http://localhost:5174', 'http://localhost:5173', 'http://127.0.0.1:5174', 'http://127.0.0.1:5173'];
 if (in_array($origin, $allowed, true)) {
     header("Access-Control-Allow-Origin: $origin");
     header('Access-Control-Allow-Credentials: true');

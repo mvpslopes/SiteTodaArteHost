@@ -2,7 +2,7 @@ import { useEffect, useMemo, useState } from 'react';
 import { CheckSquare } from 'lucide-react';
 import { api } from '../api';
 
-type Periodicidade = 'diaria' | 'segunda' | 'terca' | 'quarta' | 'quinta' | 'sexta';
+type Periodicidade = 'diaria' | 'segunda' | 'terca' | 'quarta' | 'quinta' | 'sexta' | 'mensal';
 
 interface TarefaChecklist {
   id: number;
@@ -13,9 +13,12 @@ interface TarefaChecklist {
   exec_id: number | null;
   concluida: number | null;
   observacao: string | null;
+  responsavel_id?: number | null;
+  responsavel_nome?: string | null;
+  dia_mes?: number | null;
 }
 
-const LABELS_PERIODICIDADE: Record<Periodicidade, string> = {
+const LABELS_PERIODICIDADE: Record<Exclude<Periodicidade, 'mensal'>, string> = {
   diaria: 'Rotina diária',
   segunda: 'Segunda-feira',
   terca: 'Terça-feira',
@@ -23,6 +26,17 @@ const LABELS_PERIODICIDADE: Record<Periodicidade, string> = {
   quinta: 'Quinta-feira',
   sexta: 'Sexta-feira',
 };
+
+function labelGrupo(t: TarefaChecklist) {
+  if (t.periodicidade === 'mensal') {
+    return `Todo dia ${t.dia_mes ?? '?'} do mês`;
+  }
+  return LABELS_PERIODICIDADE[t.periodicidade];
+}
+
+function chaveGrupo(t: TarefaChecklist) {
+  return t.periodicidade === 'mensal' ? `mensal-${t.dia_mes ?? 0}` : t.periodicidade;
+}
 
 function toInputDate(dateStr: string) {
   if (!dateStr) return '';
@@ -62,19 +76,24 @@ export default function Checklist() {
   }, [tarefas]);
 
   const grupos = useMemo(() => {
-    const map = new Map<Periodicidade, TarefaChecklist[]>();
+    const map = new Map<string, TarefaChecklist[]>();
     for (const t of tarefas) {
-      if (!map.has(t.periodicidade)) map.set(t.periodicidade, []);
-      map.get(t.periodicidade)!.push(t);
+      const chave = chaveGrupo(t);
+      if (!map.has(chave)) map.set(chave, []);
+      map.get(chave)!.push(t);
     }
     for (const [, list] of map) {
       list.sort((a, b) => a.ordem - b.ordem || a.id - b.id);
     }
-    return Array.from(map.entries()).sort(
-      (a, b) =>
-        ['diaria', 'segunda', 'terca', 'quarta', 'quinta', 'sexta'].indexOf(a[0]) -
-        ['diaria', 'segunda', 'terca', 'quarta', 'quinta', 'sexta'].indexOf(b[0]),
-    );
+    const ordem = ['diaria', 'segunda', 'terca', 'quarta', 'quinta', 'sexta', 'mensal'];
+    return Array.from(map.entries()).sort((a, b) => {
+      const pa = a[1][0]?.periodicidade ?? 'diaria';
+      const pb = b[1][0]?.periodicidade ?? 'diaria';
+      const ia = ordem.indexOf(pa);
+      const ib = ordem.indexOf(pb);
+      if (ia !== ib) return (ia < 0 ? 99 : ia) - (ib < 0 ? 99 : ib);
+      return (a[1][0]?.dia_mes ?? 0) - (b[1][0]?.dia_mes ?? 0);
+    });
   }, [tarefas]);
 
   const handleToggle = async (t: TarefaChecklist, checked: boolean) => {
@@ -183,14 +202,14 @@ export default function Checklist() {
         </div>
       ) : (
         <div className="space-y-5">
-          {grupos.map(([periodicidade, lista]) => (
+          {grupos.map(([chave, lista]) => (
             <div
-              key={periodicidade}
+              key={chave}
               className="rounded-xl bg-white border border-gray-200 shadow-card"
             >
               <div className="px-5 py-3 border-b border-gray-100 flex items-center justify-between">
                 <h2 className="text-sm font-semibold text-gray-800">
-                  {LABELS_PERIODICIDADE[periodicidade]}
+                  {labelGrupo(lista[0])}
                 </h2>
                 <span className="text-xs text-gray-500">
                   {lista.filter((t) => t.concluida === 1).length} de {lista.length} concluídas
@@ -209,6 +228,11 @@ export default function Checklist() {
                       />
                       <div>
                         <p className="text-sm font-medium text-gray-900">{t.titulo}</p>
+                        {t.responsavel_nome && (
+                          <p className="mt-0.5 text-xs text-primary-700">
+                            Quem faz: {t.responsavel_nome}
+                          </p>
+                        )}
                         {t.descricao && (
                           <p className="mt-0.5 text-xs text-gray-500 whitespace-pre-line">
                             {t.descricao}

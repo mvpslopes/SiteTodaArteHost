@@ -20,43 +20,120 @@ function normalizarInt($value, $min, $max) {
     return $n;
 }
 
+function gastoFixoVigente(array $g, int $mes, int $ano): bool {
+    $inicio = ((int)$g['ano_inicio']) * 12 + ((int)$g['mes_inicio']);
+    $atual = $ano * 12 + $mes;
+    if ($atual < $inicio) {
+        return false;
+    }
+    if (!empty($g['mes_fim']) && !empty($g['ano_fim'])) {
+        $fim = ((int)$g['ano_fim']) * 12 + ((int)$g['mes_fim']);
+        if ($atual > $fim) {
+            return false;
+        }
+    }
+    return true;
+}
+
+function statusGastoFixo(bool $pago, int $diaVencimento, int $mes, int $ano): string {
+    if ($pago) {
+        return 'pago';
+    }
+    $hoje = new DateTimeImmutable('today');
+    $mesAtual = ((int)$hoje->format('n'));
+    $anoAtual = ((int)$hoje->format('Y'));
+    $compSel = $ano * 12 + $mes;
+    $compHoje = $anoAtual * 12 + $mesAtual;
+    if ($compSel < $compHoje) {
+        return 'atrasado';
+    }
+    if ($compSel > $compHoje) {
+        return 'pendente';
+    }
+    $diaHoje = (int)$hoje->format('j');
+    return $diaHoje > $diaVencimento ? 'atrasado' : 'pendente';
+}
+
 // GET: listar gastos fixos (por mês/ano) ou alertas de vencimento
 if ($_SERVER['REQUEST_METHOD'] === 'GET') {
     $mes = isset($_GET['mes']) ? normalizarInt($_GET['mes'], 1, 12) : (int)date('n');
     $ano = isset($_GET['ano']) ? normalizarInt($_GET['ano'], 2000, 2100) : (int)date('Y');
     $alertas = isset($_GET['alertas']) ? (int)$_GET['alertas'] === 1 : false;
+    $hasGastoFixoId = ensureTransacaoGastoFixoColumn($pdo);
 
-    // Por simplicidade, listar todos os gastos fixos ativos
-    // (independente de mes/ano); o filtro de período pode ser evoluído depois.
     $sqlBase = "
         SELECT g.*, f.nome AS favorecido_nome
         FROM gastos_fixos g
         LEFT JOIN favorecidos f ON f.id = g.favorecido_id
         WHERE g.ativo = 1
+        ORDER BY g.dia_vencimento ASC, g.nome ASC
     ";
 
-    $params = [];
-
-    if ($alertas) {
-        $diaHoje = (int)date('j');
-        $diaLimite = $diaHoje + 3;
-        if ($diaLimite > 31) $diaLimite = 31;
-        $sqlBase .= " AND g.dia_vencimento BETWEEN ? AND ?";
-        $params[] = $diaHoje;
-        $params[] = $diaLimite;
-    }
-
-    $sqlBase .= " ORDER BY g.dia_vencimento ASC, g.nome ASC";
-
     try {
-        $stmt = $pdo->prepare($sqlBase);
-        $stmt->execute($params);
-        $rows = $stmt->fetchAll();
+        $stmt = $pdo->query($sqlBase);
+        $rows = $stmt->fetchAll(PDO::FETCH_ASSOC);
+
+        $pagamentos = [];
+        $descricoesPagas = [];
+        $sqlPag = "
+            SELECT " . ($hasGastoFixoId ? 'gasto_fixo_id,' : 'NULL AS gasto_fixo_id,') . " descricao
+            FROM transacoes
+            WHERE tipo = 'saida'
+              AND MONTH(data_transacao) = ?
+              AND YEAR(data_transacao) = ?
+        ";
+        $stmtPag = $pdo->prepare($sqlPag);
+        $stmtPag->execute([$mes, $ano]);
+        foreach ($stmtPag->fetchAll(PDO::FETCH_ASSOC) as $p) {
+            if (!empty($p['gasto_fixo_id'])) {
+                $pagamentos[(int)$p['gasto_fixo_id']] = true;
+            }
+            $d = trim((string)($p['descricao'] ?? ''));
+            if ($d !== '' && stripos($d, 'Pagamento gasto fixo:') === 0) {
+                $descricoesPagas[] = mb_strtolower($d);
+            }
+        }
+
+        $saida = [];
+        foreach ($rows as $g) {
+            if (!gastoFixoVigente($g, $mes, $ano)) {
+                continue;
+            }
+            $id = (int)$g['id'];
+            $pago = !empty($pagamentos[$id]);
+            if (!$pago) {
+                $prefix = mb_strtolower('Pagamento gasto fixo: ' . $g['nome']);
+                foreach ($descricoesPagas as $d) {
+                    if (strpos($d, $prefix) === 0) {
+                        $pago = true;
+                        break;
+                    }
+                }
+            }
+            $status = statusGastoFixo($pago, (int)$g['dia_vencimento'], $mes, $ano);
+            $g['pago'] = $pago ? 1 : 0;
+            $g['status_pagamento'] = $status;
+            if ($alertas && $pago) {
+                continue;
+            }
+            $saida[] = $g;
+        }
+
+        if ($alertas) {
+            usort($saida, function ($a, $b) {
+                $ordem = ['atrasado' => 0, 'pendente' => 1, 'pago' => 2];
+                $oa = $ordem[$a['status_pagamento']] ?? 9;
+                $ob = $ordem[$b['status_pagamento']] ?? 9;
+                if ($oa !== $ob) return $oa - $ob;
+                return ((int)$a['dia_vencimento']) - ((int)$b['dia_vencimento']);
+            });
+        }
 
         echo json_encode([
             'mes' => $mes,
             'ano' => $ano,
-            $alertas ? 'alertas' : 'gastos' => $rows,
+            $alertas ? 'alertas' : 'gastos' => $saida,
+            'pendentes' => count(array_filter($saida, fn($g) => ($g['status_pagamento'] ?? '') !== 'pago')),
         ]);
         exit;
     } catch (Throwable $e) {

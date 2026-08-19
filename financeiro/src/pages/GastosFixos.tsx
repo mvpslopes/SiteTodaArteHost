@@ -1,6 +1,7 @@
 import { useEffect, useMemo, useState } from 'react';
-import { CalendarDays, Plus, Edit3, Trash2 } from 'lucide-react';
+import { CalendarDays, Plus, Edit3, Trash2, AlertTriangle } from 'lucide-react';
 import { api, type GastoFixo, type Favorecido, METODOS_PAGAMENTO } from '../api';
+import { useToast } from '../contexts/ToastContext';
 
 const MESES = ['Jan','Fev','Mar','Abr','Mai','Jun','Jul','Ago','Set','Out','Nov','Dez'];
 
@@ -11,11 +12,11 @@ function formatMoney(n: number | null | undefined) {
 
 export default function GastosFixos() {
   const hoje = new Date();
+  const toast = useToast();
   const [mes, setMes] = useState<number>(hoje.getMonth() + 1);
   const [ano, setAno] = useState<number>(hoje.getFullYear());
   const [gastos, setGastos] = useState<GastoFixo[]>([]);
   const [loading, setLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
   const [modalOpen, setModalOpen] = useState(false);
   const [editing, setEditing] = useState<GastoFixo | null>(null);
   const [favorecidos, setFavorecidos] = useState<Favorecido[]>([]);
@@ -43,7 +44,6 @@ export default function GastosFixos() {
 
   const load = () => {
     setLoading(true);
-    setError(null);
     Promise.all([
       api.gastosFixos.list({ mes, ano }),
       api.favorecidos.list(true),
@@ -52,7 +52,7 @@ export default function GastosFixos() {
         setGastos(gf.gastos);
         setFavorecidos(fav.favorecidos);
       })
-      .catch((e) => setError(e.message))
+      .catch((e) => toast.error(e.message))
       .finally(() => setLoading(false));
   };
 
@@ -103,10 +103,9 @@ export default function GastosFixos() {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!form.nome.trim()) {
-      setError('Informe o nome do gasto fixo.');
+      toast.error('Informe o nome do gasto fixo.');
       return;
     }
-    setError(null);
     const payload = {
       nome: form.nome.trim(),
       descricao: form.descricao.trim() || undefined,
@@ -126,9 +125,10 @@ export default function GastosFixos() {
         await api.gastosFixos.create(payload);
       }
       fecharModal();
+      toast.success(editing ? 'Gasto fixo atualizado.' : 'Gasto fixo cadastrado.');
       load();
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'Erro ao salvar gasto fixo');
+      toast.error(err instanceof Error ? err.message : 'Erro ao salvar gasto fixo');
     }
   };
 
@@ -136,16 +136,45 @@ export default function GastosFixos() {
     if (!confirm(`Excluir o gasto fixo "${g.nome}"?`)) return;
     try {
       await api.gastosFixos.delete(g.id);
+      toast.success('Gasto fixo excluído.');
       load();
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'Erro ao excluir gasto fixo');
+      toast.error(err instanceof Error ? err.message : 'Erro ao excluir gasto fixo');
     }
   };
 
-  const proximos = useMemo(
-    () => gastos.slice().sort((a, b) => a.dia_vencimento - b.dia_vencimento),
-    [gastos],
+  const proximos = useMemo(() => {
+    const ordem = { atrasado: 0, pendente: 1, pago: 2 };
+    return gastos.slice().sort((a, b) => {
+      const oa = ordem[a.status_pagamento ?? 'pendente'];
+      const ob = ordem[b.status_pagamento ?? 'pendente'];
+      if (oa !== ob) return oa - ob;
+      return a.dia_vencimento - b.dia_vencimento;
+    });
+  }, [gastos]);
+
+  const emAberto = useMemo(
+    () => proximos.filter((g) => g.status_pagamento !== 'pago'),
+    [proximos],
   );
+  const atrasados = useMemo(
+    () => proximos.filter((g) => g.status_pagamento === 'atrasado'),
+    [proximos],
+  );
+  const soPendentes = useMemo(
+    () => proximos.filter((g) => g.status_pagamento === 'pendente'),
+    [proximos],
+  );
+
+  const textoAlerta = (() => {
+    const partes: string[] = [];
+    if (atrasados.length === 1) partes.push('1 gasto atrasado');
+    else if (atrasados.length > 1) partes.push(`${atrasados.length} gastos atrasados`);
+    if (soPendentes.length === 1) partes.push(atrasados.length > 0 ? '1 pendente' : '1 gasto pendente');
+    else if (soPendentes.length > 1) partes.push(atrasados.length > 0 ? `${soPendentes.length} pendentes` : `${soPendentes.length} gastos pendentes`);
+    if (partes.length === 0) return '';
+    return `${partes.join(' e ')} neste mês.`;
+  })();
 
   const abrirPagamento = (g: GastoFixo) => {
     setGastoSelecionado(g);
@@ -171,18 +200,17 @@ export default function GastosFixos() {
     if (!gastoSelecionado) return;
     const valor = parseFloat(pagForm.valor.replace(',', '.'));
     if (!valor || valor <= 0) {
-      setError('Informe um valor válido para o pagamento.');
+      toast.error('Informe um valor válido para o pagamento.');
       return;
     }
     if (!pagForm.metodo_pagamento) {
-      setError('Selecione o método de pagamento.');
+      toast.error('Selecione o método de pagamento.');
       return;
     }
     if (!pagForm.favorecido_id || pagForm.favorecido_id <= 0) {
-      setError('Selecione o destino (favorecido) para a saída.');
+      toast.error('Selecione o destino (favorecido) para a saída.');
       return;
     }
-    setError(null);
     try {
       await api.transacoes.create({
         tipo: 'saida',
@@ -192,10 +220,13 @@ export default function GastosFixos() {
         favorecido_id: pagForm.favorecido_id,
         cliente_id: undefined,
         descricao: pagForm.descricao || `Pagamento gasto fixo: ${gastoSelecionado.nome}`,
+        gasto_fixo_id: gastoSelecionado.id,
       });
       fecharPagamento();
+      toast.success('Pagamento registrado.');
+      load();
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'Erro ao registrar pagamento');
+      toast.error(err instanceof Error ? err.message : 'Erro ao registrar pagamento');
     }
   };
 
@@ -241,9 +272,21 @@ export default function GastosFixos() {
         </div>
       </div>
 
-      {error && (
-        <div className="rounded-lg bg-red-50 border border-red-200 text-red-700 p-3 text-sm">
-          {error}
+      {emAberto.length > 0 && (
+        <div className={`rounded-xl border px-5 py-4 shadow-card ${
+          atrasados.length > 0 ? 'bg-rose-50 border-rose-200' : 'bg-amber-50 border-amber-200'
+        }`}>
+          <div className="flex items-start gap-3">
+            <AlertTriangle className={`w-5 h-5 shrink-0 mt-0.5 ${atrasados.length > 0 ? 'text-rose-600' : 'text-amber-600'}`} />
+            <div>
+              <p className={`text-sm font-semibold ${atrasados.length > 0 ? 'text-rose-800' : 'text-amber-800'}`}>
+                {textoAlerta}
+              </p>
+              <p className={`text-xs mt-0.5 ${atrasados.length > 0 ? 'text-rose-700' : 'text-amber-800/80'}`}>
+                O alerta some depois que você registrar o pagamento.
+              </p>
+            </div>
+          </div>
         </div>
       )}
 
@@ -269,6 +312,7 @@ export default function GastosFixos() {
                 <tr className="text-gray-500">
                   <th className="text-left py-3 px-4 font-medium">Nome</th>
                   <th className="text-left py-3 px-4 font-medium">Vencimento</th>
+                  <th className="text-left py-3 px-4 font-medium">Status</th>
                   <th className="text-left py-3 px-4 font-medium">Método</th>
                   <th className="text-right py-3 px-4 font-medium">Valor padrão</th>
                   <th className="text-left py-3 px-4 font-medium">Período</th>
@@ -287,6 +331,21 @@ export default function GastosFixos() {
                     <td className="py-3 px-4 text-gray-700">
                       Dia {g.dia_vencimento.toString().padStart(2, '0')}
                     </td>
+                    <td className="py-3 px-4">
+                      {g.status_pagamento === 'pago' ? (
+                        <span className="inline-flex px-2 py-0.5 rounded-full text-[11px] font-medium bg-emerald-50 text-emerald-700 border border-emerald-200">
+                          Pago
+                        </span>
+                      ) : g.status_pagamento === 'atrasado' ? (
+                        <span className="inline-flex px-2 py-0.5 rounded-full text-[11px] font-medium bg-rose-50 text-rose-700 border border-rose-200">
+                          Atrasado
+                        </span>
+                      ) : (
+                        <span className="inline-flex px-2 py-0.5 rounded-full text-[11px] font-medium bg-amber-50 text-amber-800 border border-amber-200">
+                          Pendente
+                        </span>
+                      )}
+                    </td>
                     <td className="py-3 px-4 text-gray-600">
                       {g.metodo_pagamento
                         ? METODOS_PAGAMENTO.find((m) => m.value === g.metodo_pagamento)?.label ??
@@ -303,13 +362,15 @@ export default function GastosFixos() {
                     </td>
                     <td className="py-3 px-4 text-right">
                       <div className="flex items-center justify-end gap-2">
-                        <button
-                          type="button"
-                          onClick={() => abrirPagamento(g)}
-                          className="text-xs text-emerald-600 hover:text-emerald-700 inline-flex items-center gap-1"
-                        >
-                          Registrar pagamento
-                        </button>
+                        {g.status_pagamento !== 'pago' && (
+                          <button
+                            type="button"
+                            onClick={() => abrirPagamento(g)}
+                            className="text-xs text-emerald-600 hover:text-emerald-700 inline-flex items-center gap-1"
+                          >
+                            Registrar pagamento
+                          </button>
+                        )}
                         <button
                           type="button"
                           onClick={() => abrirEditar(g)}

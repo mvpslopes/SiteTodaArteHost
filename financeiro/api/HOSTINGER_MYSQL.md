@@ -27,6 +27,6 @@ Sem esse vínculo, o utilizador não pode aceder à base, mesmo com a senha corr
 
 Depois de vincular o utilizador à base e acertar a senha no `db_config.php`, teste de novo em:
 
-**https://financeiro.todaarte.com.br/api/test-db.php**
+**https://gestao.todaarte.com.br/api/test-db.php**
 
 Se aparecer `"ok": true`, a conexão está a funcionar.

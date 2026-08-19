@@ -1,8 +1,10 @@
 import { useEffect, useState } from 'react';
 import { Clock3 } from 'lucide-react';
 import { api, type AuditoriaUsuario, type SessaoUsuario, type Usuario } from '../api';
+import { useToast } from '../contexts/ToastContext';
 
 export default function Auditoria() {
+  const toast = useToast();
   const [usuarios, setUsuarios] = useState<Usuario[]>([]);
   const [sessoes, setSessoes] = useState<SessaoUsuario[]>([]);
   const [acoes, setAcoes] = useState<AuditoriaUsuario[]>([]);
@@ -10,11 +12,9 @@ export default function Auditoria() {
   const [inicio, setInicio] = useState('');
   const [fim, setFim] = useState('');
   const [loading, setLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
 
   const load = () => {
     setLoading(true);
-    setError(null);
     Promise.all([
       api.usuarios.list(),
       api.auditoria.list({
@@ -28,7 +28,7 @@ export default function Auditoria() {
         setSessoes(a.sessoes);
         setAcoes(a.acoes);
       })
-      .catch((e) => setError(e instanceof Error ? e.message : 'Erro ao carregar auditoria'))
+      .catch((e) => toast.error(e instanceof Error ? e.message : 'Erro ao carregar auditoria'))
       .finally(() => setLoading(false));
   };
 
@@ -50,12 +50,6 @@ export default function Auditoria() {
           <h1 className="text-2xl font-semibold text-gray-900">Sessões e Auditoria</h1>
         </div>
       </div>
-
-      {error && (
-        <div className="rounded-lg bg-red-50 border border-red-200 text-red-700 p-3 text-sm">
-          {error}
-        </div>
-      )}
 
       <form
         onSubmit={handleFilter}

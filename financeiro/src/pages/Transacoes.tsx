@@ -2,6 +2,7 @@ import { useEffect, useState, useMemo } from 'react';
 import { ArrowLeftRight, Plus } from 'lucide-react';
 import { api, type Transacao, type Favorecido, type Cliente, METODOS_PAGAMENTO } from '../api';
 import { useSearch, matchSearch } from '../contexts/SearchContext';
+import { useToast } from '../contexts/ToastContext';
 
 const MESES = ['Jan','Fev','Mar','Abr','Mai','Jun','Jul','Ago','Set','Out','Nov','Dez'];
 
@@ -36,11 +37,11 @@ const emptyForm = () => ({
 
 export default function Transacoes() {
   const { query } = useSearch();
+  const toast = useToast();
   const [transacoes, setTransacoes] = useState<Transacao[]>([]);
   const [favorecidos, setFavorecidos] = useState<Favorecido[]>([]);
   const [clientes, setClientes] = useState<Cliente[]>([]);
   const [loading, setLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
   const [modal, setModal] = useState<'add' | 'edit' | null>(null);
   const [editingId, setEditingId] = useState<number | null>(null);
   const [form, setForm] = useState(emptyForm());
@@ -162,7 +163,7 @@ export default function Transacoes() {
         setClientes(c.clientes);
         setSelecionados([]);
       })
-      .catch((e) => setError(e.message))
+      .catch((e) => toast.error(e.message))
       .finally(() => setLoading(false));
   };
 
@@ -197,14 +198,13 @@ export default function Transacoes() {
     e.preventDefault();
     const valor = parseFloat(form.valor.replace(',', '.'));
     if (!valor || valor <= 0) {
-      setError('Preencha o valor.');
+      toast.error('Preencha o valor.');
       return;
     }
     if (form.tipo === 'saida' && !form.favorecido_id) {
-      setError('Selecione o destino para saída.');
+      toast.error('Selecione o destino para saída.');
       return;
     }
-    setError(null);
     const clienteId = form.cliente_id && form.cliente_id > 0 ? form.cliente_id : undefined;
     const favorecidoId = form.tipo === 'saida' ? form.favorecido_id : (form.favorecido_id || 0);
     try {
@@ -231,9 +231,10 @@ export default function Transacoes() {
         });
       }
       closeModal();
+      toast.success(modal === 'add' ? 'Transação cadastrada.' : 'Transação atualizada.');
       load();
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'Erro ao salvar');
+      toast.error(err instanceof Error ? err.message : 'Erro ao salvar');
     }
   };
 
@@ -241,9 +242,10 @@ export default function Transacoes() {
     if (!confirm('Excluir esta transação?')) return;
     try {
       await api.transacoes.delete(id);
+      toast.success('Transação excluída.');
       load();
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'Erro ao excluir');
+      toast.error(err instanceof Error ? err.message : 'Erro ao excluir');
     }
   };
 
@@ -492,12 +494,6 @@ export default function Transacoes() {
           )}
         </div>
       </div>
-
-      {error && (
-        <div className="rounded-lg bg-red-50 border border-red-200 text-red-700 p-3 text-sm">
-          {error}
-        </div>
-      )}
 
       {loading ? (
         <div className="text-gray-500 py-8">Carregando...</div>

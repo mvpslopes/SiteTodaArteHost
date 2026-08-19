@@ -2,9 +2,22 @@
 require_once 'cors.php';
 require_once 'auth_helpers.php';
 require_once 'db_config.php';
+require_once 'db_helpers.php';
 
 $current = requireAuth();
 $pdo = getDBConnection();
+ensureUsuarioPasswordEncColumn($pdo);
+
+function usuarioSelectSql(): string {
+    return 'id, email, nome, perfil, ativo, created_at, updated_at, password_enc';
+}
+
+function usuarioJson(PDO $pdo, int $id): array {
+    $stmt = $pdo->prepare('SELECT ' . usuarioSelectSql() . ' FROM usuarios WHERE id = ?');
+    $stmt->execute([$id]);
+    $row = $stmt->fetch();
+    return $row ? attachUsuarioSenhaVisivel($row) : [];
+}
 
 $perfis = ['root', 'administrador', 'usuario', 'cliente'];
 
@@ -18,9 +31,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'GET') {
 
     $id = isset($_GET['id']) ? (int)$_GET['id'] : null;
     if ($id) {
-        $stmt = $pdo->prepare("SELECT id, email, nome, perfil, ativo, created_at, updated_at FROM usuarios WHERE id = ?");
-        $stmt->execute([$id]);
-        $row = $stmt->fetch();
+        $row = usuarioJson($pdo, $id);
         if (!$row) {
             http_response_code(404);
             echo json_encode(['error' => 'Usuário não encontrado']);
@@ -30,8 +41,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'GET') {
         exit;
     }
 
-    $stmt = $pdo->query("SELECT id, email, nome, perfil, ativo, created_at, updated_at FROM usuarios ORDER BY nome ASC");
-    $list = $stmt->fetchAll();
+    $stmt = $pdo->query('SELECT ' . usuarioSelectSql() . ' FROM usuarios ORDER BY nome ASC');
+    $list = array_map('attachUsuarioSenhaVisivel', $stmt->fetchAll());
     echo json_encode(['usuarios' => $list]);
     exit;
 }
@@ -75,12 +86,11 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     }
 
     $hash = password_hash($senha, PASSWORD_DEFAULT);
-    $stmt = $pdo->prepare("INSERT INTO usuarios (email, password_hash, nome, perfil, ativo) VALUES (?, ?, ?, ?, 1)");
-    $stmt->execute([$email, $hash, $nome, $perfil]);
+    $enc = encryptPasswordDisplay($senha);
+    $stmt = $pdo->prepare("INSERT INTO usuarios (email, password_hash, password_enc, nome, perfil, ativo) VALUES (?, ?, ?, ?, ?, 1)");
+    $stmt->execute([$email, $hash, $enc, $nome, $perfil]);
     $id = (int)$pdo->lastInsertId();
-    $stmt = $pdo->prepare("SELECT id, email, nome, perfil, ativo, created_at, updated_at FROM usuarios WHERE id = ?");
-    $stmt->execute([$id]);
-    echo json_encode($stmt->fetch());
+    echo json_encode(usuarioJson($pdo, $id));
     exit;
 }
 
@@ -115,9 +125,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'PUT') {
         $nome = trim($input['nome'] ?? '');
         $stmt = $pdo->prepare("UPDATE usuarios SET nome = ? WHERE id = ?");
         $stmt->execute([$nome, $id]);
-        $stmt = $pdo->prepare("SELECT id, email, nome, perfil, ativo, created_at, updated_at FROM usuarios WHERE id = ?");
-        $stmt->execute([$id]);
-        echo json_encode($stmt->fetch());
+        echo json_encode(usuarioJson($pdo, $id));
         exit;
     }
 
@@ -156,12 +164,12 @@ if ($_SERVER['REQUEST_METHOD'] === 'PUT') {
     if (isset($input['senha']) && $input['senha'] !== '' && strlen($input['senha']) >= 8) {
         $updates[] = 'password_hash = ?';
         $params[] = password_hash($input['senha'], PASSWORD_DEFAULT);
+        $updates[] = 'password_enc = ?';
+        $params[] = encryptPasswordDisplay($input['senha']);
     }
 
     if (count($updates) === 0) {
-        $stmt = $pdo->prepare("SELECT id, email, nome, perfil, ativo, created_at, updated_at FROM usuarios WHERE id = ?");
-        $stmt->execute([$id]);
-        echo json_encode($stmt->fetch());
+        echo json_encode(usuarioJson($pdo, $id));
         exit;
     }
 
@@ -170,9 +178,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'PUT') {
     $stmt = $pdo->prepare($sql);
     $stmt->execute($params);
 
-    $stmt = $pdo->prepare("SELECT id, email, nome, perfil, ativo, created_at, updated_at FROM usuarios WHERE id = ?");
-    $stmt->execute([$id]);
-    echo json_encode($stmt->fetch());
+    echo json_encode(usuarioJson($pdo, $id));
     exit;
 }
 

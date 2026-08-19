@@ -1,25 +1,26 @@
 import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../contexts/AuthContext';
+import { useToast } from '../contexts/ToastContext';
 
 export default function Login() {
   const [email, setEmail] = useState('');
   const [senha, setSenha] = useState('');
-  const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
   const { login } = useAuth();
+  const toast = useToast();
   const navigate = useNavigate();
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    setError('');
     setLoading(true);
     try {
       await login(email, senha);
+      toast.success('Login realizado com sucesso.');
       navigate('/dashboard', { replace: true });
     } catch (err) {
       const msg = err instanceof Error ? err.message : 'Falha no login';
-      setError(msg);
+      toast.error(msg);
       console.error('Login error:', err);
     } finally {
       setLoading(false);
@@ -35,16 +36,8 @@ export default function Login() {
             alt="TodaArte"
             className="h-20 w-auto object-contain mx-auto"
           />
-          <p className="text-gray-500 text-sm text-center mt-3">Sistema Financeiro</p>
+          <p className="text-gray-500 text-sm text-center mt-3">Gestão</p>
           <form onSubmit={handleSubmit} className="mt-6 space-y-4">
-            {error && (
-              <div className="rounded-lg bg-red-50 border border-red-200 text-red-700 text-sm p-3" role="alert">
-                {error}
-                <p className="mt-2 text-gray-500 text-xs">
-                  Se for erro de conexão: no painel da Hostinger, vincule o usuário MySQL ao banco.
-                </p>
-              </div>
-            )}
             <div>
               <label className="block text-sm text-gray-600 mb-1">Email</label>
               <input

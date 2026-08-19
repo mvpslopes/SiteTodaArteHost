@@ -1,36 +1,36 @@
 import { useState } from 'react';
 import { Settings } from 'lucide-react';
 import { useAuth } from '../contexts/AuthContext';
+import { useToast } from '../contexts/ToastContext';
 import { api } from '../api';
 
 export default function Configuracoes() {
   const { user } = useAuth();
+  const toast = useToast();
   const [senhaAtual, setSenhaAtual] = useState('');
   const [senhaNova, setSenhaNova] = useState('');
   const [senhaNovaConfirma, setSenhaNovaConfirma] = useState('');
-  const [message, setMessage] = useState<{ type: 'ok' | 'err'; text: string } | null>(null);
   const [loading, setLoading] = useState(false);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    setMessage(null);
     if (senhaNova !== senhaNovaConfirma) {
-      setMessage({ type: 'err', text: 'A nova senha e a confirmação não conferem.' });
+      toast.error('A nova senha e a confirmação não conferem.');
       return;
     }
     if (senhaNova.length < 8) {
-      setMessage({ type: 'err', text: 'A nova senha deve ter no mínimo 8 caracteres.' });
+      toast.error('A nova senha deve ter no mínimo 8 caracteres.');
       return;
     }
     setLoading(true);
     try {
       await api.auth.alterarSenha(senhaAtual, senhaNova);
-      setMessage({ type: 'ok', text: 'Senha alterada com sucesso.' });
+      toast.success('Senha alterada com sucesso.');
       setSenhaAtual('');
       setSenhaNova('');
       setSenhaNovaConfirma('');
     } catch (err) {
-      setMessage({ type: 'err', text: err instanceof Error ? err.message : 'Erro ao alterar senha.' });
+      toast.error(err instanceof Error ? err.message : 'Erro ao alterar senha.');
     } finally {
       setLoading(false);
     }
@@ -42,7 +42,7 @@ export default function Configuracoes() {
       : user?.perfil === 'administrador'
       ? 'Administrador'
       : user?.perfil === 'usuario'
-      ? 'Usuário'
+      ? 'Operador'
       : 'Cliente';
 
   return (
@@ -61,17 +61,6 @@ export default function Configuracoes() {
       <div className="rounded-xl border border-gray-200 bg-white p-6 max-w-md shadow-card">
         <h2 className="text-gray-800 font-medium mb-4">Alterar senha</h2>
         <form onSubmit={handleSubmit} className="space-y-4">
-          {message && (
-            <div
-              className={`rounded-lg p-3 text-sm ${
-                message.type === 'ok'
-                  ? 'bg-emerald-50 border border-emerald-200 text-emerald-700'
-                  : 'bg-red-50 border border-red-200 text-red-700'
-              }`}
-            >
-              {message.text}
-            </div>
-          )}
           <div>
             <label className="block text-sm text-gray-600 mb-1">Senha atual</label>
             <input

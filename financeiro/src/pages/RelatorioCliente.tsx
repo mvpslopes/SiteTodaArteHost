@@ -1,6 +1,7 @@
 import { useEffect, useMemo, useState } from 'react';
 import { BarChart2 } from 'lucide-react';
 import { api, type Cliente, type Demanda, type Transacao } from '../api';
+import { useToast } from '../contexts/ToastContext';
 
 type PeriodoTipo = 'competencia' | 'anual';
 
@@ -21,13 +22,13 @@ function formatMoney(n: number) {
 }
 
 export default function RelatorioCliente() {
+  const toast = useToast();
   const [clientes, setClientes] = useState<Cliente[]>([]);
   const [clienteId, setClienteId] = useState<number | ''>('');
   const [periodoTipo, setPeriodoTipo] = useState<PeriodoTipo>('competencia');
   const [mes, setMes] = useState<number>(new Date().getMonth() + 1);
   const [ano, setAno] = useState<number>(new Date().getFullYear());
   const [loading, setLoading] = useState(false);
-  const [error, setError] = useState<string | null>(null);
   const [transacoes, setTransacoes] = useState<Transacao[]>([]);
   const [demandas, setDemandas] = useState<Demanda[]>([]);
 
@@ -35,7 +36,7 @@ export default function RelatorioCliente() {
     api.clientes
       .list(true)
       .then((r) => setClientes(r.clientes))
-      .catch((e) => setError(e.message));
+      .catch((e) => toast.error(e.message));
   }, []);
 
   const clienteSelecionado = useMemo(
@@ -45,11 +46,10 @@ export default function RelatorioCliente() {
 
   const carregar = async () => {
     if (!clienteId) {
-      setError('Selecione um cliente para gerar o relatório.');
+      toast.error('Selecione um cliente para gerar o relatório.');
       return;
     }
     setLoading(true);
-    setError(null);
     try {
       const filtrosTransacoes: { mes?: number; ano?: number; cliente_id?: number } = {
         cliente_id: Number(clienteId),
@@ -82,8 +82,9 @@ export default function RelatorioCliente() {
 
       setTransacoes(transFiltradas);
       setDemandas(demandasFiltradas);
+      toast.success('Relatório gerado.');
     } catch (e) {
-      setError(e instanceof Error ? e.message : 'Erro ao carregar relatório');
+      toast.error(e instanceof Error ? e.message : 'Erro ao carregar relatório');
     } finally {
       setLoading(false);
     }
@@ -107,12 +108,6 @@ export default function RelatorioCliente() {
           Relatórios por cliente
         </h1>
       </div>
-
-      {error && (
-        <div className="rounded-lg bg-red-50 border border-red-200 text-red-700 p-3 text-sm">
-          {error}
-        </div>
-      )}
 
       <div className="rounded-xl border border-gray-200 bg-white p-4 shadow-card space-y-4">
         <form

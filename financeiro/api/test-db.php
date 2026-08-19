@@ -1,7 +1,7 @@
 <?php
 /**
  * Teste de conexão com o banco - abra no navegador para ver o erro exato.
- * Ex: https://financeiro.todaarte.com.br/api/test-db.php
+ * Ex: https://gestao.todaarte.com.br/api/test-db.php
  * REMOVA ou renomeie após corrigir a conexão.
  */
 header('Content-Type: application/json; charset=utf-8');

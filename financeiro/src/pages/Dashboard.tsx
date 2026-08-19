@@ -2,11 +2,17 @@ import { useEffect, useState, useRef, useMemo } from 'react';
 import { LayoutDashboard, CreditCard, Download, FileSpreadsheet, FileText, MapPin, UserPlus, AlertTriangle } from 'lucide-react';
 import { api, METODOS_PAGAMENTO, type GastoFixo } from '../api';
 import { useSearch, matchSearch } from '../contexts/SearchContext';
+import { useToast } from '../contexts/ToastContext';
+import { Link } from 'react-router-dom';
 import * as XLSX from 'xlsx';
 import { jsPDF } from 'jspdf';
 import autoTable from 'jspdf-autotable';
 
 const MESES = ['Janeiro','Fevereiro','Março','Abril','Maio','Junho','Julho','Agosto','Setembro','Outubro','Novembro','Dezembro'];
+
+function labelPeriodo(mes: number, ano: number) {
+  return mes === 0 ? `Ano ${ano}` : `${MESES[mes - 1]} / ${ano}`;
+}
 
 function formatMoney(n: number) {
   return new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(n);
@@ -92,16 +98,16 @@ function exportToExcel(
   resumoPorDestino: [string, ResumoItem][],
   resumoPorCliente: [string, ResumoItem][],
 ) {
-  const periodo = `${MESES[mes - 1]} ${ano}`;
+  const periodo = labelPeriodo(mes, ano);
   const wb = XLSX.utils.book_new();
 
   const resumoSheet = XLSX.utils.aoa_to_sheet([
     ['Dashboard Financeiro — ' + periodo],
     [],
-    ['Resumo do mês', ''],
+    [mes === 0 ? 'Resumo do ano' : 'Resumo do mês', ''],
     ['Entradas', d.total_entradas],
     ['Saídas', d.total_saidas],
-    ['Saldo do mês', d.saldo_mes],
+    [mes === 0 ? 'Saldo do ano' : 'Saldo do mês', d.saldo_mes],
   ]);
   XLSX.utils.book_append_sheet(wb, resumoSheet, 'Resumo');
 
@@ -150,7 +156,7 @@ function exportToExcel(
   ];
   XLSX.utils.book_append_sheet(wb, XLSX.utils.aoa_to_sheet(transRows), 'Lançamentos');
 
-  XLSX.writeFile(wb, `dashboard-${mes.toString().padStart(2, '0')}-${ano}.xlsx`);
+  XLSX.writeFile(wb, mes === 0 ? `dashboard-ano-${ano}.xlsx` : `dashboard-${mes.toString().padStart(2, '0')}-${ano}.xlsx`);
 }
 
 function exportToPdf(
@@ -162,7 +168,7 @@ function exportToPdf(
   resumoPorDestino: [string, ResumoItem][],
   resumoPorCliente: [string, ResumoItem][],
 ) {
-  const periodo = `${MESES[mes - 1]} / ${ano}`;
+  const periodo = labelPeriodo(mes, ano);
   const doc = new jsPDF({ orientation: 'portrait', unit: 'mm', format: 'a4' });
   let y = 14;
   const left = 14;
@@ -178,7 +184,7 @@ function exportToPdf(
 
   doc.setFontSize(12);
   doc.setFont('helvetica', 'bold');
-  doc.text('Resumo do mês', left, y);
+  doc.text(mes === 0 ? 'Resumo do ano' : 'Resumo do mês', left, y);
   y += 6;
   doc.setFont('helvetica', 'normal');
   doc.setFontSize(10);
@@ -186,7 +192,7 @@ function exportToPdf(
   y += 5;
   doc.text(`Saídas: R$ ${d.total_saidas.toFixed(2).replace('.', ',')}`, left, y);
   y += 5;
-  doc.text(`Saldo do mês: R$ ${d.saldo_mes.toFixed(2).replace('.', ',')}`, left, y);
+  doc.text(`${mes === 0 ? 'Saldo do ano' : 'Saldo do mês'}: R$ ${d.saldo_mes.toFixed(2).replace('.', ',')}`, left, y);
   y += 12;
 
   doc.setFont('helvetica', 'bold');
@@ -337,10 +343,11 @@ function exportToPdf(
     },
   });
 
-  doc.save(`dashboard-${mes.toString().padStart(2, '0')}-${ano}.pdf`);
+  doc.save(mes === 0 ? `dashboard-ano-${ano}.pdf` : `dashboard-${mes.toString().padStart(2, '0')}-${ano}.pdf`);
 }
 
 export default function Dashboard() {
+  const toast = useToast();
   const [ano, setAno] = useState(new Date().getFullYear());
   const [mes, setMes] = useState(new Date().getMonth() + 1);
   const [data, setData] = useState<DashboardData | null>(null);
@@ -363,7 +370,11 @@ export default function Dashboard() {
     setError(null);
     api.dashboard(mes, ano)
       .then(setData)
-      .catch((e) => setError(e.message))
+      .catch((e) => {
+        const msg = e instanceof Error ? e.message : 'Erro ao carregar dashboard';
+        setError(msg);
+        toast.error(msg);
+      })
       .finally(() => setLoading(false));
   }, [mes, ano]);
 
@@ -378,6 +389,17 @@ export default function Dashboard() {
       });
   }, []);
 
+  const gastosAtrasados = gastosAlertas.filter((g) => g.status_pagamento === 'atrasado');
+  const gastosPendentes = gastosAlertas.filter((g) => g.status_pagamento === 'pendente');
+  const textoAlertaGastos = (() => {
+    const partes: string[] = [];
+    if (gastosAtrasados.length === 1) partes.push('1 gasto atrasado');
+    else if (gastosAtrasados.length > 1) partes.push(`${gastosAtrasados.length} gastos atrasados`);
+    if (gastosPendentes.length === 1) partes.push(gastosAtrasados.length > 0 ? '1 pendente' : '1 gasto pendente');
+    else if (gastosPendentes.length > 1) partes.push(gastosAtrasados.length > 0 ? `${gastosPendentes.length} pendentes` : `${gastosPendentes.length} gastos pendentes`);
+    if (partes.length === 0) return '';
+    return `${partes.join(' e ')} neste mês.`;
+  })();
   const { query } = useSearch();
   const transacoesFiltradas = useMemo(() => {
     const list = data?.transacoes ?? [];
@@ -406,11 +428,9 @@ export default function Dashboard() {
     );
   }
 
-  if (error) {
+  if (error && !data) {
     return (
-      <div className="rounded-xl bg-red-50 border border-red-200 text-red-700 p-4">
-        {error}
-      </div>
+      <div className="text-gray-500 py-8">Não foi possível carregar o dashboard.</div>
     );
   }
 
@@ -439,8 +459,9 @@ export default function Dashboard() {
             value={mes}
             onChange={(e) => setMes(Number(e.target.value))}
             className="rounded-lg border border-gray-200 bg-white px-3 py-2 text-sm text-gray-700 focus:ring-2 focus:ring-primary-500/20 focus:border-primary-500"
-            title="Mês a exibir"
+            title="Mês ou ano inteiro"
           >
+            <option value={0}>Ano inteiro</option>
             {MESES.map((nome, i) => (
               <option key={i} value={i + 1}>{nome}</option>
             ))}
@@ -456,7 +477,7 @@ export default function Dashboard() {
             ))}
           </select>
           <span className="text-sm text-gray-600 font-medium">
-            {MESES[mes - 1]} / {ano}
+            {labelPeriodo(mes, ano)}
           </span>
           <div className="relative" ref={exportMenuRef}>
             <button
@@ -476,6 +497,7 @@ export default function Dashboard() {
                   onClick={() => {
                     exportToExcel(d, mes, ano, resumoPorMetodo, totalGeral, resumoPorDestino, resumoPorCliente);
                     setExportMenuOpen(false);
+                    toast.success('Excel gerado com sucesso.');
                   }}
                   className="w-full flex items-center gap-2 px-4 py-2 text-left text-sm text-gray-700 hover:bg-gray-50"
                 >
@@ -487,6 +509,7 @@ export default function Dashboard() {
                   onClick={() => {
                     exportToPdf(d, mes, ano, resumoPorMetodo, totalGeral, resumoPorDestino, resumoPorCliente);
                     setExportMenuOpen(false);
+                    toast.success('PDF gerado com sucesso.');
                   }}
                   className="w-full flex items-center gap-2 px-4 py-2 text-left text-sm text-gray-700 hover:bg-gray-50"
                 >
@@ -500,23 +523,36 @@ export default function Dashboard() {
       </div>
 
       {gastosAlertas.length > 0 && (
-        <div className="rounded-xl bg-amber-50 border border-amber-200 px-5 py-4 flex flex-col sm:flex-row gap-3 sm:items-center shadow-card">
+        <div className={`rounded-xl border px-5 py-4 flex flex-col sm:flex-row gap-3 sm:items-center shadow-card ${
+          gastosAlertas.some((g) => g.status_pagamento === 'atrasado')
+            ? 'bg-rose-50 border-rose-200'
+            : 'bg-amber-50 border-amber-200'
+        }`}>
           <div className="flex items-center gap-3">
-            <AlertTriangle className="w-5 h-5 text-amber-600" strokeWidth={1.8} />
+            <AlertTriangle className={`w-5 h-5 ${
+              gastosAlertas.some((g) => g.status_pagamento === 'atrasado') ? 'text-rose-600' : 'text-amber-600'
+            }`} strokeWidth={1.8} />
             <div>
-              <p className="text-sm font-semibold text-amber-800">
-                Você tem {gastosAlertas.length} gasto(s) fixo(s) com vencimento nos próximos dias.
+              <p className={`text-sm font-semibold ${
+                gastosAlertas.some((g) => g.status_pagamento === 'atrasado') ? 'text-rose-800' : 'text-amber-800'
+              }`}>
+                {textoAlertaGastos}
               </p>
-              <p className="text-xs text-amber-800/80">
-                Confira a aba de Gastos fixos para registrar os pagamentos.
+              <p className={`text-xs ${
+                gastosAlertas.some((g) => g.status_pagamento === 'atrasado') ? 'text-rose-700' : 'text-amber-800/80'
+              }`}>
+                O alerta continua até o pagamento ser registrado.{' '}
+                <Link to="/gastos-fixos" className="underline font-medium">
+                  Abrir gastos fixos
+                </Link>
               </p>
             </div>
           </div>
           <div className="flex-1">
-            <ul className="text-xs text-amber-900 list-disc pl-6 space-y-0.5">
+            <ul className="text-xs text-gray-800 list-disc pl-6 space-y-0.5">
               {gastosAlertas.slice(0, 3).map((g) => (
                 <li key={g.id}>
-                  Dia {g.dia_vencimento.toString().padStart(2, '0')}: {g.nome}{' '}
+                  {g.status_pagamento === 'atrasado' ? 'Atrasado' : 'Pendente'} · Dia {g.dia_vencimento.toString().padStart(2, '0')}: {g.nome}{' '}
                   {g.valor_padrao && `(${Number(g.valor_padrao).toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })})`}
                 </li>
               ))}
@@ -539,7 +575,7 @@ export default function Dashboard() {
           <p className="text-2xl font-bold text-rose-600 mt-1">{formatMoney(d.total_saidas)}</p>
         </div>
         <div className="rounded-xl bg-white border border-gray-200 p-5 shadow-card hover:shadow-card-hover transition-shadow">
-          <p className="text-gray-500 text-sm font-medium">Saldo do mês</p>
+          <p className="text-gray-500 text-sm font-medium">{mes === 0 ? 'Saldo do ano' : 'Saldo do mês'}</p>
           <p className={`text-2xl font-bold mt-1 ${d.saldo_mes >= 0 ? 'text-emerald-600' : 'text-rose-600'}`}>
             {formatMoney(d.saldo_mes)}
           </p>
@@ -551,10 +587,10 @@ export default function Dashboard() {
         <div className="rounded-xl bg-white border border-gray-200 overflow-hidden shadow-card">
           <div className="px-5 py-4 border-b border-gray-100">
             <h2 className="text-gray-800 font-medium">
-              Desempenho do mês — {MESES[mes - 1]} / {ano}
+              Desempenho do período — {labelPeriodo(mes, ano)}
             </h2>
             <p className="text-xs text-gray-500 mt-1">
-              Proporção entradas vs saídas no total movimentado no mês (50% / 50% = mesmos valores de entrada e saída).
+              Proporção entradas vs saídas no total movimentado no período (50% / 50% = mesmos valores de entrada e saída).
             </p>
           </div>
           <div className="p-5 flex items-end gap-4 h-24">
@@ -589,7 +625,7 @@ export default function Dashboard() {
         <div className="rounded-xl bg-white border border-gray-200 overflow-hidden shadow-card">
           <h2 className="px-5 py-4 text-gray-800 font-medium border-b border-gray-100 flex items-center gap-2">
             <CreditCard className="w-5 h-5 text-primary-500" strokeWidth={1.8} />
-            Resumo por método de pagamento — {MESES[mes - 1]} / {ano}
+            Resumo por método de pagamento — {labelPeriodo(mes, ano)}
           </h2>
           <div className="p-5 space-y-6">
             <div className="overflow-x-auto">
@@ -670,7 +706,7 @@ export default function Dashboard() {
             <div className="rounded-xl bg-white border border-gray-200 overflow-hidden shadow-card">
               <h2 className="px-5 py-4 text-gray-800 font-medium border-b border-gray-100 flex items-center gap-2">
                 <MapPin className="w-5 h-5 text-primary-500" strokeWidth={1.8} />
-                Resumo por destino — {MESES[mes - 1]} / {ano}
+                Resumo por destino — {labelPeriodo(mes, ano)}
               </h2>
               <div className="overflow-x-auto max-h-80 overflow-y-auto">
                 <table className="w-full text-sm">
@@ -708,7 +744,7 @@ export default function Dashboard() {
             <div className="rounded-xl bg-white border border-gray-200 overflow-hidden shadow-card">
               <h2 className="px-5 py-4 text-gray-800 font-medium border-b border-gray-100 flex items-center gap-2">
                 <UserPlus className="w-5 h-5 text-primary-500" strokeWidth={1.8} />
-                Resumo por cliente — {MESES[mes - 1]} / {ano}
+                Resumo por cliente — {labelPeriodo(mes, ano)}
               </h2>
               <div className="overflow-x-auto max-h-80 overflow-y-auto">
                 <table className="w-full text-sm">
@@ -748,7 +784,7 @@ export default function Dashboard() {
       {/* Tabela relatório */}
       <div className="rounded-xl bg-white border border-gray-200 overflow-hidden shadow-card">
         <h2 className="px-5 py-4 text-gray-800 font-medium border-b border-gray-100">
-          Relatório mensal — {MESES[mes - 1]} / {ano}
+          Relatório do período — {labelPeriodo(mes, ano)}
         </h2>
         <div className="overflow-x-auto scroll-thin">
           <table className="w-full text-sm">
@@ -769,7 +805,7 @@ export default function Dashboard() {
                   <td colSpan={7} className="py-8 px-5 text-gray-500 text-center">
                     {d.transacoes.length === 0 ? (
                       <>
-                        <p className="font-medium">Nenhuma transação em {MESES[mes - 1]} / {ano}.</p>
+                        <p className="font-medium">Nenhuma transação em {labelPeriodo(mes, ano)}.</p>
                         <p className="text-sm mt-1">Altere o <strong>mês</strong> e o <strong>ano</strong> nos filtros acima — os lançamentos aparecem conforme a data da transação.</p>
                       </>
                     ) : (

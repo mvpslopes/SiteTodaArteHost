@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { Outlet, NavLink, useNavigate, useLocation, Navigate } from 'react-router-dom';
 import {
   LayoutDashboard,
@@ -11,59 +11,108 @@ import {
   ChevronDown,
   LogOut,
   Menu,
-  ClipboardList,
   Clock3,
   BarChart2,
-  CheckSquare,
   CalendarDays,
+  CheckSquare,
   PieChart,
+  type LucideIcon,
 } from 'lucide-react';
 import { useAuth } from '../contexts/AuthContext';
 import { useSearch } from '../contexts/SearchContext';
+import { useToast } from '../contexts/ToastContext';
+import { api } from '../api';
 
-const nav = [
-  { to: '/dashboard', label: 'Dashboard', Icon: LayoutDashboard, roles: ['root', 'administrador', 'cliente'] },
-  { to: '/transacoes', label: 'Transações', Icon: ArrowLeftRight, roles: ['root', 'administrador', 'cliente'] },
-  { to: '/destinos', label: 'Destinos', Icon: MapPin, roles: ['root', 'administrador', 'cliente'] },
-  { to: '/clientes', label: 'Clientes', Icon: UserPlus, roles: ['root', 'administrador', 'cliente'] },
-  { to: '/gastos-fixos', label: 'Gastos fixos', Icon: CalendarDays, roles: ['root', 'administrador'] },
-  { to: '/demandas', label: 'Demandas', Icon: ClipboardList, roles: ['root', 'administrador', 'usuario'] },
-  { to: '/checklist', label: 'Checklist', Icon: CheckSquare, roles: ['root', 'administrador', 'usuario'] },
-  { to: '/checklist-admin', label: 'Checklist Gestão', Icon: PieChart, roles: ['root', 'administrador'] },
-  { to: '/relatorios-cliente', label: 'Relatórios Cliente', Icon: BarChart2, roles: ['root', 'administrador'] },
-  { to: '/auditoria', label: 'Sessões/Auditoria', Icon: Clock3, roles: ['root'] },
-  { to: '/usuarios', label: 'Usuários', Icon: ShieldCheck, roles: ['root', 'administrador'] },
-  { to: '/configuracoes', label: 'Configurações', Icon: Settings, roles: ['root', 'administrador', 'usuario', 'cliente'] },
+type NavItem = {
+  to: string;
+  label: string;
+  Icon: LucideIcon;
+  roles: string[];
+};
+
+type NavGroup = {
+  title: string;
+  items: NavItem[];
+};
+
+const navGroups: NavGroup[] = [
+  {
+    title: 'Financeiro',
+    items: [
+      { to: '/dashboard', label: 'Dashboard', Icon: LayoutDashboard, roles: ['root', 'administrador', 'cliente'] },
+      { to: '/transacoes', label: 'Transações', Icon: ArrowLeftRight, roles: ['root', 'administrador', 'cliente'] },
+      { to: '/destinos', label: 'Destinos', Icon: MapPin, roles: ['root', 'administrador', 'cliente'] },
+      { to: '/gastos-fixos', label: 'Gastos fixos', Icon: CalendarDays, roles: ['root', 'administrador'] },
+    ],
+  },
+  {
+    title: 'Clientes',
+    items: [
+      { to: '/clientes', label: 'Clientes', Icon: UserPlus, roles: ['root', 'administrador', 'cliente'] },
+      { to: '/relatorios-cliente', label: 'Relatórios Cliente', Icon: BarChart2, roles: ['root', 'administrador'] },
+    ],
+  },
+  {
+    title: 'Checklist',
+    items: [
+      { to: '/checklist', label: 'Checklist', Icon: CheckSquare, roles: ['root', 'administrador', 'usuario'] },
+      { to: '/checklist-admin', label: 'Checklist Gestão', Icon: PieChart, roles: ['root', 'administrador'] },
+    ],
+  },
+  {
+    title: 'Sistema',
+    items: [
+      { to: '/auditoria', label: 'Sessões/Auditoria', Icon: Clock3, roles: ['root'] },
+      { to: '/usuarios', label: 'Usuários', Icon: ShieldCheck, roles: ['root', 'administrador'] },
+      { to: '/configuracoes', label: 'Configurações', Icon: Settings, roles: ['root', 'administrador', 'usuario', 'cliente'] },
+    ],
+  },
 ];
 
-const ROTAS_PERMITIDAS_USUARIO = ['/demandas', '/checklist', '/configuracoes'];
+const ROTAS_PERMITIDAS_USUARIO = ['/checklist', '/configuracoes'];
 
 export default function Layout() {
   const { user, logout } = useAuth();
   const { query, setQuery } = useSearch();
+  const toast = useToast();
   const navigate = useNavigate();
   const location = useLocation();
   const [userMenuOpen, setUserMenuOpen] = useState(false);
   const [sidebarOpen, setSidebarOpen] = useState(false);
+  const [gastosPendentes, setGastosPendentes] = useState(0);
+
+  useEffect(() => {
+    if (!user || !['root', 'administrador', 'cliente'].includes(user.perfil)) return;
+    api.gastosFixos
+      .alertas()
+      .then((res) => setGastosPendentes(res.pendentes ?? res.alertas.length))
+      .catch(() => {});
+  }, [user, location.pathname]);
 
   if (user?.perfil === 'usuario' && !ROTAS_PERMITIDAS_USUARIO.includes(location.pathname)) {
-    return <Navigate to="/demandas" replace />;
+    return <Navigate to="/checklist" replace />;
   }
 
   const handleLogout = async () => {
     setUserMenuOpen(false);
     await logout();
+    toast.info('Sessão encerrada.');
     navigate('/login', { replace: true });
   };
 
-  const visibleNav = nav.filter((item) => user && item.roles.includes(user.perfil));
+  const visibleGroups = navGroups
+    .map((group) => ({
+      ...group,
+      items: group.items.filter((item) => user && item.roles.includes(user.perfil)),
+    }))
+    .filter((group) => group.items.length > 0);
   const perfilLabel =
     user?.perfil === 'root'
       ? 'Root'
       : user?.perfil === 'administrador'
       ? 'Administrador'
       : user?.perfil === 'usuario'
-      ? 'Usuário'
+      ? 'Operador'
       : 'Cliente';
 
   return (
@@ -89,7 +138,6 @@ export default function Layout() {
               alt="TodaArte"
               className="h-14 w-auto object-contain object-left"
             />
-            <p className="text-xs text-gray-500 mt-2">Sistema Financeiro</p>
           </div>
           <button
             type="button"
@@ -101,24 +149,37 @@ export default function Layout() {
           </button>
         </div>
         <div className="px-3 py-4 overflow-y-auto scroll-thin">
-          <p className="text-xs font-medium text-gray-400 uppercase tracking-wider px-3 mb-2">Menu</p>
-          <nav className="space-y-0.5">
-            {visibleNav.map(({ to, label, Icon }) => (
-              <NavLink
-                key={to}
-                to={to}
-                className={({ isActive }) =>
-                  `flex items-center gap-3 rounded-lg px-3 py-2.5 text-sm transition-colors border-l-4 ${
-                    isActive
-                      ? 'bg-primary-50 text-primary-700 font-medium border-primary-500'
-                      : 'border-transparent text-gray-600 hover:bg-gray-50 hover:text-gray-800'
-                  }`
-                }
-                onClick={() => setSidebarOpen(false)}
-              >
-                <Icon className="w-5 h-5 shrink-0" strokeWidth={1.8} />
-                {label}
-              </NavLink>
+          <nav className="space-y-5">
+            {visibleGroups.map((group) => (
+              <div key={group.title}>
+                <p className="text-xs font-medium text-gray-400 uppercase tracking-wider px-3 mb-2">
+                  {group.title}
+                </p>
+                <div className="space-y-0.5">
+                  {group.items.map(({ to, label, Icon }) => (
+                    <NavLink
+                      key={to}
+                      to={to}
+                      className={({ isActive }) =>
+                        `flex items-center gap-3 rounded-lg px-3 py-2.5 text-sm transition-colors border-l-4 ${
+                          isActive
+                            ? 'bg-primary-50 text-primary-700 font-medium border-primary-500'
+                            : 'border-transparent text-gray-600 hover:bg-gray-50 hover:text-gray-800'
+                        }`
+                      }
+                      onClick={() => setSidebarOpen(false)}
+                    >
+                      <Icon className="w-5 h-5 shrink-0" strokeWidth={1.8} />
+                      <span className="flex-1">{label}</span>
+                      {to === '/gastos-fixos' && gastosPendentes > 0 && (
+                        <span className="min-w-[1.25rem] h-5 px-1 rounded-full bg-rose-500 text-white text-[10px] font-semibold flex items-center justify-center">
+                          {gastosPendentes > 9 ? '9+' : gastosPendentes}
+                        </span>
+                      )}
+                    </NavLink>
+                  ))}
+                </div>
+              </div>
             ))}
           </nav>
         </div>

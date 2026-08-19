@@ -16,33 +16,50 @@ try {
 
 $mes = isset($_GET['mes']) ? (int)$_GET['mes'] : (int)date('n');
 $ano = isset($_GET['ano']) ? (int)$_GET['ano'] : (int)date('Y');
+$anual = ($mes === 0);
 
-// Totais do mês
+if (!$anual && ($mes < 1 || $mes > 12)) {
+    $mes = (int)date('n');
+}
+
+$hasClientes = tableExists($pdo, 'clientes');
+$hasClienteId = columnExists($pdo, 'transacoes', 'cliente_id');
+
+if ($anual) {
+    $where = 'YEAR(data_transacao) = ?';
+    $params = [$ano];
+    $whereT = 'YEAR(t.data_transacao) = ?';
+    $paramsT = [$ano];
+} else {
+    $where = 'MONTH(data_transacao) = ? AND YEAR(data_transacao) = ?';
+    $params = [$mes, $ano];
+    $whereT = 'MONTH(t.data_transacao) = ? AND YEAR(t.data_transacao) = ?';
+    $paramsT = [$mes, $ano];
+}
+
+// Totais do período
 $stmt = $pdo->prepare("
     SELECT
         COALESCE(SUM(CASE WHEN tipo = 'entrada' THEN valor ELSE 0 END), 0) AS total_entradas,
         COALESCE(SUM(CASE WHEN tipo = 'saida' THEN valor ELSE 0 END), 0) AS total_saidas
     FROM transacoes
-    WHERE MONTH(data_transacao) = ? AND YEAR(data_transacao) = ?
+    WHERE $where
 ");
-$stmt->execute([$mes, $ano]);
+$stmt->execute($params);
 $totais = $stmt->fetch();
 
 $totalEntradas = (float)($totais['total_entradas'] ?? 0);
 $totalSaidas = (float)($totais['total_saidas'] ?? 0);
 $saldoMes = $totalEntradas - $totalSaidas;
 
-$hasClientes = tableExists($pdo, 'clientes');
-$hasClienteId = columnExists($pdo, 'transacoes', 'cliente_id');
-
-// Lista de transações do mês com descrição (para o relatório)
+// Lista de transações do período
 if ($hasClientes && $hasClienteId) {
     $stmt = $pdo->prepare("
         SELECT t.id, t.tipo, t.data_transacao, t.valor, t.metodo_pagamento, t.descricao, f.nome AS favorecido_nome, c.nome AS cliente_nome
         FROM transacoes t
         LEFT JOIN favorecidos f ON f.id = t.favorecido_id
         LEFT JOIN clientes c ON c.id = t.cliente_id
-        WHERE MONTH(t.data_transacao) = ? AND YEAR(t.data_transacao) = ?
+        WHERE $whereT
         ORDER BY t.data_transacao ASC, t.id ASC
     ");
 } else {
@@ -50,11 +67,11 @@ if ($hasClientes && $hasClienteId) {
         SELECT t.id, t.tipo, t.data_transacao, t.valor, t.metodo_pagamento, t.descricao, f.nome AS favorecido_nome
         FROM transacoes t
         LEFT JOIN favorecidos f ON f.id = t.favorecido_id
-        WHERE MONTH(t.data_transacao) = ? AND YEAR(t.data_transacao) = ?
+        WHERE $whereT
         ORDER BY t.data_transacao ASC, t.id ASC
     ");
 }
-$stmt->execute([$mes, $ano]);
+$stmt->execute($paramsT);
 $transacoes = $stmt->fetchAll();
 if (!$hasClienteId) {
     foreach ($transacoes as &$row) {
@@ -62,19 +79,20 @@ if (!$hasClienteId) {
     }
 }
 
-// Resumo por método (opcional para gráfico)
+// Resumo por método
 $stmt = $pdo->prepare("
     SELECT metodo_pagamento, tipo, SUM(valor) AS total
     FROM transacoes
-    WHERE MONTH(data_transacao) = ? AND YEAR(data_transacao) = ?
+    WHERE $where
     GROUP BY metodo_pagamento, tipo
 ");
-$stmt->execute([$mes, $ano]);
+$stmt->execute($params);
 $porMetodo = $stmt->fetchAll();
 
 echo json_encode([
     'mes' => $mes,
     'ano' => $ano,
+    'periodo' => $anual ? 'ano' : 'mes',
     'total_entradas' => round($totalEntradas, 2),
     'total_saidas' => round($totalSaidas, 2),
     'saldo_mes' => round($saldoMes, 2),

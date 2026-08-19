@@ -10,6 +10,7 @@ CREATE TABLE IF NOT EXISTS usuarios (
   id INT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
   email VARCHAR(255) NOT NULL UNIQUE,
   password_hash VARCHAR(255) NOT NULL,
+  password_enc TEXT DEFAULT NULL,
   nome VARCHAR(255) NOT NULL DEFAULT '',
   perfil ENUM('root','administrador','usuario','cliente') NOT NULL DEFAULT 'usuario',
   ativo TINYINT(1) NOT NULL DEFAULT 1,
@@ -162,13 +163,17 @@ CREATE TABLE IF NOT EXISTS checklist_tarefas_fixas (
   id INT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
   titulo VARCHAR(255) NOT NULL,
   descricao TEXT DEFAULT NULL,
-  periodicidade ENUM('diaria','segunda','terca','quarta','quinta','sexta') NOT NULL DEFAULT 'diaria',
+  periodicidade ENUM('diaria','segunda','terca','quarta','quinta','sexta','mensal') NOT NULL DEFAULT 'diaria',
   ordem INT UNSIGNED NOT NULL DEFAULT 1,
   ativo TINYINT(1) NOT NULL DEFAULT 1,
+  responsavel_id INT UNSIGNED DEFAULT NULL,
+  dia_mes TINYINT UNSIGNED DEFAULT NULL,
   created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
   updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
   INDEX idx_checklist_periodicidade (periodicidade),
-  INDEX idx_checklist_ativo (ativo)
+  INDEX idx_checklist_ativo (ativo),
+  INDEX idx_checklist_responsavel (responsavel_id),
+  CONSTRAINT fk_checklist_responsavel FOREIGN KEY (responsavel_id) REFERENCES usuarios(id) ON DELETE SET NULL ON UPDATE CASCADE
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 -- Execução diária do checklist por usuário

@@ -2,12 +2,13 @@ import { useEffect, useState, useMemo } from 'react';
 import { UserPlus, Plus } from 'lucide-react';
 import { api, type Cliente } from '../api';
 import { useSearch, matchSearch } from '../contexts/SearchContext';
+import { useToast } from '../contexts/ToastContext';
 
 export default function Clientes() {
   const { query } = useSearch();
+  const toast = useToast();
   const [clientes, setClientes] = useState<Cliente[]>([]);
   const [loading, setLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
   const [modal, setModal] = useState<'add' | 'edit' | null>(null);
   const [editingId, setEditingId] = useState<number | null>(null);
   const [nome, setNome] = useState('');
@@ -22,7 +23,7 @@ export default function Clientes() {
     setLoading(true);
     api.clientes.list(!mostrarInativos)
       .then((r) => setClientes(r.clientes))
-      .catch((e) => setError(e.message))
+      .catch((e) => toast.error(e.message))
       .finally(() => setLoading(false));
   };
 
@@ -49,7 +50,6 @@ export default function Clientes() {
     e.preventDefault();
     const n = nome.trim();
     if (!n) return;
-    setError(null);
     try {
       if (modal === 'add') {
         await api.clientes.create({ nome: n });
@@ -57,9 +57,10 @@ export default function Clientes() {
         await api.clientes.update({ id: editingId, nome: n });
       }
       closeModal();
+      toast.success(modal === 'add' ? 'Cliente cadastrado.' : 'Cliente atualizado.');
       load();
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'Erro ao salvar');
+      toast.error(err instanceof Error ? err.message : 'Erro ao salvar');
     }
   };
 
@@ -67,9 +68,10 @@ export default function Clientes() {
     if (!confirm('Inativar este cliente? Ele não aparecerá ao lançar entradas.')) return;
     try {
       await api.clientes.delete(id);
+      toast.success('Cliente inativado.');
       load();
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'Erro ao inativar');
+      toast.error(err instanceof Error ? err.message : 'Erro ao inativar');
     }
   };
 
@@ -100,12 +102,6 @@ export default function Clientes() {
           </button>
         </div>
       </div>
-
-      {error && (
-        <div className="rounded-lg bg-red-50 border border-red-200 text-red-700 p-3 text-sm">
-          {error}
-        </div>
-      )}
 
       {loading ? (
         <div className="text-gray-500 py-8">Carregando...</div>
