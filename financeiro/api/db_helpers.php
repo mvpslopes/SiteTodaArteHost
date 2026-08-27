@@ -70,6 +70,28 @@ function ensureChecklistMensalSupport(PDO $pdo): bool {
     }
 }
 
+function ensureUsuarioPerfilFreelancer(PDO $pdo): void {
+    static $done = false;
+    if ($done) {
+        return;
+    }
+    if (!tableExists($pdo, 'usuarios')) {
+        return;
+    }
+    try {
+        $stmt = $pdo->query("SHOW COLUMNS FROM usuarios LIKE 'perfil'");
+        $col = $stmt ? $stmt->fetch() : null;
+        $type = strtolower((string)($col['Type'] ?? ''));
+        if (strpos($type, "'freelancer'") !== false) {
+            $done = true;
+            return;
+        }
+        $pdo->exec("ALTER TABLE usuarios MODIFY COLUMN perfil ENUM('root','administrador','usuario','cliente','freelancer') NOT NULL DEFAULT 'usuario'");
+    } catch (Throwable $e) {
+    }
+    $done = true;
+}
+
 function ensureUsuarioPasswordEncColumn(PDO $pdo): bool {
     if (!tableExists($pdo, 'usuarios')) {
         return false;
@@ -107,11 +129,11 @@ function decryptPasswordDisplay(?string $enc): ?string {
     return $plain === false ? null : $plain;
 }
 
-/** Inclui senha visível na API, exceto perfil operador (usuario). */
+/** Inclui senha visível na API, exceto operador e freelancer. */
 function attachUsuarioSenhaVisivel(array $row): array {
     $enc = $row['password_enc'] ?? null;
     unset($row['password_enc']);
-    if (($row['perfil'] ?? '') === 'usuario') {
+    if (in_array($row['perfil'] ?? '', ['usuario', 'freelancer'], true)) {
         $row['senha'] = null;
         return $row;
     }

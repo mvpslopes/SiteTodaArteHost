@@ -5,14 +5,14 @@
 SET NAMES utf8mb4;
 SET FOREIGN_KEY_CHECKS = 0;
 
--- Usuários do sistema (perfis: root, administrador, usuario, cliente)
+-- Usuários do sistema (perfis: root, administrador, usuario, freelancer, cliente)
 CREATE TABLE IF NOT EXISTS usuarios (
   id INT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
   email VARCHAR(255) NOT NULL UNIQUE,
   password_hash VARCHAR(255) NOT NULL,
   password_enc TEXT DEFAULT NULL,
   nome VARCHAR(255) NOT NULL DEFAULT '',
-  perfil ENUM('root','administrador','usuario','cliente') NOT NULL DEFAULT 'usuario',
+  perfil ENUM('root','administrador','usuario','cliente','freelancer') NOT NULL DEFAULT 'usuario',
   ativo TINYINT(1) NOT NULL DEFAULT 1,
   created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
   updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,

@@ -1,5 +1,5 @@
 import { useEffect, useState, useRef, useMemo } from 'react';
-import { LayoutDashboard, CreditCard, Download, FileSpreadsheet, FileText, MapPin, UserPlus, AlertTriangle } from 'lucide-react';
+import { CreditCard, Download, FileSpreadsheet, FileText, MapPin, UserPlus, AlertTriangle } from 'lucide-react';
 import { api, METODOS_PAGAMENTO, type GastoFixo } from '../api';
 import { useSearch, matchSearch } from '../contexts/SearchContext';
 import { useToast } from '../contexts/ToastContext';
@@ -448,11 +448,7 @@ export default function Dashboard() {
 
   return (
     <div className="space-y-8">
-        <div className="flex flex-wrap items-center justify-between gap-4">
-        <h1 className="text-2xl font-semibold text-gray-900 flex items-center gap-2">
-          <LayoutDashboard className="w-7 h-7 text-primary-500" strokeWidth={1.8} />
-          Dashboard
-        </h1>
+        <div className="flex flex-wrap items-center justify-end gap-4">
         <div className="flex items-center gap-3 flex-wrap">
           <span className="text-sm text-gray-500 hidden sm:inline">Período:</span>
           <select
@@ -483,7 +479,7 @@ export default function Dashboard() {
             <button
               type="button"
               onClick={() => setExportMenuOpen((o) => !o)}
-              className="inline-flex items-center gap-2 px-3 py-2 rounded-lg border border-gray-200 bg-white text-gray-700 hover:bg-gray-50 text-sm font-medium transition-colors"
+              className="inline-flex items-center gap-2 px-3 py-2 rounded-xl border border-brand-beige bg-white text-brand-dark-brown hover:bg-brand-off-white text-sm font-medium transition"
               aria-expanded={exportMenuOpen}
               aria-haspopup="true"
             >
@@ -564,21 +560,23 @@ export default function Dashboard() {
         </div>
       )}
 
-      {/* Cards de totais */}
       <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-        <div className="rounded-xl bg-white border border-gray-200 p-5 shadow-card hover:shadow-card-hover transition-shadow">
-          <p className="text-gray-500 text-sm font-medium">Entradas</p>
-          <p className="text-2xl font-bold text-emerald-600 mt-1">{formatMoney(d.total_entradas)}</p>
+        <div className="rounded-2xl border border-emerald-500/20 bg-gradient-to-br from-emerald-500/15 to-emerald-500/5 p-5 shadow-card transition hover:-translate-y-0.5 hover:shadow-card-hover">
+          <p className="text-xs font-semibold uppercase tracking-wide text-brand-olive">Entradas</p>
+          <p className="mt-2 text-2xl font-semibold text-emerald-700">{formatMoney(d.total_entradas)}</p>
+          <p className="mt-1 text-xs text-brand-olive/80">Recebido no período</p>
         </div>
-        <div className="rounded-xl bg-white border border-gray-200 p-5 shadow-card hover:shadow-card-hover transition-shadow">
-          <p className="text-gray-500 text-sm font-medium">Saídas</p>
-          <p className="text-2xl font-bold text-rose-600 mt-1">{formatMoney(d.total_saidas)}</p>
+        <div className="rounded-2xl border border-rose-400/25 bg-gradient-to-br from-rose-500/10 to-rose-500/5 p-5 shadow-card transition hover:-translate-y-0.5 hover:shadow-card-hover">
+          <p className="text-xs font-semibold uppercase tracking-wide text-brand-olive">Saídas</p>
+          <p className="mt-2 text-2xl font-semibold text-rose-600">{formatMoney(d.total_saidas)}</p>
+          <p className="mt-1 text-xs text-brand-olive/80">Pago no período</p>
         </div>
-        <div className="rounded-xl bg-white border border-gray-200 p-5 shadow-card hover:shadow-card-hover transition-shadow">
-          <p className="text-gray-500 text-sm font-medium">{mes === 0 ? 'Saldo do ano' : 'Saldo do mês'}</p>
-          <p className={`text-2xl font-bold mt-1 ${d.saldo_mes >= 0 ? 'text-emerald-600' : 'text-rose-600'}`}>
+        <div className="rounded-2xl border border-brand-gold/25 bg-gradient-to-br from-brand-gold/20 to-brand-gold/5 p-5 shadow-card transition hover:-translate-y-0.5 hover:shadow-card-hover">
+          <p className="text-xs font-semibold uppercase tracking-wide text-brand-olive">{mes === 0 ? 'Saldo do ano' : 'Saldo do mês'}</p>
+          <p className={`mt-2 text-2xl font-semibold ${d.saldo_mes >= 0 ? 'text-brand-dark-brown' : 'text-rose-600'}`}>
             {formatMoney(d.saldo_mes)}
           </p>
+          <p className="mt-1 text-xs text-brand-olive/80">{labelPeriodo(mes, ano)}</p>
         </div>
       </div>
 

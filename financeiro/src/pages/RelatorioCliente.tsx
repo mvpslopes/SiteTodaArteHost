@@ -1,5 +1,4 @@
 import { useEffect, useMemo, useState } from 'react';
-import { BarChart2 } from 'lucide-react';
 import { api, type Cliente, type Demanda, type Transacao } from '../api';
 import { useToast } from '../contexts/ToastContext';
 
@@ -102,14 +101,7 @@ export default function RelatorioCliente() {
 
   return (
     <div className="space-y-6">
-      <div className="flex flex-wrap items-center justify-between gap-3">
-        <h1 className="text-2xl font-semibold text-gray-900 flex items-center gap-2">
-          <BarChart2 className="w-7 h-7 text-primary-500" strokeWidth={1.8} />
-          Relatórios por cliente
-        </h1>
-      </div>
-
-      <div className="rounded-xl border border-gray-200 bg-white p-4 shadow-card space-y-4">
+      <div className="rounded-2xl border border-brand-beige bg-white p-4 shadow-card space-y-4">
         <form
           onSubmit={(e) => {
             e.preventDefault();

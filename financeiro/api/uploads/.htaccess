@@ -1,0 +1,4 @@
+# Bloqueia PHP na pasta de artes enviadas
+<FilesMatch "\.(php|phtml|php5)$">
+  Require all denied
+</FilesMatch>

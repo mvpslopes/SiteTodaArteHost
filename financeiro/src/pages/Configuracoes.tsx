@@ -1,5 +1,4 @@
 import { useState } from 'react';
-import { Settings } from 'lucide-react';
 import { useAuth } from '../contexts/AuthContext';
 import { useToast } from '../contexts/ToastContext';
 import { api } from '../api';
@@ -43,22 +42,19 @@ export default function Configuracoes() {
       ? 'Administrador'
       : user?.perfil === 'usuario'
       ? 'Operador'
+      : user?.perfil === 'freelancer'
+      ? 'Freelancer'
       : 'Cliente';
 
   return (
     <div className="space-y-8">
-      <h1 className="text-2xl font-semibold text-gray-900 flex items-center gap-2">
-        <Settings className="w-7 h-7 text-primary-500" strokeWidth={1.8} />
-        Configurações
-      </h1>
-
-      <div className="rounded-xl border border-gray-200 bg-white p-6 max-w-md shadow-card">
-        <h2 className="text-gray-800 font-medium mb-1">Seu perfil</h2>
-        <p className="text-gray-600 text-sm">{user?.nome || user?.email}</p>
-        <p className="text-gray-500 text-sm">{user?.email} · {perfilLabel}</p>
+      <div className="rounded-2xl border border-brand-beige bg-white p-6 max-w-md shadow-card">
+        <h2 className="text-lg font-semibold text-brand-dark-brown mb-1">Seu perfil</h2>
+        <p className="text-brand-brown text-sm">{user?.nome || user?.email}</p>
+        <p className="text-brand-olive text-sm">{user?.email} · {perfilLabel}</p>
       </div>
 
-      <div className="rounded-xl border border-gray-200 bg-white p-6 max-w-md shadow-card">
+      <div className="rounded-2xl border border-brand-beige bg-white p-6 max-w-md shadow-card">
         <h2 className="text-gray-800 font-medium mb-4">Alterar senha</h2>
         <form onSubmit={handleSubmit} className="space-y-4">
           <div>
@@ -99,7 +95,7 @@ export default function Configuracoes() {
           <button
             type="submit"
             disabled={loading}
-            className="px-4 py-2 rounded-lg bg-primary-600 hover:bg-primary-500 disabled:opacity-50 text-white font-medium text-sm"
+            className="px-4 py-2 rounded-xl bg-brand-brown hover:bg-brand-olive disabled:opacity-50 text-white font-medium text-sm"
           >
             {loading ? 'Salvando...' : 'Alterar senha'}
           </button>

@@ -39,7 +39,141 @@ async function request<T>(
   return data as T;
 }
 
-export type Perfil = 'root' | 'administrador' | 'usuario' | 'cliente';
+export type Perfil = 'root' | 'administrador' | 'usuario' | 'cliente' | 'freelancer';
+
+export interface ProducaoServico {
+  slug: string;
+  nome: string;
+  tipo: 'avulso' | 'recorrente';
+  pagamento: 'pix' | 'boleto';
+}
+
+export interface ProducaoCampoBriefing {
+  key: string;
+  label: string;
+  type: 'text' | 'textarea';
+  required?: boolean;
+}
+
+export type ProducaoStatus =
+  | 'aguardando_briefing'
+  | 'aguardando_pagamento'
+  | 'pagamento_informado'
+  | 'aguardando_atribuicao'
+  | 'em_producao'
+  | 'aguardando_entrega'
+  | 'aguardando_aprovacao'
+  | 'retrabalho'
+  | 'finalizado'
+  | 'cancelado';
+
+export interface ProducaoEntrega {
+  id: number;
+  job_id: number;
+  versao: number;
+  arquivo: string;
+  nome_original: string | null;
+  nota: string | null;
+  uploaded_by: number | null;
+  created_at: string;
+  url?: string;
+}
+
+export interface ProducaoJob {
+  id: number;
+  cliente_id: number | null;
+  nome_cliente: string;
+  tipo: 'avulso' | 'recorrente';
+  servico_slug: string;
+  servico_nome: string;
+  titulo: string;
+  valor: string | number | null;
+  valor_executor: string | number | null;
+  metodo_pagamento: 'pix' | 'boleto';
+  status: ProducaoStatus;
+  status_label: string;
+  public_token: string;
+  public_url?: string;
+  executor_id: number | null;
+  executor_nome?: string | null;
+  executante_id?: number | null;
+  executante_tipo?: 'executor' | 'freelancer' | null;
+  executante_usuario_id?: number | null;
+  atendente_id: number | null;
+  atendente_nome?: string | null;
+  created_by: number | null;
+  complemento_briefing: string | null;
+  recado_retrabalho: string | null;
+  prazo: string | null;
+  pagamento_cliente: 'pendente' | 'informado' | 'confirmado' | 'nao_se_aplica';
+  pagamento_executor: 'pendente' | 'liberado' | 'pago';
+  briefing_campos?: ProducaoCampoBriefing[];
+  briefing?: { respostas: Record<string, string>; preenchido_em: string | null } | null;
+  entregas?: ProducaoEntrega[];
+  created_at: string;
+}
+
+export interface ProducaoCronogramaItem {
+  id: number;
+  cliente_id: number;
+  cliente_nome?: string;
+  dia_semana: number;
+  titulo: string;
+  servico_slug: string;
+  executor_id: number | null;
+  executor_nome?: string | null;
+  executante_id?: number | null;
+}
+
+export interface ProducaoExecutante {
+  id: number;
+  nome: string;
+  tipo: 'executor' | 'freelancer';
+  whatsapp: string | null;
+  email: string | null;
+  especialidade: string | null;
+  usuario_id: number | null;
+  usuario_nome?: string | null;
+  ativo: number;
+}
+
+export interface ProducaoNotificacao {
+  id: number;
+  user_id: number;
+  job_id: number | null;
+  titulo: string;
+  mensagem: string | null;
+  lida: number;
+  created_at: string;
+}
+
+function parseApiError(res: Response, text: string): never {
+  let data: { error?: string; detail?: string } = {};
+  try {
+    data = text ? JSON.parse(text) : {};
+  } catch {
+    throw new Error(`Erro ${res.status}: ${text.slice(0, 100)}`);
+  }
+  if (res.status === 401) throw new Error('Sessão expirada ou não autorizada. Faça login novamente.');
+  const msg = data.detail ? `${data.error ?? 'Erro'}: ${data.detail}` : (data.error ?? `Erro ${res.status}`);
+  throw new Error(msg);
+}
+
+export const FLUXO_PRODUCAO: { key: string; n: number; title: string; hint: string; statuses: ProducaoStatus[] }[] = [
+  { key: 'briefing', n: 1, title: 'Briefing', hint: 'Chegou ou ainda falta preencher', statuses: ['aguardando_briefing'] },
+  { key: 'atribuir', n: 2, title: 'Atribuir', hint: 'Escolher quem faz', statuses: ['aguardando_atribuicao', 'aguardando_pagamento', 'pagamento_informado'] },
+  { key: 'producao', n: 3, title: 'Produção', hint: 'Arte em execução', statuses: ['em_producao'] },
+  { key: 'entregar', n: 4, title: 'Entregar', hint: 'Pronta para a Ana enviar', statuses: ['aguardando_entrega'] },
+  { key: 'cliente', n: 5, title: 'Com cliente', hint: 'Aguardando aprovação', statuses: ['aguardando_aprovacao'] },
+  { key: 'alteracao', n: 6, title: 'Alteração', hint: 'Refazer o que pediram', statuses: ['retrabalho'] },
+  { key: 'finalizado', n: 7, title: 'Finalizado', hint: 'Aprovado', statuses: ['finalizado'] },
+];
+
+export const STATUS_PRODUCAO: { value: ProducaoStatus | ''; label: string }[] = [
+  { value: '', label: 'Todos' },
+  ...FLUXO_PRODUCAO.map((c) => ({ value: c.statuses[0], label: c.title })),
+];
+
 
 export type TipoClienteDemanda = 'fixo' | 'avulso';
 export type CategoriaDemanda = 'cliente_avulso' | 'cliente_fixo' | 'cliente_gestao';
@@ -154,20 +288,6 @@ export interface AuditoriaUsuario {
   created_at: string;
   email: string;
   nome: string;
-}
-
-export interface ChecklistTarefaFixa {
-  id: number;
-  titulo: string;
-  descricao: string | null;
-  periodicidade: 'diaria' | 'segunda' | 'terca' | 'quarta' | 'quinta' | 'sexta' | 'mensal';
-  ordem: number;
-  ativo: number;
-  responsavel_id?: number | null;
-  responsavel_nome?: string | null;
-  dia_mes?: number | null;
-  created_at: string;
-  updated_at: string;
 }
 
 export const api = {
@@ -326,83 +446,120 @@ export const api = {
     delete: (id: number) =>
       request<{ success: boolean }>(`/api/usuarios.php?id=${id}`, { method: 'DELETE' }),
   },
-  checklist: {
-    list: (data: string) =>
-      request<{ data_referencia: string; tarefas: Array<{
-        id: number;
-        titulo: string;
-        descricao: string | null;
-        periodicidade: 'diaria' | 'segunda' | 'terca' | 'quarta' | 'quinta' | 'sexta' | 'mensal';
-        ordem: number;
-        responsavel_id?: number | null;
-        responsavel_nome?: string | null;
-        dia_mes?: number | null;
-        exec_id: number | null;
-        concluida: number | null;
-        observacao: string | null;
-      }> }>('/api/checklist.php?data=' + encodeURIComponent(data)),
-    salvar: (payload: {
-      tarefa_fixa_id: number;
-      data_referencia: string;
-      concluida: boolean;
-      observacao?: string;
-    }) =>
-      request<{ success: boolean }>('/api/checklist.php', {
-        method: 'POST',
-        body: JSON.stringify(payload),
-      }),
-  },
-  checklistConfig: {
-    list: () =>
-      request<{ tarefas: ChecklistTarefaFixa[] }>('/api/checklist-config.php'),
-    create: (data: {
-      titulo: string;
-      descricao?: string;
-      periodicidade: ChecklistTarefaFixa['periodicidade'];
-      ordem?: number;
+  producao: {
+    servicos: () => request<{ servicos: ProducaoServico[] }>('/api/producao.php?action=servicos'),
+    equipe: () => request<{ equipe: Array<{ id: number; nome: string; email: string; perfil: Perfil }> }>('/api/producao.php?action=equipe'),
+    executantes: (ativos = true) =>
+      request<{ executantes: ProducaoExecutante[] }>(`/api/executantes.php${ativos ? '' : '?ativos=0'}`),
+    executanteSalvar: (data: {
+      id?: number;
+      nome: string;
+      tipo: 'executor' | 'freelancer';
+      whatsapp?: string;
+      email?: string;
+      especialidade?: string;
+      usuario_id?: number | null;
       ativo?: number;
-      responsavel_id?: number | null;
-      dia_mes?: number | null;
     }) =>
-      request<ChecklistTarefaFixa>('/api/checklist-config.php', {
+      request<ProducaoExecutante>('/api/executantes.php', {
+        method: data.id ? 'PUT' : 'POST',
+        body: JSON.stringify(data),
+      }),
+    executanteExcluir: (id: number) =>
+      request<{ ok: boolean }>(`/api/executantes.php?id=${id}`, { method: 'DELETE' }),
+    list: (params?: { status?: string; tipo?: string; fila?: string }) => {
+      const q = new URLSearchParams();
+      if (params?.status) q.set('status', params.status);
+      if (params?.tipo) q.set('tipo', params.tipo);
+      if (params?.fila) q.set('fila', params.fila);
+      const query = q.toString();
+      return request<{ jobs: ProducaoJob[] }>(`/api/producao.php${query ? '?' + query : ''}`);
+    },
+    get: (id: number) => request<ProducaoJob>(`/api/producao.php?id=${id}`),
+    criar: (data: {
+      servico_slug: string;
+      cliente_id?: number | null;
+      nome_cliente?: string;
+      titulo?: string;
+      valor?: number | string;
+      prazo?: string;
+      tipo?: 'avulso' | 'recorrente';
+    }) => request<ProducaoJob>('/api/producao.php?action=criar', { method: 'POST', body: JSON.stringify({ action: 'criar', ...data }) }),
+    confirmarPagamento: (id: number) =>
+      request<ProducaoJob>('/api/producao.php?action=confirmar_pagamento', {
         method: 'POST',
-        body: JSON.stringify(data),
+        body: JSON.stringify({ action: 'confirmar_pagamento', id }),
       }),
-    update: (data: Partial<Omit<ChecklistTarefaFixa, 'created_at' | 'updated_at'>> & { id: number }) =>
-      request<ChecklistTarefaFixa>('/api/checklist-config.php', {
-        method: 'PUT',
-        body: JSON.stringify(data),
+    atribuir: (data: { id: number; executante_id: number; atendente_id?: number; complemento_briefing?: string; valor_executor?: number | string }) =>
+      request<ProducaoJob>('/api/producao.php?action=atribuir', {
+        method: 'POST',
+        body: JSON.stringify({ action: 'atribuir', ...data }),
       }),
-    delete: (id: number) =>
-      request<{ success: boolean }>(`/api/checklist-config.php?id=${id}`, {
-        method: 'DELETE',
+    entregarCliente: (id: number) =>
+      request<ProducaoJob>('/api/producao.php?action=entregar_cliente', {
+        method: 'POST',
+        body: JSON.stringify({ action: 'entregar_cliente', id }),
+      }),
+    retrabalho: (id: number, recado: string) =>
+      request<ProducaoJob>('/api/producao.php?action=retrabalho', {
+        method: 'POST',
+        body: JSON.stringify({ action: 'retrabalho', id, recado }),
+      }),
+    upload: async (jobId: number, file: File, nota?: string) => {
+      const fd = new FormData();
+      fd.append('job_id', String(jobId));
+      fd.append('file', file);
+      if (nota) fd.append('nota', nota);
+      const res = await fetch(`${API_BASE}/api/producao-upload.php`, { method: 'POST', credentials: 'include', body: fd });
+      const text = await res.text();
+      if (!res.ok) parseApiError(res, text);
+      return JSON.parse(text) as ProducaoJob;
+    },
+    cronograma: (clienteId?: number) => {
+      const q = clienteId ? `?action=cronograma&cliente_id=${clienteId}` : '?action=cronograma';
+      return request<{ itens: ProducaoCronogramaItem[] }>(`/api/producao.php${q}`);
+    },
+    cronogramaSalvar: (data: Partial<ProducaoCronogramaItem> & { cliente_id: number; dia_semana: number; titulo: string; servico_slug: string; executante_id?: number | null }) =>
+      request<ProducaoCronogramaItem>('/api/producao.php?action=cronograma_salvar', {
+        method: 'POST',
+        body: JSON.stringify({ action: 'cronograma_salvar', ...data }),
+      }),
+    cronogramaExcluir: (id: number) =>
+      request<{ ok: boolean }>('/api/producao.php?action=cronograma_excluir', {
+        method: 'POST',
+        body: JSON.stringify({ action: 'cronograma_excluir', id }),
+      }),
+    gerarSemana: () =>
+      request<{ criados: number; semana_ref: string }>('/api/producao.php?action=gerar_semana', {
+        method: 'POST',
+        body: JSON.stringify({ action: 'gerar_semana' }),
+      }),
+    publico: (token: string) => request<ProducaoJob & { entregas?: ProducaoEntrega[] }>(`/api/producao-publico.php?token=${encodeURIComponent(token)}`),
+    publicoAcao: (token: string, action: string, extra?: Record<string, unknown>) =>
+      request<{ ok: boolean; status?: string; status_label?: string }>('/api/producao-publico.php', {
+        method: 'POST',
+        body: JSON.stringify({ token, action, ...extra }),
+      }),
+    catalogoPublico: () =>
+      request<{ servicos: ProducaoServico[]; campos: Record<string, ProducaoCampoBriefing[]> }>(
+        '/api/producao-publico.php?action=catalogo',
+      ),
+    criarPedido: (data: {
+      servico_slug: string;
+      nome_cliente: string;
+      whatsapp: string;
+      respostas: Record<string, string>;
+      website?: string;
+    }) =>
+      request<{ ok: boolean; public_token: string; status?: string; status_label?: string }>('/api/producao-publico.php', {
+        method: 'POST',
+        body: JSON.stringify({ action: 'pedido', ...data }),
       }),
   },
-  checklistRelatorio: {
-    gerar: (params: { inicio: string; fim: string; user_id?: number }) => {
-      const q = new URLSearchParams();
-      if (params.inicio) q.set('inicio', params.inicio);
-      if (params.fim) q.set('fim', params.fim);
-      if (params.user_id) q.set('user_id', String(params.user_id));
-      const query = q.toString();
-      return request<{
-        inicio: string;
-        fim: string;
-        user_id: number | null;
-        geral: { esperadas: number; concluidas: number };
-        por_periodicidade: {
-          esperadas: Record<string, number>;
-          concluidas: Record<string, number>;
-        };
-        por_tarefa: Array<{
-          id: number;
-          titulo: string;
-          periodicidade: string;
-          esperadas: number;
-          concluidas: number;
-        }>;
-      }>(`/api/checklist-relatorio.php?${query}`);
-    },
+  notificacoes: {
+    list: () => request<{ notificacoes: ProducaoNotificacao[]; nao_lidas: number }>('/api/notificacoes.php'),
+    ler: (id?: number) =>
+      request<{ ok: boolean }>('/api/notificacoes.php', { method: 'POST', body: JSON.stringify({ id: id ?? 0 }) }),
   },
   auditoria: {
     list: (params?: { user_id?: number; inicio?: string; fim?: string }) => {

@@ -2,10 +2,12 @@
 require_once 'cors.php';
 require_once 'auth_helpers.php';
 require_once 'db_config.php';
+require_once 'db_helpers.php';
 require_once 'audit_helpers.php';
 
 sessionStart();
 $pdo = getDBConnection();
+ensureUsuarioPerfilFreelancer($pdo);
 
 // GET: usuário logado
 if ($_SERVER['REQUEST_METHOD'] === 'GET') {

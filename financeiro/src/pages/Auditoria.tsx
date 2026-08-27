@@ -1,5 +1,4 @@
 import { useEffect, useState } from 'react';
-import { Clock3 } from 'lucide-react';
 import { api, type AuditoriaUsuario, type SessaoUsuario, type Usuario } from '../api';
 import { useToast } from '../contexts/ToastContext';
 
@@ -44,16 +43,9 @@ export default function Auditoria() {
 
   return (
     <div className="space-y-6">
-      <div className="flex items-center justify-between gap-2">
-        <div className="flex items-center gap-2">
-          <Clock3 className="w-7 h-7 text-primary-500" strokeWidth={1.8} />
-          <h1 className="text-2xl font-semibold text-gray-900">Sessões e Auditoria</h1>
-        </div>
-      </div>
-
       <form
         onSubmit={handleFilter}
-        className="rounded-xl border border-gray-200 bg-white p-4 shadow-card flex flex-wrap gap-4 items-end"
+        className="rounded-2xl border border-brand-beige bg-white p-4 shadow-card flex flex-wrap gap-4 items-end"
       >
         <div>
           <label className="block text-xs text-gray-600 mb-1">Usuário</label>

@@ -3,10 +3,12 @@ require_once 'cors.php';
 require_once 'auth_helpers.php';
 require_once 'db_config.php';
 require_once 'db_helpers.php';
+require_once 'producao_lib.php';
 
 $current = requireAuth();
 $pdo = getDBConnection();
 ensureUsuarioPasswordEncColumn($pdo);
+ensureUsuarioPerfilFreelancer($pdo);
 
 function usuarioSelectSql(): string {
     return 'id, email, nome, perfil, ativo, created_at, updated_at, password_enc';
@@ -19,7 +21,7 @@ function usuarioJson(PDO $pdo, int $id): array {
     return $row ? attachUsuarioSenhaVisivel($row) : [];
 }
 
-$perfis = ['root', 'administrador', 'usuario', 'cliente'];
+$perfis = ['root', 'administrador', 'usuario', 'cliente', 'freelancer'];
 
 // GET: listar (root ou administrador) ou obter um por id
 if ($_SERVER['REQUEST_METHOD'] === 'GET') {
@@ -90,6 +92,9 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     $stmt = $pdo->prepare("INSERT INTO usuarios (email, password_hash, password_enc, nome, perfil, ativo) VALUES (?, ?, ?, ?, ?, 1)");
     $stmt->execute([$email, $hash, $enc, $nome, $perfil]);
     $id = (int)$pdo->lastInsertId();
+    if ($perfil === 'freelancer') {
+        producaoEnsureExecutanteParaUsuario($pdo, $id, $nome, $email);
+    }
     echo json_encode(usuarioJson($pdo, $id));
     exit;
 }
@@ -115,7 +120,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'PUT') {
 
     $isSelf = ((int)$target['id']) === ((int)$current['id']);
 
-    if ($current['perfil'] === 'usuario' || $current['perfil'] === 'cliente') {
+    if ($current['perfil'] === 'usuario' || $current['perfil'] === 'cliente' || $current['perfil'] === 'freelancer') {
         if (!$isSelf) {
             http_response_code(403);
             echo json_encode(['error' => 'Acesso negado']);
@@ -178,7 +183,11 @@ if ($_SERVER['REQUEST_METHOD'] === 'PUT') {
     $stmt = $pdo->prepare($sql);
     $stmt->execute($params);
 
-    echo json_encode(usuarioJson($pdo, $id));
+    $row = usuarioJson($pdo, $id);
+    if (($row['perfil'] ?? '') === 'freelancer') {
+        producaoEnsureExecutanteParaUsuario($pdo, $id, $row['nome'] ?? '', $row['email'] ?? '');
+    }
+    echo json_encode($row);
     exit;
 }
 

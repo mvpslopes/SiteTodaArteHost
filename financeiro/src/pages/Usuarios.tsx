@@ -1,5 +1,5 @@
 import { useEffect, useState, useMemo } from 'react';
-import { ShieldCheck, Plus } from 'lucide-react';
+import { Plus } from 'lucide-react';
 import { useAuth } from '../contexts/AuthContext';
 import { api, type Usuario, type Perfil } from '../api';
 import { useSearch, matchSearch } from '../contexts/SearchContext';
@@ -9,6 +9,7 @@ const PERFIS: { value: Perfil; label: string }[] = [
   { value: 'root', label: 'Root' },
   { value: 'administrador', label: 'Administrador' },
   { value: 'usuario', label: 'Operador' },
+  { value: 'freelancer', label: 'Freelancer' },
   { value: 'cliente', label: 'Cliente' },
 ];
 
@@ -16,6 +17,7 @@ function labelPerfil(perfil: Perfil) {
   if (perfil === 'root') return 'Root';
   if (perfil === 'administrador') return 'Administrador';
   if (perfil === 'usuario') return 'Operador';
+  if (perfil === 'freelancer') return 'Freelancer';
   return 'Cliente';
 }
 
@@ -141,16 +143,12 @@ export default function Usuarios() {
 
   return (
     <div className="space-y-6">
-      <div className="flex flex-wrap items-center justify-between gap-4">
-        <h1 className="text-2xl font-semibold text-gray-900 flex items-center gap-2">
-          <ShieldCheck className="w-7 h-7 text-primary-500" strokeWidth={1.8} />
-          Usuários
-        </h1>
+      <div className="flex flex-wrap items-center justify-end gap-4">
         {isRoot && (
           <button
             type="button"
             onClick={openAdd}
-            className="inline-flex items-center gap-2 px-4 py-2 rounded-lg bg-primary-600 hover:bg-primary-500 text-white font-medium text-sm shadow-card"
+            className="inline-flex items-center gap-2 px-4 py-2 rounded-xl bg-brand-brown hover:bg-brand-olive text-white font-medium text-sm shadow-card"
           >
             <Plus className="w-4 h-4" strokeWidth={2} />
             Novo usuário
@@ -189,8 +187,22 @@ export default function Usuarios() {
                     <span className="text-gray-600">{labelPerfil(u.perfil)}</span>
                   </td>
                   <td className="py-3 px-4">
-                    {u.perfil === 'usuario' ? (
-                      <span className="text-gray-400 text-xs">—</span>
+                    {u.perfil === 'usuario' || u.perfil === 'freelancer' ? (
+                      <div className="flex items-center gap-2">
+                        <span className="text-gray-400 text-xs">—</span>
+                        {podeDefinirSenha(u) && (
+                          <button
+                            type="button"
+                            onClick={() => {
+                              setSenhaAlvo(u);
+                              setSenhaNova('');
+                            }}
+                            className="text-xs text-primary-600 hover:text-primary-700 shrink-0"
+                          >
+                            alterar
+                          </button>
+                        )}
+                      </div>
                     ) : (
                       <div className="flex items-center gap-2">
                         <span className="font-mono text-gray-800">{u.senha || '—'}</span>
@@ -243,9 +255,9 @@ export default function Usuarios() {
       )}
 
       {modal && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60" onClick={closeModal}>
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-brand-dark-brown/50 backdrop-blur-[2px]" onClick={closeModal}>
           <div
-            className="bg-white border border-gray-200 rounded-xl shadow-lg w-full max-w-md"
+            className="bg-white border border-brand-beige rounded-2xl shadow-2xl w-full max-w-md"
             onClick={(e) => e.stopPropagation()}
           >
             <h2 className="px-5 py-4 border-b border-gray-200 text-lg font-medium text-gray-900">
@@ -286,6 +298,11 @@ export default function Usuarios() {
                     <option key={p.value} value={p.value}>{p.label}</option>
                   ))}
                 </select>
+                {form.perfil === 'freelancer' && (
+                  <p className="mt-1 text-xs text-gray-500">
+                    Entra só em Produção para executar os jobs atribuídos. Também é cadastrado em Executantes.
+                  </p>
+                )}
               </div>
               <div>
                 <label className="block text-sm text-gray-600 mb-1">
@@ -318,9 +335,9 @@ export default function Usuarios() {
       )}
 
       {senhaAlvo && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60" onClick={() => setSenhaAlvo(null)}>
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-brand-dark-brown/50 backdrop-blur-[2px]" onClick={() => setSenhaAlvo(null)}>
           <div
-            className="bg-white border border-gray-200 rounded-xl shadow-lg w-full max-w-sm"
+            className="bg-white border border-brand-beige rounded-2xl shadow-2xl w-full max-w-sm"
             onClick={(e) => e.stopPropagation()}
           >
             <h2 className="px-5 py-4 border-b border-gray-200 text-lg font-medium text-gray-900">

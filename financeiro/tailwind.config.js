@@ -1,14 +1,29 @@
 /** @type {import('tailwindcss').Config} */
 export default {
   content: ['./index.html', './src/**/*.{js,ts,jsx,tsx}'],
+  darkMode: 'class',
   theme: {
     extend: {
       fontFamily: {
-        sans: ['DM Sans', 'system-ui', 'sans-serif'],
+        sans: ['Montserrat', 'system-ui', 'sans-serif'],
+        display: ['Montserrat', 'sans-serif'],
         mono: ['JetBrains Mono', 'monospace'],
       },
       colors: {
-        /* Paleta da logo TodaArte - bronze / dourado */
+        /* Cinza quente — as telas antigas (gray-*) passam a parecer creme/marrom */
+        gray: {
+          50: '#F8F7F4',
+          100: '#F3EEE6',
+          200: '#E6D8C3',
+          300: '#D4C4B0',
+          400: '#C4B09A',
+          500: '#A0896A',
+          600: '#81705F',
+          700: '#6B5A4A',
+          800: '#4F3E32',
+          900: '#3d2f26',
+          950: '#2a211c',
+        },
         primary: {
           50: '#faf8f6',
           100: '#f5f0eb',
@@ -16,21 +31,24 @@ export default {
           300: '#d4c4b0',
           400: '#D4B896',
           500: '#AC8869',
-          600: '#9a7759',
-          700: '#846347',
-          800: '#6d5239',
-          900: '#5c452f',
+          600: '#81705F',
+          700: '#6B5A4A',
+          800: '#4F3E32',
+          900: '#3d2f26',
         },
         brand: {
-          50: '#f0fdf4',
-          100: '#dcfce7',
-          500: '#22c55e',
-          600: '#16a34a',
+          brown: '#81705F',
+          beige: '#E6D8C3',
+          'off-white': '#F8F7F4',
+          olive: '#A0896A',
+          'dark-brown': '#4F3E32',
+          gold: '#AC8869',
+          'gold-light': '#D4B896',
         },
       },
       boxShadow: {
-        'card': '0 1px 3px 0 rgb(0 0 0 / 0.06), 0 1px 2px -1px rgb(0 0 0 / 0.06)',
-        'card-hover': '0 4px 6px -1px rgb(0 0 0 / 0.07), 0 2px 4px -2px rgb(0 0 0 / 0.07)',
+        card: 'var(--shadow-card)',
+        'card-hover': 'var(--shadow-card-hover)',
       },
     },
   },

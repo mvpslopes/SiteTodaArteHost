@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useState } from 'react';
-import { CalendarDays, Plus, Edit3, Trash2, AlertTriangle } from 'lucide-react';
+import { Plus, Edit3, Trash2, AlertTriangle } from 'lucide-react';
 import { api, type GastoFixo, type Favorecido, METODOS_PAGAMENTO } from '../api';
 import { useToast } from '../contexts/ToastContext';
 
@@ -232,16 +232,7 @@ export default function GastosFixos() {
 
   return (
     <div className="space-y-6">
-      <div className="flex flex-wrap items-center justify-between gap-4">
-        <div className="flex items-center gap-2">
-          <CalendarDays className="w-7 h-7 text-primary-500" strokeWidth={1.8} />
-          <div>
-            <h1 className="text-2xl font-semibold text-gray-900">Gastos fixos</h1>
-            <p className="text-xs text-gray-500">
-              Lista mensal de gastos recorrentes para você lembrar o que precisa pagar.
-            </p>
-          </div>
-        </div>
+      <div className="flex flex-wrap items-center justify-end gap-4">
         <div className="flex items-center gap-3 flex-wrap">
           <select
             value={mes}
@@ -399,7 +390,7 @@ export default function GastosFixos() {
 
       {modalOpen && (
         <div
-          className="fixed inset-0 z-40 flex items-center justify-center bg-black/60 p-4"
+          className="fixed inset-0 z-40 flex items-center justify-center bg-brand-dark-brown/50 backdrop-blur-[2px] p-4"
           onClick={fecharModal}
         >
           <div
@@ -567,7 +558,7 @@ export default function GastosFixos() {
 
       {modalPagamentoOpen && gastoSelecionado && (
         <div
-          className="fixed inset-0 z-40 flex items-center justify-center bg-black/60 p-4"
+          className="fixed inset-0 z-40 flex items-center justify-center bg-brand-dark-brown/50 backdrop-blur-[2px] p-4"
           onClick={fecharPagamento}
         >
           <div

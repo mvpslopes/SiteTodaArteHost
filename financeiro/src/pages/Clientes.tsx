@@ -1,5 +1,5 @@
 import { useEffect, useState, useMemo } from 'react';
-import { UserPlus, Plus } from 'lucide-react';
+import { Plus } from 'lucide-react';
 import { api, type Cliente } from '../api';
 import { useSearch, matchSearch } from '../contexts/SearchContext';
 import { useToast } from '../contexts/ToastContext';
@@ -77,11 +77,7 @@ export default function Clientes() {
 
   return (
     <div className="space-y-6">
-      <div className="flex flex-wrap items-center justify-between gap-4">
-        <h1 className="text-2xl font-semibold text-gray-900 flex items-center gap-2">
-          <UserPlus className="w-7 h-7 text-primary-500" strokeWidth={1.8} />
-          Clientes
-        </h1>
+      <div className="flex flex-wrap items-center justify-end gap-4">
         <div className="flex items-center gap-3">
           <label className="flex items-center gap-2 text-sm text-gray-600">
             <input
@@ -152,8 +148,8 @@ export default function Clientes() {
       )}
 
       {modal && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60" onClick={closeModal}>
-          <div className="bg-white border border-gray-200 rounded-xl shadow-lg w-full max-w-sm" onClick={(e) => e.stopPropagation()}>
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-brand-dark-brown/50 backdrop-blur-[2px]" onClick={closeModal}>
+          <div className="bg-white border border-brand-beige rounded-2xl shadow-2xl w-full max-w-sm" onClick={(e) => e.stopPropagation()}>
             <h2 className="px-5 py-4 border-b border-gray-200 text-lg font-medium text-gray-900">
               {modal === 'add' ? 'Novo cliente' : 'Editar cliente'}
             </h2>

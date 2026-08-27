@@ -147,8 +147,8 @@ export default function Favorecidos() {
       )}
 
       {modal && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60" onClick={closeModal}>
-          <div className="bg-white border border-gray-200 rounded-xl shadow-lg w-full max-w-sm" onClick={(e) => e.stopPropagation()}>
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-brand-dark-brown/50 backdrop-blur-[2px]" onClick={closeModal}>
+          <div className="bg-white border border-brand-beige rounded-2xl shadow-2xl w-full max-w-sm" onClick={(e) => e.stopPropagation()}>
             <h2 className="px-5 py-4 border-b border-gray-200 text-lg font-medium text-gray-900">
               {modal === 'add' ? 'Novo favorecido' : 'Editar favorecido'}
             </h2>

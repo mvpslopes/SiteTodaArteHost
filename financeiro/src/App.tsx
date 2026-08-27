@@ -2,6 +2,7 @@ import React from 'react';
 import { Routes, Route, Navigate } from 'react-router-dom';
 import { AuthProvider, useAuth } from './contexts/AuthContext';
 import { ToastProvider } from './contexts/ToastContext';
+import { ThemeProvider } from './contexts/ThemeContext';
 import { SearchProvider } from './contexts/SearchContext';
 import Layout from './components/Layout';
 import Login from './pages/Login';
@@ -14,8 +15,12 @@ import Auditoria from './pages/Auditoria';
 import Configuracoes from './pages/Configuracoes';
 import Usuarios from './pages/Usuarios';
 import GastosFixos from './pages/GastosFixos';
-import Checklist from './pages/Checklist';
-import ChecklistAdmin from './pages/ChecklistAdmin';
+import Producao from './pages/Producao';
+import JobDetalhe from './pages/JobDetalhe';
+import Cronograma from './pages/Cronograma';
+import Executantes from './pages/Executantes';
+import ClienteJob from './pages/ClienteJob';
+import Pedido from './pages/Pedido';
 
 function ProtectedRoute({ children }: { children: React.ReactNode }) {
   const { user, loading } = useAuth();
@@ -30,15 +35,15 @@ function ProtectedRoute({ children }: { children: React.ReactNode }) {
 
   if (loading || showSplash) {
     return (
-      <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-primary-50 via-white to-amber-50">
+      <div className="min-h-screen flex items-center justify-center bg-brand-off-white">
         <div className="flex flex-col items-center gap-4">
           <img
             src="/logo-todaarte.png"
             alt="TodaArte"
             className="h-16 w-auto object-contain drop-shadow-sm"
           />
-          <div className="flex items-center gap-2 text-sm text-gray-500">
-            <span className="inline-flex h-3 w-3 animate-ping rounded-full bg-primary-500 opacity-75" />
+          <div className="flex items-center gap-2 text-sm text-brand-olive">
+            <span className="inline-flex h-3 w-3 animate-ping rounded-full bg-brand-gold opacity-75" />
             <span>Carregando...</span>
           </div>
         </div>
@@ -50,20 +55,26 @@ function ProtectedRoute({ children }: { children: React.ReactNode }) {
   return <>{children}</>;
 }
 
+function homePath(perfil?: string) {
+  return perfil === 'usuario' || perfil === 'freelancer' ? '/producao' : '/dashboard';
+}
+
 function IndexRedirect() {
   const { user } = useAuth();
-  return <Navigate to={user?.perfil === 'usuario' ? '/checklist' : '/dashboard'} replace />;
+  return <Navigate to={homePath(user?.perfil)} replace />;
 }
 
 function DefaultRedirect() {
   const { user } = useAuth();
-  return <Navigate to={user?.perfil === 'usuario' ? '/checklist' : '/dashboard'} replace />;
+  return <Navigate to={homePath(user?.perfil)} replace />;
 }
 
 function AppRoutes() {
   return (
     <Routes>
       <Route path="/login" element={<Login />} />
+      <Route path="/pedido" element={<Pedido />} />
+      <Route path="/j/:token" element={<ClienteJob />} />
       <Route
         path="/"
         element={
@@ -81,10 +92,12 @@ function AppRoutes() {
         <Route path="favorecidos" element={<Navigate to="/destinos" replace />} />
         <Route path="clientes" element={<Clientes />} />
         <Route path="gastos-fixos" element={<GastosFixos />} />
-        <Route path="checklist" element={<Checklist />} />
-        <Route path="checklist-admin" element={<ChecklistAdmin />} />
         <Route path="relatorios-cliente" element={<RelatorioCliente />} />
         <Route path="auditoria" element={<Auditoria />} />
+        <Route path="producao" element={<Producao />} />
+        <Route path="producao/:id" element={<JobDetalhe />} />
+        <Route path="cronograma" element={<Cronograma />} />
+        <Route path="executantes" element={<Executantes />} />
         <Route path="configuracoes" element={<Configuracoes />} />
         <Route path="usuarios" element={<Usuarios />} />
       </Route>
@@ -95,10 +108,12 @@ function AppRoutes() {
 
 export default function App() {
   return (
-    <ToastProvider>
-      <AuthProvider>
-        <AppRoutes />
-      </AuthProvider>
-    </ToastProvider>
+    <ThemeProvider>
+      <ToastProvider>
+        <AuthProvider>
+          <AppRoutes />
+        </AuthProvider>
+      </ToastProvider>
+    </ThemeProvider>
   );
 }

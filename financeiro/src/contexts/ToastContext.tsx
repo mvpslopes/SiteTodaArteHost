@@ -21,9 +21,9 @@ let nextId = 1;
 
 const STYLES: Record<ToastType, { wrap: string; icon: string; bar: string }> = {
   success: {
-    wrap: 'border-emerald-200 bg-white',
+    wrap: 'border-brand-beige bg-white',
     icon: 'text-emerald-600',
-    bar: 'bg-emerald-500',
+    bar: 'bg-brand-gold',
   },
   error: {
     wrap: 'border-rose-200 bg-white',
@@ -31,9 +31,9 @@ const STYLES: Record<ToastType, { wrap: string; icon: string; bar: string }> = {
     bar: 'bg-rose-500',
   },
   info: {
-    wrap: 'border-sky-200 bg-white',
-    icon: 'text-sky-600',
-    bar: 'bg-sky-500',
+    wrap: 'border-brand-beige bg-white',
+    icon: 'text-brand-gold',
+    bar: 'bg-brand-brown',
   },
 };
 
@@ -78,11 +78,11 @@ export function ToastProvider({ children }: { children: ReactNode }) {
             >
               <div className="flex items-start gap-3 px-3.5 py-3">
                 <Icon className={`mt-0.5 h-5 w-5 shrink-0 ${style.icon}`} strokeWidth={2} />
-                <p className="flex-1 text-sm leading-snug text-gray-800">{t.message}</p>
+                <p className="flex-1 text-sm leading-snug text-brand-dark-brown">{t.message}</p>
                 <button
                   type="button"
                   onClick={() => dismiss(t.id)}
-                  className="rounded p-0.5 text-gray-400 hover:bg-gray-100 hover:text-gray-600"
+                  className="rounded p-0.5 text-brand-olive/60 hover:bg-brand-off-white hover:text-brand-dark-brown"
                   aria-label="Fechar"
                 >
                   <X className="h-4 w-4" />
