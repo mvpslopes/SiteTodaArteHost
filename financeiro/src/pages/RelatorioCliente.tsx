@@ -1,6 +1,9 @@
 import { useEffect, useMemo, useState } from 'react';
 import { api, type Cliente, type Demanda, type Transacao } from '../api';
 import { useToast } from '../contexts/ToastContext';
+import FilterBar, { FilterField, filterControlClass } from '../components/FilterBar';
+import SortableTh from '../components/SortableTh';
+import { sortRows, useTableSort } from '../hooks/useTableSort';
 
 type PeriodoTipo = 'competencia' | 'anual';
 
@@ -30,6 +33,8 @@ export default function RelatorioCliente() {
   const [loading, setLoading] = useState(false);
   const [transacoes, setTransacoes] = useState<Transacao[]>([]);
   const [demandas, setDemandas] = useState<Demanda[]>([]);
+  const transSort = useTableSort('data', 'desc');
+  const demandasSort = useTableSort('data', 'desc');
 
   useEffect(() => {
     api.clientes
@@ -97,24 +102,72 @@ export default function RelatorioCliente() {
     return { entradas, saidas, saldo, totalDemandas, saldoAposDemandas };
   }, [transacoes, demandas]);
 
+  const transacoesOrdenadas = useMemo(
+    () =>
+      sortRows(transacoes, transSort.sortKey, transSort.sortDir, (row, key) => {
+        switch (key) {
+          case 'data':
+            return row.data_transacao;
+          case 'tipo':
+            return row.tipo;
+          case 'descricao':
+            return row.descricao ?? '';
+          case 'valor':
+            return Number(row.valor);
+          default:
+            return '';
+        }
+      }),
+    [transacoes, transSort.sortKey, transSort.sortDir],
+  );
+
+  const demandasOrdenadas = useMemo(
+    () =>
+      sortRows(demandas, demandasSort.sortKey, demandasSort.sortDir, (row, key) => {
+        switch (key) {
+          case 'data':
+            return row.data_pedido;
+          case 'descricao':
+            return row.descricao;
+          case 'quem':
+            return row.quem_pediu;
+          case 'valor':
+            return Number(row.valor_total);
+          case 'status':
+            return row.status;
+          default:
+            return '';
+        }
+      }),
+    [demandas, demandasSort.sortKey, demandasSort.sortDir],
+  );
+
   const meses = ['Jan','Fev','Mar','Abr','Mai','Jun','Jul','Ago','Set','Out','Nov','Dez'];
 
   return (
     <div className="space-y-6">
-      <div className="rounded-2xl border border-brand-beige bg-white p-4 shadow-card space-y-4">
-        <form
-          onSubmit={(e) => {
-            e.preventDefault();
-            carregar();
-          }}
-          className="flex flex-wrap items-end gap-4"
+      <form
+        onSubmit={(e) => {
+          e.preventDefault();
+          carregar();
+        }}
+      >
+        <FilterBar
+          actions={
+            <button
+              type="submit"
+              disabled={loading}
+              className="px-4 py-2 rounded-lg bg-primary-600 hover:bg-primary-500 text-white text-sm font-medium disabled:opacity-60"
+            >
+              {loading ? 'Gerando...' : 'Gerar relatório'}
+            </button>
+          }
         >
-          <div>
-            <label className="block text-xs text-gray-600 mb-1">Cliente</label>
+          <FilterField label="Cliente">
             <select
               value={clienteId}
               onChange={(e) => setClienteId(e.target.value ? Number(e.target.value) : '')}
-              className="rounded-lg border border-gray-200 bg-white px-3 py-2 text-sm text-gray-800"
+              className={filterControlClass()}
             >
               <option value="">Selecione...</option>
               {clientes.map((c) => (
@@ -123,10 +176,9 @@ export default function RelatorioCliente() {
                 </option>
               ))}
             </select>
-          </div>
-          <div>
-            <label className="block text-xs text-gray-600 mb-1">Tipo de período</label>
-            <div className="flex items-center gap-3 text-sm text-gray-700">
+          </FilterField>
+          <FilterField label="Tipo de período">
+            <div className="mt-1 flex items-center gap-3 text-sm text-gray-700">
               <label className="inline-flex items-center gap-1">
                 <input
                   type="radio"
@@ -148,15 +200,14 @@ export default function RelatorioCliente() {
                 Anual
               </label>
             </div>
-          </div>
+          </FilterField>
           {periodoTipo === 'competencia' && (
-            <div className="flex items-end gap-3">
-              <div>
-                <label className="block text-xs text-gray-600 mb-1">Mês</label>
+            <>
+              <FilterField label="Mês">
                 <select
                   value={mes}
                   onChange={(e) => setMes(Number(e.target.value))}
-                  className="rounded-lg border border-gray-200 bg-white px-3 py-2 text-sm text-gray-800"
+                  className={filterControlClass()}
                 >
                   {meses.map((label, idx) => (
                     <option key={label} value={idx + 1}>
@@ -164,38 +215,29 @@ export default function RelatorioCliente() {
                     </option>
                   ))}
                 </select>
-              </div>
-              <div>
-                <label className="block text-xs text-gray-600 mb-1">Ano</label>
+              </FilterField>
+              <FilterField label="Ano">
                 <input
                   type="number"
                   value={ano}
                   onChange={(e) => setAno(Number(e.target.value))}
-                  className="rounded-lg border border-gray-200 bg-white px-3 py-2 text-sm text-gray-800 w-24"
+                  className={filterControlClass('w-24')}
                 />
-              </div>
-            </div>
+              </FilterField>
+            </>
           )}
           {periodoTipo === 'anual' && (
-            <div>
-              <label className="block text-xs text-gray-600 mb-1">Ano</label>
+            <FilterField label="Ano">
               <input
                 type="number"
                 value={ano}
                 onChange={(e) => setAno(Number(e.target.value))}
-                className="rounded-lg border border-gray-200 bg-white px-3 py-2 text-sm text-gray-800 w-24"
+                className={filterControlClass('w-24')}
               />
-            </div>
+            </FilterField>
           )}
-          <button
-            type="submit"
-            disabled={loading}
-            className="px-4 py-2 rounded-lg bg-primary-600 hover:bg-primary-500 text-white text-sm font-medium disabled:opacity-60"
-          >
-            {loading ? 'Gerando...' : 'Gerar relatório'}
-          </button>
-        </form>
-      </div>
+        </FilterBar>
+      </form>
 
       {clienteSelecionado && (
         <div className="space-y-4">
@@ -266,22 +308,22 @@ export default function RelatorioCliente() {
               <div className="overflow-x-auto max-h-[360px] scroll-thin">
                 <table className="w-full text-xs">
                   <thead>
-                    <tr className="text-gray-500 border-b border-gray-200 bg-gray-50/80">
-                      <th className="text-left py-2 px-3">Data</th>
-                      <th className="text-left py-2 px-3">Tipo</th>
-                      <th className="text-left py-2 px-3">Descrição</th>
-                      <th className="text-right py-2 px-3">Valor</th>
+                    <tr className="border-b border-gray-200 bg-gray-50/80">
+                      <SortableTh label="Data" column="data" sortKey={transSort.sortKey} sortDir={transSort.sortDir} onSort={transSort.toggleSort} />
+                      <SortableTh label="Tipo" column="tipo" sortKey={transSort.sortKey} sortDir={transSort.sortDir} onSort={transSort.toggleSort} />
+                      <SortableTh label="Descrição" column="descricao" sortKey={transSort.sortKey} sortDir={transSort.sortDir} onSort={transSort.toggleSort} />
+                      <SortableTh label="Valor" column="valor" sortKey={transSort.sortKey} sortDir={transSort.sortDir} onSort={transSort.toggleSort} align="right" />
                     </tr>
                   </thead>
                   <tbody>
-                    {transacoes.length === 0 ? (
+                    {transacoesOrdenadas.length === 0 ? (
                       <tr>
                         <td colSpan={4} className="py-4 text-center text-gray-500">
                           Nenhuma transação para o período.
                         </td>
                       </tr>
                     ) : (
-                      transacoes.map((t) => (
+                      transacoesOrdenadas.map((t) => (
                         <tr key={t.id} className="border-b border-gray-100 hover:bg-gray-50/40">
                           <td className="py-2 px-3 text-gray-600">
                             {new Date(t.data_transacao + 'T12:00:00').toLocaleDateString('pt-BR')}
@@ -310,23 +352,23 @@ export default function RelatorioCliente() {
               <div className="overflow-x-auto max-h-[360px] scroll-thin">
                 <table className="w-full text-xs">
                   <thead>
-                    <tr className="text-gray-500 border-b border-gray-200 bg-gray-50/80">
-                      <th className="text-left py-2 px-3">Data</th>
-                      <th className="text-left py-2 px-3">Descrição</th>
-                      <th className="text-left py-2 px-3">Quem pediu</th>
-                      <th className="text-right py-2 px-3">Valor total</th>
-                      <th className="text-left py-2 px-3">Status</th>
+                    <tr className="border-b border-gray-200 bg-gray-50/80">
+                      <SortableTh label="Data" column="data" sortKey={demandasSort.sortKey} sortDir={demandasSort.sortDir} onSort={demandasSort.toggleSort} />
+                      <SortableTh label="Descrição" column="descricao" sortKey={demandasSort.sortKey} sortDir={demandasSort.sortDir} onSort={demandasSort.toggleSort} />
+                      <SortableTh label="Quem pediu" column="quem" sortKey={demandasSort.sortKey} sortDir={demandasSort.sortDir} onSort={demandasSort.toggleSort} />
+                      <SortableTh label="Valor total" column="valor" sortKey={demandasSort.sortKey} sortDir={demandasSort.sortDir} onSort={demandasSort.toggleSort} align="right" />
+                      <SortableTh label="Status" column="status" sortKey={demandasSort.sortKey} sortDir={demandasSort.sortDir} onSort={demandasSort.toggleSort} />
                     </tr>
                   </thead>
                   <tbody>
-                    {demandas.length === 0 ? (
+                    {demandasOrdenadas.length === 0 ? (
                       <tr>
                         <td colSpan={5} className="py-4 text-center text-gray-500">
                           Nenhuma demanda para o período.
                         </td>
                       </tr>
                     ) : (
-                      demandas.map((d) => (
+                      demandasOrdenadas.map((d) => (
                         <tr key={d.id} className="border-b border-gray-100 hover:bg-gray-50/40">
                           <td className="py-2 px-3 text-gray-600">
                             {new Date(d.data_pedido + 'T12:00:00').toLocaleDateString('pt-BR')}

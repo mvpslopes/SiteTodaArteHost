@@ -222,7 +222,11 @@ export interface Cliente {
 export type ClientePlataformaFixa = 'instagram' | 'youtube' | 'email' | 'facebook';
 
 export interface ClienteAcesso {
+  id?: number;
+  cliente_id?: number;
+  cliente_nome?: string;
   plataforma: string;
+  plataforma_label?: string;
   rotulo?: string;
   login: string;
   senha: string;
@@ -362,15 +366,35 @@ export const api = {
       request<Cliente>('/api/clientes.php', { method: 'PUT', body: JSON.stringify(data) }),
     delete: (id: number) =>
       request<{ success: boolean }>(`/api/clientes.php?id=${id}`, { method: 'DELETE' }),
-    acessos: (clienteId: number) =>
-      request<{ cliente_id: number; cliente_nome: string; acessos: ClienteAcesso[] }>(
-        `/api/cliente-acessos.php?cliente_id=${clienteId}`,
-      ),
-    salvarAcessos: (clienteId: number, acessos: ClienteAcesso[]) =>
-      request<{ cliente_id: number; cliente_nome: string; acessos: ClienteAcesso[] }>('/api/cliente-acessos.php', {
-        method: 'PUT',
-        body: JSON.stringify({ cliente_id: clienteId, acessos }),
+    acessos: (clienteId?: number) => {
+      const q = clienteId ? `?cliente_id=${clienteId}` : '';
+      return request<{ acessos: ClienteAcesso[] }>(`/api/cliente-acessos.php${q}`);
+    },
+    criarAcesso: (data: {
+      cliente_id: number;
+      tipo: ClientePlataformaFixa | 'outro';
+      rotulo?: string;
+      login: string;
+      senha: string;
+      observacao?: string;
+    }) =>
+      request<ClienteAcesso>('/api/cliente-acessos.php', {
+        method: 'POST',
+        body: JSON.stringify(data),
       }),
+    atualizarAcesso: (data: {
+      id: number;
+      login: string;
+      senha?: string;
+      observacao?: string;
+      rotulo?: string;
+    }) =>
+      request<ClienteAcesso>('/api/cliente-acessos.php', {
+        method: 'PUT',
+        body: JSON.stringify(data),
+      }),
+    excluirAcesso: (id: number) =>
+      request<{ success: boolean }>(`/api/cliente-acessos.php?id=${id}`, { method: 'DELETE' }),
   },
   demandas: {
     list: (params?: { tipo_cliente?: TipoClienteDemanda; cliente_id?: number; status?: Demanda['status'] }) => {

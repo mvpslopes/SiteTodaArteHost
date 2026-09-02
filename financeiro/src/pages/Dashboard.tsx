@@ -7,6 +7,8 @@ import { Link } from 'react-router-dom';
 import * as XLSX from 'xlsx';
 import { jsPDF } from 'jspdf';
 import autoTable from 'jspdf-autotable';
+import SortableTh from '../components/SortableTh';
+import { sortRows, useTableSort } from '../hooks/useTableSort';
 
 const MESES = ['Janeiro','Fevereiro','Março','Abril','Maio','Junho','Julho','Agosto','Setembro','Outubro','Novembro','Dezembro'];
 
@@ -401,6 +403,11 @@ export default function Dashboard() {
     return `${partes.join(' e ')} neste mês.`;
   })();
   const { query } = useSearch();
+  const metodoSort = useTableSort('metodo');
+  const destinoSort = useTableSort('nome');
+  const clienteSort = useTableSort('nome');
+  const lancSort = useTableSort('data', 'desc');
+
   const transacoesFiltradas = useMemo(() => {
     const list = data?.transacoes ?? [];
     if (!query.trim()) return list;
@@ -419,6 +426,118 @@ export default function Dashboard() {
       );
     });
   }, [data?.transacoes, query]);
+
+  const totalGeralMemo = (data?.total_entradas ?? 0) + (data?.total_saidas ?? 0);
+
+  const metodoRows = useMemo(() => {
+    if (!data) return [];
+    const resumoPorMetodo = buildResumoPorMetodo(data.por_metodo ?? []);
+    const rows = METODOS_PAGAMENTO.map(({ value, label }) => {
+      const r = resumoPorMetodo.get(value)!;
+      const totalMetodo = r.entradas + r.saidas;
+      const pct = totalGeralMemo > 0 ? (totalMetodo / totalGeralMemo) * 100 : 0;
+      return { value, label, ...r, pct, totalMetodo };
+    });
+    return sortRows(rows, metodoSort.sortKey, metodoSort.sortDir, (row, key) => {
+      switch (key) {
+        case 'metodo':
+          return row.label;
+        case 'entradas':
+          return row.entradas;
+        case 'saidas':
+          return row.saidas;
+        case 'saldo':
+          return row.saldo;
+        case 'pct':
+          return row.pct;
+        default:
+          return '';
+      }
+    });
+  }, [data, totalGeralMemo, metodoSort.sortKey, metodoSort.sortDir]);
+
+  const resumoPorDestinoBase = useMemo(
+    () => buildResumoPorDestino(data?.transacoes ?? []),
+    [data?.transacoes],
+  );
+
+  const resumoPorDestinoSorted = useMemo(() => {
+    const rows = resumoPorDestinoBase.map(([nome, r]) => {
+      const totalItem = r.entradas + r.saidas;
+      const pct = totalGeralMemo > 0 ? (totalItem / totalGeralMemo) * 100 : 0;
+      return { nome, ...r, pct, totalItem };
+    });
+    return sortRows(rows, destinoSort.sortKey, destinoSort.sortDir, (row, key) => {
+      switch (key) {
+        case 'nome':
+          return row.nome;
+        case 'entradas':
+          return row.entradas;
+        case 'saidas':
+          return row.saidas;
+        case 'saldo':
+          return row.saldo;
+        case 'pct':
+          return row.pct;
+        default:
+          return '';
+      }
+    });
+  }, [resumoPorDestinoBase, totalGeralMemo, destinoSort.sortKey, destinoSort.sortDir]);
+
+  const resumoPorClienteBase = useMemo(
+    () => buildResumoPorCliente(data?.transacoes ?? []),
+    [data?.transacoes],
+  );
+
+  const resumoPorClienteSorted = useMemo(() => {
+    const rows = resumoPorClienteBase.map(([nome, r]) => {
+      const totalItem = r.entradas + r.saidas;
+      const pct = totalGeralMemo > 0 ? (totalItem / totalGeralMemo) * 100 : 0;
+      return { nome, ...r, pct, totalItem };
+    });
+    return sortRows(rows, clienteSort.sortKey, clienteSort.sortDir, (row, key) => {
+      switch (key) {
+        case 'nome':
+          return row.nome;
+        case 'entradas':
+          return row.entradas;
+        case 'saidas':
+          return row.saidas;
+        case 'saldo':
+          return row.saldo;
+        case 'pct':
+          return row.pct;
+        default:
+          return '';
+      }
+    });
+  }, [resumoPorClienteBase, totalGeralMemo, clienteSort.sortKey, clienteSort.sortDir]);
+
+  const transacoesOrdenadas = useMemo(
+    () =>
+      sortRows(transacoesFiltradas, lancSort.sortKey, lancSort.sortDir, (row, key) => {
+        switch (key) {
+          case 'data':
+            return row.data_transacao;
+          case 'tipo':
+            return row.tipo;
+          case 'destino':
+            return row.favorecido_nome ?? '';
+          case 'cliente':
+            return row.cliente_nome ?? '';
+          case 'descricao':
+            return row.descricao ?? '';
+          case 'metodo':
+            return row.metodo_pagamento;
+          case 'valor':
+            return Number(row.valor);
+          default:
+            return '';
+        }
+      }),
+    [transacoesFiltradas, lancSort.sortKey, lancSort.sortDir],
+  );
 
   if (loading && !data) {
     return (
@@ -439,8 +558,8 @@ export default function Dashboard() {
   const pctEntradas = totalGeral > 0 ? (d.total_entradas / totalGeral) * 100 : 0;
   const pctSaidas = totalGeral > 0 ? (d.total_saidas / totalGeral) * 100 : 0;
   const resumoPorMetodo = buildResumoPorMetodo(d.por_metodo ?? []);
-  const resumoPorDestino = buildResumoPorDestino(d.transacoes ?? []);
-  const resumoPorCliente = buildResumoPorCliente(d.transacoes ?? []);
+  const resumoPorDestino = resumoPorDestinoBase;
+  const resumoPorCliente = resumoPorClienteBase;
   const maxMetodoVal = Math.max(
     ...Array.from(resumoPorMetodo.values()).flatMap((r) => [r.entradas, r.saidas]),
     1
@@ -629,31 +748,26 @@ export default function Dashboard() {
             <div className="overflow-x-auto">
               <table className="w-full text-sm">
                 <thead>
-                  <tr className="text-gray-500 border-b border-gray-200">
-                    <th className="text-left py-3 px-4 font-medium">Método</th>
-                    <th className="text-right py-3 px-4 font-medium">Entradas</th>
-                    <th className="text-right py-3 px-4 font-medium">Saídas</th>
-                    <th className="text-right py-3 px-4 font-medium">Saldo</th>
-                    <th className="text-right py-3 px-4 font-medium">% do total</th>
+                  <tr className="border-b border-gray-200 bg-gray-50/80">
+                    <SortableTh label="Método" column="metodo" sortKey={metodoSort.sortKey} sortDir={metodoSort.sortDir} onSort={metodoSort.toggleSort} />
+                    <SortableTh label="Entradas" column="entradas" sortKey={metodoSort.sortKey} sortDir={metodoSort.sortDir} onSort={metodoSort.toggleSort} align="right" />
+                    <SortableTh label="Saídas" column="saidas" sortKey={metodoSort.sortKey} sortDir={metodoSort.sortDir} onSort={metodoSort.toggleSort} align="right" />
+                    <SortableTh label="Saldo" column="saldo" sortKey={metodoSort.sortKey} sortDir={metodoSort.sortDir} onSort={metodoSort.toggleSort} align="right" />
+                    <SortableTh label="% do total" column="pct" sortKey={metodoSort.sortKey} sortDir={metodoSort.sortDir} onSort={metodoSort.toggleSort} align="right" />
                   </tr>
                 </thead>
                 <tbody>
-                  {METODOS_PAGAMENTO.map(({ value, label }) => {
-                    const r = resumoPorMetodo.get(value)!;
-                    const totalMetodo = r.entradas + r.saidas;
-                    const pct = totalGeral > 0 ? (totalMetodo / totalGeral) * 100 : 0;
-                    return (
-                      <tr key={value} className="border-b border-gray-100 last:border-0">
-                        <td className="py-3 px-4 font-medium text-gray-800 capitalize">{label}</td>
+                  {metodoRows.map((r) => (
+                      <tr key={r.value} className="border-b border-gray-100 last:border-0">
+                        <td className="py-3 px-4 font-medium text-gray-800 capitalize">{r.label}</td>
                         <td className="py-3 px-4 text-right font-mono text-emerald-600">{formatMoney(r.entradas)}</td>
                         <td className="py-3 px-4 text-right font-mono text-rose-600">{formatMoney(r.saidas)}</td>
                         <td className={`py-3 px-4 text-right font-mono font-medium ${r.saldo >= 0 ? 'text-emerald-600' : 'text-rose-600'}`}>
                           {formatMoney(r.saldo)}
                         </td>
-                        <td className="py-3 px-4 text-right text-gray-600">{pct.toFixed(1)}%</td>
+                        <td className="py-3 px-4 text-right text-gray-600">{r.pct.toFixed(1)}%</td>
                       </tr>
-                    );
-                  })}
+                  ))}
                 </tbody>
               </table>
             </div>
@@ -709,30 +823,26 @@ export default function Dashboard() {
               <div className="overflow-x-auto max-h-80 overflow-y-auto">
                 <table className="w-full text-sm">
                   <thead className="sticky top-0 bg-gray-50">
-                    <tr className="text-gray-500 border-b border-gray-200">
-                      <th className="text-left py-3 px-4 font-medium">Destino</th>
-                      <th className="text-right py-3 px-4 font-medium">Entradas</th>
-                      <th className="text-right py-3 px-4 font-medium">Saídas</th>
-                      <th className="text-right py-3 px-4 font-medium">Saldo</th>
-                      <th className="text-right py-3 px-4 font-medium">%</th>
+                    <tr className="border-b border-gray-200">
+                      <SortableTh label="Destino" column="nome" sortKey={destinoSort.sortKey} sortDir={destinoSort.sortDir} onSort={destinoSort.toggleSort} />
+                      <SortableTh label="Entradas" column="entradas" sortKey={destinoSort.sortKey} sortDir={destinoSort.sortDir} onSort={destinoSort.toggleSort} align="right" />
+                      <SortableTh label="Saídas" column="saidas" sortKey={destinoSort.sortKey} sortDir={destinoSort.sortDir} onSort={destinoSort.toggleSort} align="right" />
+                      <SortableTh label="Saldo" column="saldo" sortKey={destinoSort.sortKey} sortDir={destinoSort.sortDir} onSort={destinoSort.toggleSort} align="right" />
+                      <SortableTh label="%" column="pct" sortKey={destinoSort.sortKey} sortDir={destinoSort.sortDir} onSort={destinoSort.toggleSort} align="right" />
                     </tr>
                   </thead>
                   <tbody>
-                    {resumoPorDestino.map(([nome, r]) => {
-                      const totalItem = r.entradas + r.saidas;
-                      const pct = totalGeral > 0 ? (totalItem / totalGeral) * 100 : 0;
-                      return (
-                        <tr key={nome} className="border-b border-gray-100 last:border-0">
-                          <td className="py-3 px-4 font-medium text-gray-800">{nome}</td>
+                    {resumoPorDestinoSorted.map((r) => (
+                        <tr key={r.nome} className="border-b border-gray-100 last:border-0">
+                          <td className="py-3 px-4 font-medium text-gray-800">{r.nome}</td>
                           <td className="py-3 px-4 text-right font-mono text-emerald-600">{formatMoney(r.entradas)}</td>
                           <td className="py-3 px-4 text-right font-mono text-rose-600">{formatMoney(r.saidas)}</td>
                           <td className={`py-3 px-4 text-right font-mono font-medium ${r.saldo >= 0 ? 'text-emerald-600' : 'text-rose-600'}`}>
                             {formatMoney(r.saldo)}
                           </td>
-                          <td className="py-3 px-4 text-right text-gray-600">{pct.toFixed(1)}%</td>
+                          <td className="py-3 px-4 text-right text-gray-600">{r.pct.toFixed(1)}%</td>
                         </tr>
-                      );
-                    })}
+                    ))}
                   </tbody>
                 </table>
               </div>
@@ -747,30 +857,26 @@ export default function Dashboard() {
               <div className="overflow-x-auto max-h-80 overflow-y-auto">
                 <table className="w-full text-sm">
                   <thead className="sticky top-0 bg-gray-50">
-                    <tr className="text-gray-500 border-b border-gray-200">
-                      <th className="text-left py-3 px-4 font-medium">Cliente</th>
-                      <th className="text-right py-3 px-4 font-medium">Entradas</th>
-                      <th className="text-right py-3 px-4 font-medium">Saídas</th>
-                      <th className="text-right py-3 px-4 font-medium">Saldo</th>
-                      <th className="text-right py-3 px-4 font-medium">%</th>
+                    <tr className="border-b border-gray-200">
+                      <SortableTh label="Cliente" column="nome" sortKey={clienteSort.sortKey} sortDir={clienteSort.sortDir} onSort={clienteSort.toggleSort} />
+                      <SortableTh label="Entradas" column="entradas" sortKey={clienteSort.sortKey} sortDir={clienteSort.sortDir} onSort={clienteSort.toggleSort} align="right" />
+                      <SortableTh label="Saídas" column="saidas" sortKey={clienteSort.sortKey} sortDir={clienteSort.sortDir} onSort={clienteSort.toggleSort} align="right" />
+                      <SortableTh label="Saldo" column="saldo" sortKey={clienteSort.sortKey} sortDir={clienteSort.sortDir} onSort={clienteSort.toggleSort} align="right" />
+                      <SortableTh label="%" column="pct" sortKey={clienteSort.sortKey} sortDir={clienteSort.sortDir} onSort={clienteSort.toggleSort} align="right" />
                     </tr>
                   </thead>
                   <tbody>
-                    {resumoPorCliente.map(([nome, r]) => {
-                      const totalItem = r.entradas + r.saidas;
-                      const pct = totalGeral > 0 ? (totalItem / totalGeral) * 100 : 0;
-                      return (
-                        <tr key={nome} className="border-b border-gray-100 last:border-0">
-                          <td className="py-3 px-4 font-medium text-gray-800">{nome}</td>
+                    {resumoPorClienteSorted.map((r) => (
+                        <tr key={r.nome} className="border-b border-gray-100 last:border-0">
+                          <td className="py-3 px-4 font-medium text-gray-800">{r.nome}</td>
                           <td className="py-3 px-4 text-right font-mono text-emerald-600">{formatMoney(r.entradas)}</td>
                           <td className="py-3 px-4 text-right font-mono text-rose-600">{formatMoney(r.saidas)}</td>
                           <td className={`py-3 px-4 text-right font-mono font-medium ${r.saldo >= 0 ? 'text-emerald-600' : 'text-rose-600'}`}>
                             {formatMoney(r.saldo)}
                           </td>
-                          <td className="py-3 px-4 text-right text-gray-600">{pct.toFixed(1)}%</td>
+                          <td className="py-3 px-4 text-right text-gray-600">{r.pct.toFixed(1)}%</td>
                         </tr>
-                      );
-                    })}
+                    ))}
                   </tbody>
                 </table>
               </div>
@@ -787,18 +893,18 @@ export default function Dashboard() {
         <div className="overflow-x-auto scroll-thin">
           <table className="w-full text-sm">
             <thead>
-              <tr className="text-gray-500 border-b border-gray-200 bg-gray-50/80">
-                <th className="text-left py-3 px-5 font-medium">Data</th>
-                <th className="text-left py-3 px-5 font-medium">Tipo</th>
-                <th className="text-left py-3 px-5 font-medium">Destino</th>
-                <th className="text-left py-3 px-5 font-medium">Cliente</th>
-                <th className="text-left py-3 px-5 font-medium">Descrição</th>
-                <th className="text-left py-3 px-5 font-medium">Método</th>
-                <th className="text-right py-3 px-5 font-medium">Valor</th>
+              <tr className="border-b border-gray-200 bg-gray-50/80">
+                <SortableTh label="Data" column="data" sortKey={lancSort.sortKey} sortDir={lancSort.sortDir} onSort={lancSort.toggleSort} />
+                <SortableTh label="Tipo" column="tipo" sortKey={lancSort.sortKey} sortDir={lancSort.sortDir} onSort={lancSort.toggleSort} />
+                <SortableTh label="Destino" column="destino" sortKey={lancSort.sortKey} sortDir={lancSort.sortDir} onSort={lancSort.toggleSort} />
+                <SortableTh label="Cliente" column="cliente" sortKey={lancSort.sortKey} sortDir={lancSort.sortDir} onSort={lancSort.toggleSort} />
+                <SortableTh label="Descrição" column="descricao" sortKey={lancSort.sortKey} sortDir={lancSort.sortDir} onSort={lancSort.toggleSort} />
+                <SortableTh label="Método" column="metodo" sortKey={lancSort.sortKey} sortDir={lancSort.sortDir} onSort={lancSort.toggleSort} />
+                <SortableTh label="Valor" column="valor" sortKey={lancSort.sortKey} sortDir={lancSort.sortDir} onSort={lancSort.toggleSort} align="right" />
               </tr>
             </thead>
             <tbody>
-              {transacoesFiltradas.length === 0 ? (
+              {transacoesOrdenadas.length === 0 ? (
                 <tr>
                   <td colSpan={7} className="py-8 px-5 text-gray-500 text-center">
                     {d.transacoes.length === 0 ? (
@@ -812,7 +918,7 @@ export default function Dashboard() {
                   </td>
                 </tr>
               ) : (
-                transacoesFiltradas.map((t) => (
+                transacoesOrdenadas.map((t) => (
                   <tr key={t.id} className="border-b border-gray-100 hover:bg-gray-50/50">
                     <td className="py-3 px-5 text-gray-600 font-mono">{formatDate(t.data_transacao)}</td>
                     <td className="py-3 px-5">

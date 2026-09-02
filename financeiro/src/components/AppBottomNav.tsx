@@ -8,6 +8,7 @@ import {
   UserPlus,
   Settings,
   Palette,
+  KeyRound,
 } from 'lucide-react';
 
 interface NavItem {
@@ -33,7 +34,7 @@ function itemsForPerfil(perfil?: string): NavItem[] {
   if (perfil === 'usuario') {
     return [
       { to: '/producao', icon: Palette, label: 'Produção' },
-      { to: '/clientes', icon: UserPlus, label: 'Clientes' },
+      { to: '/logins', icon: KeyRound, label: 'Logins' },
       { to: '/configuracoes', icon: Settings, label: 'Conta' },
     ];
   }

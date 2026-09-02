@@ -2,6 +2,9 @@ import { useEffect, useMemo, useState } from 'react';
 import { Plus, Edit3, Trash2, AlertTriangle } from 'lucide-react';
 import { api, type GastoFixo, type Favorecido, METODOS_PAGAMENTO } from '../api';
 import { useToast } from '../contexts/ToastContext';
+import FilterBar, { FilterField, filterControlClass } from '../components/FilterBar';
+import SortableTh from '../components/SortableTh';
+import { sortRows, useTableSort } from '../hooks/useTableSort';
 
 const MESES = ['Jan','Fev','Mar','Abr','Mai','Jun','Jul','Ago','Set','Out','Nov','Dez'];
 
@@ -15,8 +18,10 @@ export default function GastosFixos() {
   const toast = useToast();
   const [mes, setMes] = useState<number>(hoje.getMonth() + 1);
   const [ano, setAno] = useState<number>(hoje.getFullYear());
+  const [statusFiltro, setStatusFiltro] = useState<'' | 'pago' | 'pendente' | 'atrasado'>('');
   const [gastos, setGastos] = useState<GastoFixo[]>([]);
   const [loading, setLoading] = useState(true);
+  const { sortKey, sortDir, toggleSort } = useTableSort('status');
   const [modalOpen, setModalOpen] = useState(false);
   const [editing, setEditing] = useState<GastoFixo | null>(null);
   const [favorecidos, setFavorecidos] = useState<Favorecido[]>([]);
@@ -143,27 +148,47 @@ export default function GastosFixos() {
     }
   };
 
-  const proximos = useMemo(() => {
-    const ordem = { atrasado: 0, pendente: 1, pago: 2 };
-    return gastos.slice().sort((a, b) => {
-      const oa = ordem[a.status_pagamento ?? 'pendente'];
-      const ob = ordem[b.status_pagamento ?? 'pendente'];
-      if (oa !== ob) return oa - ob;
-      return a.dia_vencimento - b.dia_vencimento;
-    });
-  }, [gastos]);
+  const filtrados = useMemo(() => {
+    if (!statusFiltro) return gastos;
+    return gastos.filter((g) => (g.status_pagamento ?? 'pendente') === statusFiltro);
+  }, [gastos, statusFiltro]);
+
+  const proximos = useMemo(
+    () =>
+      sortRows(filtrados, sortKey, sortDir, (row, key) => {
+        switch (key) {
+          case 'nome':
+            return row.nome;
+          case 'vencimento':
+            return row.dia_vencimento;
+          case 'status': {
+            const ordem = { atrasado: 0, pendente: 1, pago: 2 };
+            return ordem[row.status_pagamento ?? 'pendente'];
+          }
+          case 'metodo':
+            return row.metodo_pagamento || '';
+          case 'valor':
+            return row.valor_padrao ? Number(row.valor_padrao) : 0;
+          case 'periodo':
+            return `${row.ano_inicio}-${String(row.mes_inicio).padStart(2, '0')}`;
+          default:
+            return '';
+        }
+      }),
+    [filtrados, sortKey, sortDir],
+  );
 
   const emAberto = useMemo(
-    () => proximos.filter((g) => g.status_pagamento !== 'pago'),
-    [proximos],
+    () => gastos.filter((g) => g.status_pagamento !== 'pago'),
+    [gastos],
   );
   const atrasados = useMemo(
-    () => proximos.filter((g) => g.status_pagamento === 'atrasado'),
-    [proximos],
+    () => gastos.filter((g) => g.status_pagamento === 'atrasado'),
+    [gastos],
   );
   const soPendentes = useMemo(
-    () => proximos.filter((g) => g.status_pagamento === 'pendente'),
-    [proximos],
+    () => gastos.filter((g) => g.status_pagamento === 'pendente'),
+    [gastos],
   );
 
   const textoAlerta = (() => {
@@ -232,26 +257,8 @@ export default function GastosFixos() {
 
   return (
     <div className="space-y-6">
-      <div className="flex flex-wrap items-center justify-end gap-4">
-        <div className="flex items-center gap-3 flex-wrap">
-          <select
-            value={mes}
-            onChange={(e) => setMes(Number(e.target.value))}
-            className="rounded-lg border border-gray-200 bg-white px-3 py-2 text-sm text-gray-800"
-          >
-            {MESES.map((m, i) => (
-              <option key={m} value={i + 1}>{m}</option>
-            ))}
-          </select>
-          <select
-            value={ano}
-            onChange={(e) => setAno(Number(e.target.value))}
-            className="rounded-lg border border-gray-200 bg-white px-3 py-2 text-sm text-gray-800"
-          >
-            {Array.from({ length: 5 }, (_, i) => hoje.getFullYear() - 2 + i).map((y) => (
-              <option key={y} value={y}>{y}</option>
-            ))}
-          </select>
+      <FilterBar
+        actions={
           <button
             type="button"
             onClick={abrirNovo}
@@ -260,8 +267,43 @@ export default function GastosFixos() {
             <Plus className="w-4 h-4" />
             Novo gasto fixo
           </button>
-        </div>
-      </div>
+        }
+      >
+        <FilterField label="Mês">
+          <select
+            value={mes}
+            onChange={(e) => setMes(Number(e.target.value))}
+            className={filterControlClass()}
+          >
+            {MESES.map((m, i) => (
+              <option key={m} value={i + 1}>{m}</option>
+            ))}
+          </select>
+        </FilterField>
+        <FilterField label="Ano">
+          <select
+            value={ano}
+            onChange={(e) => setAno(Number(e.target.value))}
+            className={filterControlClass()}
+          >
+            {Array.from({ length: 5 }, (_, i) => hoje.getFullYear() - 2 + i).map((y) => (
+              <option key={y} value={y}>{y}</option>
+            ))}
+          </select>
+        </FilterField>
+        <FilterField label="Status pagamento">
+          <select
+            value={statusFiltro}
+            onChange={(e) => setStatusFiltro(e.target.value as '' | 'pago' | 'pendente' | 'atrasado')}
+            className={filterControlClass()}
+          >
+            <option value="">Todos</option>
+            <option value="pendente">Pendente</option>
+            <option value="atrasado">Atrasado</option>
+            <option value="pago">Pago</option>
+          </select>
+        </FilterField>
+      </FilterBar>
 
       {emAberto.length > 0 && (
         <div className={`rounded-xl border px-5 py-4 shadow-card ${
@@ -300,14 +342,14 @@ export default function GastosFixos() {
           <div className="overflow-x-auto">
             <table className="w-full text-sm">
               <thead className="bg-gray-50 border-b border-gray-200">
-                <tr className="text-gray-500">
-                  <th className="text-left py-3 px-4 font-medium">Nome</th>
-                  <th className="text-left py-3 px-4 font-medium">Vencimento</th>
-                  <th className="text-left py-3 px-4 font-medium">Status</th>
-                  <th className="text-left py-3 px-4 font-medium">Método</th>
-                  <th className="text-right py-3 px-4 font-medium">Valor padrão</th>
-                  <th className="text-left py-3 px-4 font-medium">Período</th>
-                  <th className="w-40 py-3 px-4" />
+                <tr>
+                  <SortableTh label="Nome" column="nome" sortKey={sortKey} sortDir={sortDir} onSort={toggleSort} />
+                  <SortableTh label="Vencimento" column="vencimento" sortKey={sortKey} sortDir={sortDir} onSort={toggleSort} />
+                  <SortableTh label="Status" column="status" sortKey={sortKey} sortDir={sortDir} onSort={toggleSort} />
+                  <SortableTh label="Método" column="metodo" sortKey={sortKey} sortDir={sortDir} onSort={toggleSort} />
+                  <SortableTh label="Valor padrão" column="valor" sortKey={sortKey} sortDir={sortDir} onSort={toggleSort} align="right" />
+                  <SortableTh label="Período" column="periodo" sortKey={sortKey} sortDir={sortDir} onSort={toggleSort} />
+                  <th className="w-40 px-4 py-3 text-right text-xs font-medium text-gray-500">Ações</th>
                 </tr>
               </thead>
               <tbody>

@@ -3,6 +3,9 @@ import { Plus } from 'lucide-react';
 import { api, type Favorecido } from '../api';
 import { useSearch, matchSearch } from '../contexts/SearchContext';
 import { useToast } from '../contexts/ToastContext';
+import FilterBar, { FilterField, filterControlClass } from '../components/FilterBar';
+import SortableTh from '../components/SortableTh';
+import { sortRows, useTableSort } from '../hooks/useTableSort';
 
 export default function Destinos() {
   const { query } = useSearch();
@@ -12,22 +15,43 @@ export default function Destinos() {
   const [modal, setModal] = useState<'add' | 'edit' | null>(null);
   const [editingId, setEditingId] = useState<number | null>(null);
   const [nome, setNome] = useState('');
-  const [mostrarInativos, setMostrarInativos] = useState(false);
+  const [statusFiltro, setStatusFiltro] = useState<'' | 'ativos' | 'inativos'>('ativos');
+  const { sortKey, sortDir, toggleSort } = useTableSort('nome');
 
-  const destinosFiltrados = useMemo(() => {
-    if (!query.trim()) return destinos;
-    return destinos.filter((d) => matchSearch(d.nome, query));
-  }, [destinos, query]);
+  const filtrados = useMemo(() => {
+    let list = destinos;
+    if (statusFiltro === 'inativos') list = list.filter((d) => !d.ativo);
+    if (!query.trim()) return list;
+    return list.filter((d) => matchSearch(d.nome, query));
+  }, [destinos, query, statusFiltro]);
+
+  const ordenados = useMemo(
+    () =>
+      sortRows(filtrados, sortKey, sortDir, (row, key) => {
+        switch (key) {
+          case 'nome':
+            return row.nome;
+          case 'status':
+            return row.ativo ? 1 : 0;
+          default:
+            return '';
+        }
+      }),
+    [filtrados, sortKey, sortDir],
+  );
 
   const load = () => {
     setLoading(true);
-    api.favorecidos.list(!mostrarInativos)
+    api.favorecidos
+      .list(statusFiltro === 'ativos')
       .then((r) => setDestinos(r.favorecidos))
       .catch((e) => toast.error(e.message))
       .finally(() => setLoading(false));
   };
 
-  useEffect(() => { load(); }, [mostrarInativos]);
+  useEffect(() => {
+    load();
+  }, [statusFiltro]);
 
   const openAdd = () => {
     setNome('');
@@ -77,17 +101,8 @@ export default function Destinos() {
 
   return (
     <div className="space-y-6">
-      <div className="flex flex-wrap items-center justify-end gap-4">
-        <div className="flex items-center gap-3">
-          <label className="flex items-center gap-2 text-sm text-gray-600">
-            <input
-              type="checkbox"
-              checked={mostrarInativos}
-              onChange={(e) => setMostrarInativos(e.target.checked)}
-              className="rounded border-gray-300 text-primary-600 focus:ring-primary-500"
-            />
-            Mostrar inativos
-          </label>
+      <FilterBar
+        actions={
           <button
             type="button"
             onClick={openAdd}
@@ -96,8 +111,20 @@ export default function Destinos() {
             <Plus className="w-4 h-4" strokeWidth={2} />
             Novo destino
           </button>
-        </div>
-      </div>
+        }
+      >
+        <FilterField label="Status">
+          <select
+            value={statusFiltro}
+            onChange={(e) => setStatusFiltro(e.target.value as '' | 'ativos' | 'inativos')}
+            className={filterControlClass()}
+          >
+            <option value="">Todos</option>
+            <option value="ativos">Ativos</option>
+            <option value="inativos">Inativos</option>
+          </select>
+        </FilterField>
+      </FilterBar>
 
       {loading ? (
         <div className="text-gray-500 py-8">Carregando...</div>
@@ -106,14 +133,14 @@ export default function Destinos() {
           <div className="overflow-x-auto">
             <table className="w-full text-sm">
               <thead>
-                <tr className="text-gray-500 border-b border-gray-200 bg-gray-50/80">
-                  <th className="text-left py-3 px-4 font-medium">Nome</th>
-                  <th className="text-left py-3 px-4 font-medium">Status</th>
-                  <th className="w-32 py-3 px-4"></th>
+                <tr className="border-b border-gray-200 bg-gray-50/80">
+                  <SortableTh label="Nome" column="nome" sortKey={sortKey} sortDir={sortDir} onSort={toggleSort} />
+                  <SortableTh label="Status" column="status" sortKey={sortKey} sortDir={sortDir} onSort={toggleSort} />
+                  <th className="px-4 py-3 text-right text-xs font-medium text-gray-500">Ações</th>
                 </tr>
               </thead>
               <tbody>
-                {destinosFiltrados.length === 0 ? (
+                {ordenados.length === 0 ? (
                   <tr>
                     <td colSpan={3} className="py-8 text-gray-500 text-center">
                       {destinos.length === 0
@@ -122,7 +149,7 @@ export default function Destinos() {
                     </td>
                   </tr>
                 ) : (
-                  destinosFiltrados.map((f) => (
+                  ordenados.map((f) => (
                     <tr key={f.id} className="border-b border-gray-100 hover:bg-gray-50/50">
                       <td className="py-3 px-4 text-gray-800 font-medium">{f.nome}</td>
                       <td className="py-3 px-4">
@@ -130,11 +157,15 @@ export default function Destinos() {
                           {f.ativo ? 'Ativo' : 'Inativo'}
                         </span>
                       </td>
-                      <td className="py-3 px-4 flex gap-2">
+                      <td className="py-3 px-4 flex gap-2 justify-end">
                         {f.ativo && (
                           <>
-                            <button type="button" onClick={() => openEdit(f)} className="text-gray-500 hover:text-primary-600 text-xs">Editar</button>
-                            <button type="button" onClick={() => inativar(f.id)} className="text-gray-500 hover:text-rose-600 text-xs">Inativar</button>
+                            <button type="button" onClick={() => openEdit(f)} className="text-gray-500 hover:text-primary-600 text-xs">
+                              Editar
+                            </button>
+                            <button type="button" onClick={() => inativar(f.id)} className="text-gray-500 hover:text-rose-600 text-xs">
+                              Inativar
+                            </button>
                           </>
                         )}
                       </td>

@@ -4,6 +4,9 @@ import { api, type ProducaoExecutante, type Usuario } from '../api';
 import { useSearch, matchSearch } from '../contexts/SearchContext';
 import { useToast } from '../contexts/ToastContext';
 import AppButton from '../components/AppButton';
+import FilterBar, { FilterField, filterControlClass } from '../components/FilterBar';
+import SortableTh from '../components/SortableTh';
+import { sortRows, useTableSort } from '../hooks/useTableSort';
 
 const TIPOS = [
   { value: 'executor' as const, label: 'Executor' },
@@ -25,26 +28,54 @@ export default function Executantes() {
   const [lista, setLista] = useState<ProducaoExecutante[]>([]);
   const [usuarios, setUsuarios] = useState<Usuario[]>([]);
   const [loading, setLoading] = useState(true);
-  const [mostrarInativos, setMostrarInativos] = useState(false);
+  const [statusFiltro, setStatusFiltro] = useState<'' | 'ativos' | 'inativos'>('ativos');
+  const [tipoFiltro, setTipoFiltro] = useState<'' | 'executor' | 'freelancer'>('');
   const [modal, setModal] = useState<'add' | 'edit' | null>(null);
   const [editingId, setEditingId] = useState<number | null>(null);
   const [form, setForm] = useState(emptyForm);
+  const { sortKey, sortDir, toggleSort } = useTableSort('nome');
 
   const filtrados = useMemo(() => {
-    if (!query.trim()) return lista;
-    return lista.filter(
+    let list = lista;
+    if (statusFiltro === 'inativos') list = list.filter((e) => !e.ativo);
+    if (tipoFiltro) list = list.filter((e) => e.tipo === tipoFiltro);
+    if (!query.trim()) return list;
+    return list.filter(
       (e) =>
         matchSearch(e.nome, query) ||
         matchSearch(e.especialidade || '', query) ||
         matchSearch(e.whatsapp || '', query) ||
         matchSearch(e.tipo, query),
     );
-  }, [lista, query]);
+  }, [lista, query, statusFiltro, tipoFiltro]);
+
+  const ordenados = useMemo(
+    () =>
+      sortRows(filtrados, sortKey, sortDir, (row, key) => {
+        switch (key) {
+          case 'nome':
+            return row.nome;
+          case 'tipo':
+            return row.tipo;
+          case 'whatsapp':
+            return row.whatsapp || '';
+          case 'especialidade':
+            return row.especialidade || '';
+          case 'acesso':
+            return row.usuario_nome || '';
+          case 'status':
+            return row.ativo ? 1 : 0;
+          default:
+            return '';
+        }
+      }),
+    [filtrados, sortKey, sortDir],
+  );
 
   const load = () => {
     setLoading(true);
     api.producao
-      .executantes(!mostrarInativos)
+      .executantes(statusFiltro === 'ativos')
       .then((r) => setLista(r.executantes))
       .catch((e) => toast.error(e.message))
       .finally(() => setLoading(false));
@@ -52,7 +83,7 @@ export default function Executantes() {
 
   useEffect(() => {
     load();
-  }, [mostrarInativos]);
+  }, [statusFiltro]);
 
   useEffect(() => {
     api.usuarios
@@ -128,21 +159,40 @@ export default function Executantes() {
 
   return (
     <div className="space-y-6">
-      <div className="flex flex-wrap items-center justify-end gap-3">
-        <label className="flex items-center gap-2 text-sm text-brand-olive">
-          <input
-            type="checkbox"
-            checked={mostrarInativos}
-            onChange={(e) => setMostrarInativos(e.target.checked)}
-            className="rounded border-brand-beige"
-          />
-          Mostrar inativos
-        </label>
-        <AppButton onClick={openAdd}>
-          <Plus className="h-4 w-4" />
-          Novo executante
-        </AppButton>
-      </div>
+      <FilterBar
+        actions={
+          <AppButton onClick={openAdd}>
+            <Plus className="h-4 w-4" />
+            Novo executante
+          </AppButton>
+        }
+      >
+        <FilterField label="Tipo">
+          <select
+            value={tipoFiltro}
+            onChange={(e) => setTipoFiltro(e.target.value as '' | 'executor' | 'freelancer')}
+            className={filterControlClass()}
+          >
+            <option value="">Todos</option>
+            {TIPOS.map((t) => (
+              <option key={t.value} value={t.value}>
+                {t.label}
+              </option>
+            ))}
+          </select>
+        </FilterField>
+        <FilterField label="Status">
+          <select
+            value={statusFiltro}
+            onChange={(e) => setStatusFiltro(e.target.value as '' | 'ativos' | 'inativos')}
+            className={filterControlClass()}
+          >
+            <option value="">Todos</option>
+            <option value="ativos">Ativos</option>
+            <option value="inativos">Inativos</option>
+          </select>
+        </FilterField>
+      </FilterBar>
 
       {loading ? (
         <p className="py-8 text-sm text-brand-olive">Carregando...</p>
@@ -151,17 +201,17 @@ export default function Executantes() {
           <div className="overflow-x-auto">
             <table className="w-full text-sm">
               <thead>
-                <tr className="border-b border-brand-beige bg-brand-off-white/80 text-brand-olive">
-                  <th className="px-4 py-3 text-left font-medium">Nome</th>
-                  <th className="px-4 py-3 text-left font-medium">Tipo</th>
-                  <th className="px-4 py-3 text-left font-medium">WhatsApp</th>
-                  <th className="px-4 py-3 text-left font-medium">Especialidade</th>
-                  <th className="px-4 py-3 text-left font-medium">Acesso</th>
-                  <th className="w-32 px-4 py-3" />
+                <tr className="border-b border-brand-beige bg-brand-off-white/80">
+                  <SortableTh label="Nome" column="nome" sortKey={sortKey} sortDir={sortDir} onSort={toggleSort} />
+                  <SortableTh label="Tipo" column="tipo" sortKey={sortKey} sortDir={sortDir} onSort={toggleSort} />
+                  <SortableTh label="WhatsApp" column="whatsapp" sortKey={sortKey} sortDir={sortDir} onSort={toggleSort} />
+                  <SortableTh label="Especialidade" column="especialidade" sortKey={sortKey} sortDir={sortDir} onSort={toggleSort} />
+                  <SortableTh label="Acesso" column="acesso" sortKey={sortKey} sortDir={sortDir} onSort={toggleSort} />
+                  <th className="w-32 px-4 py-3 text-right text-xs font-medium text-gray-500">Ações</th>
                 </tr>
               </thead>
               <tbody>
-                {filtrados.length === 0 ? (
+                {ordenados.length === 0 ? (
                   <tr>
                     <td colSpan={6} className="px-4 py-8 text-center text-brand-olive">
                       {lista.length === 0
@@ -170,7 +220,7 @@ export default function Executantes() {
                     </td>
                   </tr>
                 ) : (
-                  filtrados.map((e) => (
+                  ordenados.map((e) => (
                     <tr key={e.id} className="border-b border-brand-beige/70 hover:bg-brand-off-white/50">
                       <td className="px-4 py-3 font-medium text-brand-dark-brown">{e.nome}</td>
                       <td className="px-4 py-3">

@@ -15,6 +15,7 @@ import {
   CalendarDays,
   Palette,
   Users,
+  KeyRound,
   PanelLeftClose,
   PanelLeftOpen,
   type LucideIcon,
@@ -71,6 +72,7 @@ const navGroups: NavGroup[] = [
     title: 'Clientes',
     items: [
       { to: '/clientes', label: 'Clientes', Icon: UserPlus, roles: ['root', 'administrador', 'usuario', 'cliente'] },
+      { to: '/logins', label: 'Logins', Icon: KeyRound, roles: ['root', 'administrador', 'usuario'] },
       { to: '/relatorios-cliente', label: 'Relatórios', Icon: BarChart2, roles: ['root', 'administrador'] },
     ],
   },
@@ -90,7 +92,7 @@ function isPortalProducao(perfil?: string) {
 
 function equipePodeAcessar(perfil: string | undefined, pathname: string) {
   if (pathname === '/configuracoes' || pathname === '/producao' || pathname.startsWith('/producao/')) return true;
-  if (perfil === 'usuario' && pathname === '/clientes') return true;
+  if (perfil === 'usuario' && (pathname === '/clientes' || pathname === '/logins')) return true;
   return false;
 }
 
@@ -156,7 +158,7 @@ export default function Layout() {
     user?.perfil === 'freelancer'
       ? ['/producao', '/configuracoes']
       : user?.perfil === 'usuario'
-        ? ['/producao', '/clientes', '/configuracoes']
+        ? ['/producao', '/logins', '/configuracoes']
         : user?.perfil === 'cliente'
         ? ['/dashboard', '/transacoes', '/clientes']
         : ['/dashboard', '/producao', '/transacoes', '/gastos-fixos'];

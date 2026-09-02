@@ -4,6 +4,9 @@ import { useAuth } from '../contexts/AuthContext';
 import { api, type Usuario, type Perfil } from '../api';
 import { useSearch, matchSearch } from '../contexts/SearchContext';
 import { useToast } from '../contexts/ToastContext';
+import FilterBar, { FilterField, filterControlClass } from '../components/FilterBar';
+import SortableTh from '../components/SortableTh';
+import { sortRows, useTableSort } from '../hooks/useTableSort';
 
 const PERFIS: { value: Perfil; label: string }[] = [
   { value: 'root', label: 'Root' },
@@ -32,11 +35,37 @@ export default function Usuarios() {
   const [form, setForm] = useState({ email: '', senha: '', nome: '', perfil: 'usuario' as Perfil });
   const [senhaAlvo, setSenhaAlvo] = useState<Usuario | null>(null);
   const [senhaNova, setSenhaNova] = useState('');
+  const [perfilFiltro, setPerfilFiltro] = useState<'' | Perfil>('');
+  const [statusFiltro, setStatusFiltro] = useState<'' | 'ativos' | 'inativos'>('');
+  const { sortKey, sortDir, toggleSort } = useTableSort('nome');
 
-  const usuariosFiltrados = useMemo(() => {
-    if (!query.trim()) return usuarios;
-    return usuarios.filter((u) => matchSearch(u.nome, query) || matchSearch(u.email, query));
-  }, [usuarios, query]);
+  const filtrados = useMemo(() => {
+    let list = usuarios;
+    if (perfilFiltro) list = list.filter((u) => u.perfil === perfilFiltro);
+    if (statusFiltro === 'ativos') list = list.filter((u) => !!u.ativo);
+    if (statusFiltro === 'inativos') list = list.filter((u) => !u.ativo);
+    if (!query.trim()) return list;
+    return list.filter((u) => matchSearch(u.nome, query) || matchSearch(u.email, query));
+  }, [usuarios, query, perfilFiltro, statusFiltro]);
+
+  const ordenados = useMemo(
+    () =>
+      sortRows(filtrados, sortKey, sortDir, (row, key) => {
+        switch (key) {
+          case 'nome':
+            return row.nome || '';
+          case 'email':
+            return row.email;
+          case 'perfil':
+            return labelPerfil(row.perfil);
+          case 'status':
+            return row.ativo ? 1 : 0;
+          default:
+            return '';
+        }
+      }),
+    [filtrados, sortKey, sortDir],
+  );
 
   const load = () => {
     setLoading(true);
@@ -143,18 +172,46 @@ export default function Usuarios() {
 
   return (
     <div className="space-y-6">
-      <div className="flex flex-wrap items-center justify-end gap-4">
-        {isRoot && (
-          <button
-            type="button"
-            onClick={openAdd}
-            className="inline-flex items-center gap-2 px-4 py-2 rounded-xl bg-brand-brown hover:bg-brand-olive text-white font-medium text-sm shadow-card"
+      <FilterBar
+        actions={
+          isRoot ? (
+            <button
+              type="button"
+              onClick={openAdd}
+              className="inline-flex items-center gap-2 px-4 py-2 rounded-xl bg-brand-brown hover:bg-brand-olive text-white font-medium text-sm shadow-card"
+            >
+              <Plus className="w-4 h-4" strokeWidth={2} />
+              Novo usuário
+            </button>
+          ) : undefined
+        }
+      >
+        <FilterField label="Perfil">
+          <select
+            value={perfilFiltro}
+            onChange={(e) => setPerfilFiltro(e.target.value as '' | Perfil)}
+            className={filterControlClass()}
           >
-            <Plus className="w-4 h-4" strokeWidth={2} />
-            Novo usuário
-          </button>
-        )}
-      </div>
+            <option value="">Todos</option>
+            {PERFIS.map((p) => (
+              <option key={p.value} value={p.value}>
+                {p.label}
+              </option>
+            ))}
+          </select>
+        </FilterField>
+        <FilterField label="Status">
+          <select
+            value={statusFiltro}
+            onChange={(e) => setStatusFiltro(e.target.value as '' | 'ativos' | 'inativos')}
+            className={filterControlClass()}
+          >
+            <option value="">Todos</option>
+            <option value="ativos">Ativo</option>
+            <option value="inativos">Inativo</option>
+          </select>
+        </FilterField>
+      </FilterBar>
 
       {loading ? (
         <div className="text-gray-500 py-8">Carregando...</div>
@@ -162,24 +219,24 @@ export default function Usuarios() {
         <div className="rounded-xl border border-gray-200 bg-white overflow-hidden shadow-card">
           <table className="w-full text-sm">
             <thead>
-              <tr className="text-gray-500 border-b border-gray-200 bg-gray-50/80">
-                <th className="text-left py-3 px-4">Nome</th>
-                <th className="text-left py-3 px-4">Email</th>
-                <th className="text-left py-3 px-4">Perfil</th>
-                <th className="text-left py-3 px-4">Senha</th>
-                <th className="text-left py-3 px-4">Status</th>
-                {isRoot && <th className="w-24 py-3 px-4"></th>}
+              <tr className="border-b border-gray-200 bg-gray-50/80">
+                <SortableTh label="Nome" column="nome" sortKey={sortKey} sortDir={sortDir} onSort={toggleSort} />
+                <SortableTh label="Email" column="email" sortKey={sortKey} sortDir={sortDir} onSort={toggleSort} />
+                <SortableTh label="Perfil" column="perfil" sortKey={sortKey} sortDir={sortDir} onSort={toggleSort} />
+                <th className="px-4 py-3 text-left text-xs font-medium text-gray-500">Senha</th>
+                <SortableTh label="Status" column="status" sortKey={sortKey} sortDir={sortDir} onSort={toggleSort} />
+                {isRoot && <th className="px-4 py-3 text-right text-xs font-medium text-gray-500">Ações</th>}
               </tr>
             </thead>
             <tbody>
-              {usuariosFiltrados.length === 0 ? (
+              {ordenados.length === 0 ? (
                 <tr>
                   <td colSpan={colSpan} className="py-8 text-gray-500 text-center">
                     {usuarios.length === 0 ? 'Nenhum usuário.' : 'Nenhum usuário encontrado para esta pesquisa.'}
                   </td>
                 </tr>
               ) : (
-              usuariosFiltrados.map((u) => (
+              ordenados.map((u) => (
                 <tr key={u.id} className="border-b border-gray-100 hover:bg-gray-50/50">
                   <td className="py-3 px-4 text-gray-800 font-medium">{u.nome || '—'}</td>
                   <td className="py-3 px-4 text-gray-500">{u.email}</td>

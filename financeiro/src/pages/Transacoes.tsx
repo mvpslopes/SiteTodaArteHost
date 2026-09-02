@@ -3,6 +3,9 @@ import { Plus } from 'lucide-react';
 import { api, type Transacao, type Favorecido, type Cliente, METODOS_PAGAMENTO } from '../api';
 import { useSearch, matchSearch } from '../contexts/SearchContext';
 import { useToast } from '../contexts/ToastContext';
+import FilterBar, { FilterField, filterControlClass } from '../components/FilterBar';
+import SortableTh from '../components/SortableTh';
+import { sortRows, useTableSort } from '../hooks/useTableSort';
 
 const MESES = ['Jan','Fev','Mar','Abr','Mai','Jun','Jul','Ago','Set','Out','Nov','Dez'];
 
@@ -58,16 +61,16 @@ export default function Transacoes() {
   const [dataFimFiltro, setDataFimFiltro] = useState('');
   const [descricaoFiltro, setDescricaoFiltro] = useState('');
   const [gastoFixoFiltro, setGastoFixoFiltro] = useState<'' | 'sim' | 'nao'>('');
-  const [ordenacao, setOrdenacao] = useState<'data_desc' | 'data_asc' | 'valor_desc' | 'valor_asc'>('data_desc');
   const [selecionados, setSelecionados] = useState<number[]>([]);
+  const { sortKey, sortDir, toggleSort } = useTableSort('data', 'desc');
 
-  const transacoesFiltradas = useMemo(() => {
+  const filtrados = useMemo(() => {
     const q = query.trim().toLowerCase();
     const descricaoBusca = descricaoFiltro.trim().toLowerCase();
     const valorMin = parseFiltroValor(valorMinFiltro);
     const valorMax = parseFiltroValor(valorMaxFiltro);
 
-    const filtradas = transacoes.filter((t) => {
+    return transacoes.filter((t) => {
       if (q) {
         const okBusca =
           matchSearch(t.descricao, q) ||
@@ -95,19 +98,6 @@ export default function Transacoes() {
       if (gastoFixoFiltro === 'nao' && ehGastoFixo) return false;
       return true;
     });
-
-    return filtradas.slice().sort((a, b) => {
-      if (ordenacao === 'data_asc') {
-        return a.data_transacao.localeCompare(b.data_transacao) || a.id - b.id;
-      }
-      if (ordenacao === 'valor_desc') {
-        return Number(b.valor) - Number(a.valor);
-      }
-      if (ordenacao === 'valor_asc') {
-        return Number(a.valor) - Number(b.valor);
-      }
-      return b.data_transacao.localeCompare(a.data_transacao) || b.id - a.id;
-    });
   }, [
     transacoes,
     query,
@@ -122,8 +112,32 @@ export default function Transacoes() {
     dataFimFiltro,
     descricaoFiltro,
     gastoFixoFiltro,
-    ordenacao,
   ]);
+
+  const transacoesFiltradas = useMemo(
+    () =>
+      sortRows(filtrados, sortKey, sortDir, (row, key) => {
+        switch (key) {
+          case 'data':
+            return row.data_transacao;
+          case 'tipo':
+            return row.tipo;
+          case 'valor':
+            return Number(row.valor);
+          case 'metodo':
+            return row.metodo_pagamento;
+          case 'destino':
+            return row.favorecido_nome ?? '';
+          case 'cliente':
+            return row.cliente_nome ?? '';
+          case 'descricao':
+            return row.descricao ?? '';
+          default:
+            return '';
+        }
+      }),
+    [filtrados, sortKey, sortDir],
+  );
 
   const resumoSelecao = useMemo(() => {
     if (selecionados.length === 0) {
@@ -269,42 +283,13 @@ export default function Transacoes() {
     setDataFimFiltro('');
     setDescricaoFiltro('');
     setGastoFixoFiltro('');
-    setOrdenacao('data_desc');
     setSelecionados([]);
   };
 
   return (
     <div className="space-y-6">
-      <div className="flex flex-wrap items-center justify-end gap-4">
-        <div className="flex items-center gap-3 flex-wrap">
-          <span className="text-sm text-gray-500">Período:</span>
-          <select
-            value={mes}
-            onChange={(e) => setMes(e.target.value ? Number(e.target.value) : '')}
-            className="rounded-lg border border-gray-200 bg-white px-3 py-2 text-sm text-gray-800 focus:ring-2 focus:ring-primary-500/20 focus:border-primary-500"
-            title="Filtrar por mês"
-          >
-            <option value="">Todos os meses</option>
-            {MESES.map((nome, i) => (
-              <option key={i} value={i + 1}>{nome}</option>
-            ))}
-          </select>
-          <select
-            value={ano}
-            onChange={(e) => setAno(e.target.value ? Number(e.target.value) : '')}
-            className="rounded-lg border border-gray-200 bg-white px-3 py-2 text-sm text-gray-800 focus:ring-2 focus:ring-primary-500/20 focus:border-primary-500"
-            title="Filtrar por ano"
-          >
-            <option value="">Todos os anos</option>
-            {Array.from({ length: 6 }, (_, i) => new Date().getFullYear() - i).map((y) => (
-              <option key={y} value={y}>{y}</option>
-            ))}
-          </select>
-          {mes !== '' && ano !== '' ? (
-            <span className="text-sm font-medium text-gray-700">{MESES[Number(mes) - 1]} / {ano}</span>
-          ) : (mes !== '' || ano !== '') ? (
-            <span className="text-sm text-amber-600">Selecione mês e ano para filtrar</span>
-          ) : null}
+      <FilterBar
+        actions={
           <button
             type="button"
             onClick={openAdd}
@@ -313,183 +298,185 @@ export default function Transacoes() {
             <Plus className="w-4 h-4" strokeWidth={2} />
             Nova transação
           </button>
-        </div>
-      </div>
-
-      <div className="rounded-xl border border-gray-200 bg-white p-4 shadow-card">
-        <div className="flex flex-wrap items-end gap-3">
-          <label className="text-xs text-gray-600">
-            Tipo
-            <select
-              value={tipoFiltro}
-              onChange={(e) => setTipoFiltro(e.target.value as Transacao['tipo'] | '')}
-              className="mt-1 block rounded-lg border border-gray-200 bg-white px-2 py-1.5 text-xs text-gray-800"
-            >
-              <option value="">Todos</option>
-              <option value="entrada">Entradas</option>
-              <option value="saida">Saídas</option>
-            </select>
-          </label>
-          <label className="text-xs text-gray-600">
-            Método de pagamento
-            <select
-              value={metodoFiltro}
-              onChange={(e) => setMetodoFiltro(e.target.value as Transacao['metodo_pagamento'] | '')}
-              className="mt-1 block rounded-lg border border-gray-200 bg-white px-2 py-1.5 text-xs text-gray-800"
-            >
-              <option value="">Todos</option>
-              {METODOS_PAGAMENTO.map((m) => (
-                <option key={m.value} value={m.value}>
-                  {m.label}
-                </option>
-              ))}
-            </select>
-          </label>
-          <label className="text-xs text-gray-600">
-            Cliente
-            <select
-              value={clienteFiltro}
-              onChange={(e) => setClienteFiltro(e.target.value ? Number(e.target.value) : '')}
-              className="mt-1 block rounded-lg border border-gray-200 bg-white px-2 py-1.5 text-xs text-gray-800"
-            >
-              <option value="">Todos</option>
-              {clientes.map((c) => (
-                <option key={c.id} value={c.id}>
-                  {c.nome}
-                </option>
-              ))}
-            </select>
-          </label>
-          <label className="text-xs text-gray-600">
-            Com cliente?
-            <select
-              value={clientePresencaFiltro}
-              onChange={(e) => setClientePresencaFiltro(e.target.value as '' | 'com' | 'sem')}
-              className="mt-1 block rounded-lg border border-gray-200 bg-white px-2 py-1.5 text-xs text-gray-800"
-            >
-              <option value="">Todos</option>
-              <option value="com">Somente com cliente</option>
-              <option value="sem">Somente sem cliente</option>
-            </select>
-          </label>
-          <label className="text-xs text-gray-600">
-            Destino/Favorecido
-            <select
-              value={favorecidoFiltro}
-              onChange={(e) => setFavorecidoFiltro(e.target.value ? Number(e.target.value) : '')}
-              className="mt-1 block rounded-lg border border-gray-200 bg-white px-2 py-1.5 text-xs text-gray-800"
-            >
-              <option value="">Todos</option>
-              {favorecidos.map((f) => (
-                <option key={f.id} value={f.id}>
-                  {f.nome}
-                </option>
-              ))}
-            </select>
-          </label>
-          <label className="text-xs text-gray-600">
-            Data inicial
-            <input
-              type="date"
-              value={dataInicioFiltro}
-              onChange={(e) => setDataInicioFiltro(e.target.value)}
-              className="mt-1 block rounded-lg border border-gray-200 bg-white px-2 py-1.5 text-xs text-gray-800"
-            />
-          </label>
-          <label className="text-xs text-gray-600">
-            Data final
-            <input
-              type="date"
-              value={dataFimFiltro}
-              onChange={(e) => setDataFimFiltro(e.target.value)}
-              className="mt-1 block rounded-lg border border-gray-200 bg-white px-2 py-1.5 text-xs text-gray-800"
-            />
-          </label>
-          <label className="text-xs text-gray-600">
-            Valor mínimo
-            <input
-              type="text"
-              inputMode="decimal"
-              placeholder="0,00"
-              value={valorMinFiltro}
-              onChange={(e) => setValorMinFiltro(e.target.value)}
-              className="mt-1 block w-24 rounded-lg border border-gray-200 bg-white px-2 py-1.5 text-xs text-gray-800"
-            />
-          </label>
-          <label className="text-xs text-gray-600">
-            Valor máximo
-            <input
-              type="text"
-              inputMode="decimal"
-              placeholder="0,00"
-              value={valorMaxFiltro}
-              onChange={(e) => setValorMaxFiltro(e.target.value)}
-              className="mt-1 block w-24 rounded-lg border border-gray-200 bg-white px-2 py-1.5 text-xs text-gray-800"
-            />
-          </label>
-          <label className="text-xs text-gray-600">
-            Descrição
-            <input
-              type="text"
-              placeholder="Texto da descrição"
-              value={descricaoFiltro}
-              onChange={(e) => setDescricaoFiltro(e.target.value)}
-              className="mt-1 block w-40 rounded-lg border border-gray-200 bg-white px-2 py-1.5 text-xs text-gray-800"
-            />
-          </label>
-          <label className="text-xs text-gray-600">
-            Gasto fixo
-            <select
-              value={gastoFixoFiltro}
-              onChange={(e) => setGastoFixoFiltro(e.target.value as '' | 'sim' | 'nao')}
-              className="mt-1 block rounded-lg border border-gray-200 bg-white px-2 py-1.5 text-xs text-gray-800"
-            >
-              <option value="">Todos</option>
-              <option value="sim">Somente gasto fixo</option>
-              <option value="nao">Ocultar gasto fixo</option>
-            </select>
-          </label>
-          <label className="text-xs text-gray-600">
-            Ordenar por
-            <select
-              value={ordenacao}
-              onChange={(e) => setOrdenacao(e.target.value as typeof ordenacao)}
-              className="mt-1 block rounded-lg border border-gray-200 bg-white px-2 py-1.5 text-xs text-gray-800"
-            >
-              <option value="data_desc">Mais recentes</option>
-              <option value="data_asc">Mais antigas</option>
-              <option value="valor_desc">Maior valor</option>
-              <option value="valor_asc">Menor valor</option>
-            </select>
-          </label>
-          <button
-            type="button"
-            onClick={limparFiltros}
-            className="rounded-lg border border-gray-200 px-3 py-1.5 text-xs text-gray-600 hover:bg-gray-50 hover:text-gray-800"
+        }
+      >
+        <FilterField label="Mês">
+          <select
+            value={mes}
+            onChange={(e) => setMes(e.target.value ? Number(e.target.value) : '')}
+            className={filterControlClass()}
+            title="Filtrar por mês"
           >
-            Limpar filtros
-          </button>
-
-          {selecionados.length > 0 && (
-            <div className="flex items-center gap-3 text-xs">
-              <div className="px-3 py-1 rounded-full bg-emerald-50 border border-emerald-200 text-emerald-800">
-                <span className="font-semibold mr-1">{selecionados.length}</span>
-                selecionada{selecionados.length > 1 && 's'} · Soma:{' '}
-                <span className="font-semibold">
-                  {formatMoney(resumoSelecao.saldo)}
-                </span>
-              </div>
-              <button
-                type="button"
-                onClick={limparSelecao}
-                className="text-[11px] text-gray-500 hover:text-gray-700"
-              >
-                Limpar seleção
-              </button>
+            <option value="">Todos os meses</option>
+            {MESES.map((nome, i) => (
+              <option key={i} value={i + 1}>{nome}</option>
+            ))}
+          </select>
+        </FilterField>
+        <FilterField label="Ano">
+          <select
+            value={ano}
+            onChange={(e) => setAno(e.target.value ? Number(e.target.value) : '')}
+            className={filterControlClass()}
+            title="Filtrar por ano"
+          >
+            <option value="">Todos os anos</option>
+            {Array.from({ length: 6 }, (_, i) => new Date().getFullYear() - i).map((y) => (
+              <option key={y} value={y}>{y}</option>
+            ))}
+          </select>
+        </FilterField>
+        <FilterField label="Tipo">
+          <select
+            value={tipoFiltro}
+            onChange={(e) => setTipoFiltro(e.target.value as Transacao['tipo'] | '')}
+            className={filterControlClass()}
+          >
+            <option value="">Todos</option>
+            <option value="entrada">Entradas</option>
+            <option value="saida">Saídas</option>
+          </select>
+        </FilterField>
+        <FilterField label="Método de pagamento">
+          <select
+            value={metodoFiltro}
+            onChange={(e) => setMetodoFiltro(e.target.value as Transacao['metodo_pagamento'] | '')}
+            className={filterControlClass()}
+          >
+            <option value="">Todos</option>
+            {METODOS_PAGAMENTO.map((m) => (
+              <option key={m.value} value={m.value}>
+                {m.label}
+              </option>
+            ))}
+          </select>
+        </FilterField>
+        <FilterField label="Cliente">
+          <select
+            value={clienteFiltro}
+            onChange={(e) => setClienteFiltro(e.target.value ? Number(e.target.value) : '')}
+            className={filterControlClass()}
+          >
+            <option value="">Todos</option>
+            {clientes.map((c) => (
+              <option key={c.id} value={c.id}>
+                {c.nome}
+              </option>
+            ))}
+          </select>
+        </FilterField>
+        <FilterField label="Com cliente?">
+          <select
+            value={clientePresencaFiltro}
+            onChange={(e) => setClientePresencaFiltro(e.target.value as '' | 'com' | 'sem')}
+            className={filterControlClass()}
+          >
+            <option value="">Todos</option>
+            <option value="com">Somente com cliente</option>
+            <option value="sem">Somente sem cliente</option>
+          </select>
+        </FilterField>
+        <FilterField label="Destino/Favorecido">
+          <select
+            value={favorecidoFiltro}
+            onChange={(e) => setFavorecidoFiltro(e.target.value ? Number(e.target.value) : '')}
+            className={filterControlClass()}
+          >
+            <option value="">Todos</option>
+            {favorecidos.map((f) => (
+              <option key={f.id} value={f.id}>
+                {f.nome}
+              </option>
+            ))}
+          </select>
+        </FilterField>
+        <FilterField label="Data inicial">
+          <input
+            type="date"
+            value={dataInicioFiltro}
+            onChange={(e) => setDataInicioFiltro(e.target.value)}
+            className={filterControlClass()}
+          />
+        </FilterField>
+        <FilterField label="Data final">
+          <input
+            type="date"
+            value={dataFimFiltro}
+            onChange={(e) => setDataFimFiltro(e.target.value)}
+            className={filterControlClass()}
+          />
+        </FilterField>
+        <FilterField label="Valor mínimo">
+          <input
+            type="text"
+            inputMode="decimal"
+            placeholder="0,00"
+            value={valorMinFiltro}
+            onChange={(e) => setValorMinFiltro(e.target.value)}
+            className={filterControlClass('w-24')}
+          />
+        </FilterField>
+        <FilterField label="Valor máximo">
+          <input
+            type="text"
+            inputMode="decimal"
+            placeholder="0,00"
+            value={valorMaxFiltro}
+            onChange={(e) => setValorMaxFiltro(e.target.value)}
+            className={filterControlClass('w-24')}
+          />
+        </FilterField>
+        <FilterField label="Descrição">
+          <input
+            type="text"
+            placeholder="Texto da descrição"
+            value={descricaoFiltro}
+            onChange={(e) => setDescricaoFiltro(e.target.value)}
+            className={filterControlClass('w-40')}
+          />
+        </FilterField>
+        <FilterField label="Gasto fixo">
+          <select
+            value={gastoFixoFiltro}
+            onChange={(e) => setGastoFixoFiltro(e.target.value as '' | 'sim' | 'nao')}
+            className={filterControlClass()}
+          >
+            <option value="">Todos</option>
+            <option value="sim">Somente gasto fixo</option>
+            <option value="nao">Ocultar gasto fixo</option>
+          </select>
+        </FilterField>
+        <button
+          type="button"
+          onClick={limparFiltros}
+          className="rounded-lg border border-gray-200 px-3 py-2 text-xs text-gray-600 hover:bg-gray-50 hover:text-gray-800"
+        >
+          Limpar filtros
+        </button>
+        {mes !== '' && ano !== '' ? (
+          <span className="text-sm font-medium text-gray-700 self-center">{MESES[Number(mes) - 1]} / {ano}</span>
+        ) : (mes !== '' || ano !== '') ? (
+          <span className="text-sm text-amber-600 self-center">Selecione mês e ano para filtrar</span>
+        ) : null}
+        {selecionados.length > 0 && (
+          <div className="flex items-center gap-3 text-xs self-center">
+            <div className="px-3 py-1 rounded-full bg-emerald-50 border border-emerald-200 text-emerald-800">
+              <span className="font-semibold mr-1">{selecionados.length}</span>
+              selecionada{selecionados.length > 1 && 's'} · Soma:{' '}
+              <span className="font-semibold">
+                {formatMoney(resumoSelecao.saldo)}
+              </span>
             </div>
-          )}
-        </div>
-      </div>
+            <button
+              type="button"
+              onClick={limparSelecao}
+              className="text-[11px] text-gray-500 hover:text-gray-700"
+            >
+              Limpar seleção
+            </button>
+          </div>
+        )}
+      </FilterBar>
 
       {loading ? (
         <div className="text-gray-500 py-8">Carregando...</div>
@@ -498,16 +485,16 @@ export default function Transacoes() {
           <div className="overflow-x-auto scroll-thin">
             <table className="w-full text-sm">
               <thead>
-                <tr className="text-gray-500 border-b border-gray-200 bg-gray-50/80">
+                <tr className="border-b border-gray-200 bg-gray-50/80">
                   <th className="text-left py-3 px-4 font-medium w-6"></th>
-                  <th className="text-left py-3 px-4 font-medium">Data</th>
-                  <th className="text-left py-3 px-4 font-medium">Tipo</th>
-                  <th className="text-left py-3 px-4 font-medium">Valor</th>
-                  <th className="text-left py-3 px-4 font-medium">Método</th>
-                  <th className="text-left py-3 px-4 font-medium">Destino</th>
-                  <th className="text-left py-3 px-4 font-medium">Cliente</th>
-                  <th className="text-left py-3 px-4 font-medium">Descrição</th>
-                  <th className="w-24 py-3 px-4"></th>
+                  <SortableTh label="Data" column="data" sortKey={sortKey} sortDir={sortDir} onSort={toggleSort} />
+                  <SortableTh label="Tipo" column="tipo" sortKey={sortKey} sortDir={sortDir} onSort={toggleSort} />
+                  <SortableTh label="Valor" column="valor" sortKey={sortKey} sortDir={sortDir} onSort={toggleSort} />
+                  <SortableTh label="Método" column="metodo" sortKey={sortKey} sortDir={sortDir} onSort={toggleSort} />
+                  <SortableTh label="Destino" column="destino" sortKey={sortKey} sortDir={sortDir} onSort={toggleSort} />
+                  <SortableTh label="Cliente" column="cliente" sortKey={sortKey} sortDir={sortDir} onSort={toggleSort} />
+                  <SortableTh label="Descrição" column="descricao" sortKey={sortKey} sortDir={sortDir} onSort={toggleSort} />
+                  <th className="px-4 py-3 text-right text-xs font-medium text-gray-500">Ações</th>
                 </tr>
               </thead>
               <tbody>

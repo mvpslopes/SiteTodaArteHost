@@ -10,6 +10,7 @@ import Dashboard from './pages/Dashboard';
 import Transacoes from './pages/Transacoes';
 import Destinos from './pages/Destinos';
 import Clientes from './pages/Clientes';
+import Logins from './pages/Logins';
 import RelatorioCliente from './pages/RelatorioCliente';
 import Auditoria from './pages/Auditoria';
 import Configuracoes from './pages/Configuracoes';
@@ -91,6 +92,7 @@ function AppRoutes() {
         <Route path="destinos" element={<Destinos />} />
         <Route path="favorecidos" element={<Navigate to="/destinos" replace />} />
         <Route path="clientes" element={<Clientes />} />
+        <Route path="logins" element={<Logins />} />
         <Route path="gastos-fixos" element={<GastosFixos />} />
         <Route path="relatorios-cliente" element={<RelatorioCliente />} />
         <Route path="auditoria" element={<Auditoria />} />
