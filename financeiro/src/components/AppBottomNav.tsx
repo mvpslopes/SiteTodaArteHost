@@ -24,9 +24,16 @@ interface AppBottomNavProps {
 }
 
 function itemsForPerfil(perfil?: string): NavItem[] {
-  if (perfil === 'usuario' || perfil === 'freelancer') {
+  if (perfil === 'freelancer') {
     return [
       { to: '/producao', icon: Palette, label: 'Produção' },
+      { to: '/configuracoes', icon: Settings, label: 'Conta' },
+    ];
+  }
+  if (perfil === 'usuario') {
+    return [
+      { to: '/producao', icon: Palette, label: 'Produção' },
+      { to: '/clientes', icon: UserPlus, label: 'Clientes' },
       { to: '/configuracoes', icon: Settings, label: 'Conta' },
     ];
   }

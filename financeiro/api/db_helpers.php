@@ -141,6 +141,49 @@ function attachUsuarioSenhaVisivel(array $row): array {
     return $row;
 }
 
+function ensureClienteAcessosTable(PDO $pdo): void {
+    static $done = false;
+    if ($done) {
+        return;
+    }
+    try {
+        $pdo->exec("
+            CREATE TABLE IF NOT EXISTS cliente_acessos (
+              id INT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
+              cliente_id INT UNSIGNED NOT NULL,
+              plataforma VARCHAR(80) NOT NULL,
+              rotulo VARCHAR(80) DEFAULT NULL,
+              login VARCHAR(255) NOT NULL DEFAULT '',
+              senha_enc TEXT DEFAULT NULL,
+              observacao VARCHAR(500) DEFAULT NULL,
+              created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+              updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+              UNIQUE KEY uniq_cliente_plataforma (cliente_id, plataforma),
+              INDEX idx_cliente_acesso_cliente (cliente_id)
+            ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci
+        ");
+    } catch (Throwable $e) {
+    }
+    if (tableExists($pdo, 'cliente_acessos')) {
+        try {
+            $stmt = $pdo->query("SHOW COLUMNS FROM cliente_acessos LIKE 'plataforma'");
+            $col = $stmt ? $stmt->fetch() : null;
+            $type = strtolower((string)($col['Type'] ?? ''));
+            if (strpos($type, 'enum') !== false || strpos($type, 'varchar(80)') === false) {
+                $pdo->exec("ALTER TABLE cliente_acessos MODIFY COLUMN plataforma VARCHAR(80) NOT NULL");
+            }
+        } catch (Throwable $e) {
+        }
+        if (!columnExists($pdo, 'cliente_acessos', 'rotulo')) {
+            try {
+                $pdo->exec("ALTER TABLE cliente_acessos ADD COLUMN rotulo VARCHAR(80) DEFAULT NULL AFTER plataforma");
+            } catch (Throwable $e) {
+            }
+        }
+    }
+    $done = true;
+}
+
 function ensureTransacaoGastoFixoColumn(PDO $pdo): bool {
     if (!tableExists($pdo, 'transacoes')) {
         return false;

@@ -37,6 +37,7 @@ export default function Producao() {
   const { query } = useSearch();
   const toast = useToast();
   const isGestao = user?.perfil === 'root' || user?.perfil === 'administrador';
+  const isOperacao = isGestao || user?.perfil === 'usuario';
   const [jobs, setJobs] = useState<ProducaoJob[]>([]);
   const [colunaAtiva, setColunaAtiva] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
@@ -56,7 +57,7 @@ export default function Producao() {
   const load = () => {
     setLoading(true);
     api.producao
-      .list({ fila: isGestao ? undefined : 'minha' })
+      .list({ fila: user?.perfil === 'freelancer' ? 'minha' : undefined })
       .then((r) => setJobs(r.jobs))
       .catch((e) => toast.error(e.message))
       .finally(() => setLoading(false));
@@ -64,7 +65,7 @@ export default function Producao() {
 
   useEffect(() => {
     load();
-  }, [isGestao]);
+  }, [isOperacao, user?.perfil]);
 
   useEffect(() => {
     if (!modal) return;
@@ -124,11 +125,11 @@ export default function Producao() {
     <div className="space-y-5">
       <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
         <p className="text-sm text-brand-olive">
-          {isGestao
-            ? 'Fluxo: briefing → quem faz → produção → prévia → cliente → pagamento → arquivos finais.'
-            : 'Jobs atribuídos a você. Envie a arte quando estiver pronta.'}
+          {user?.perfil === 'freelancer'
+            ? 'Jobs atribuídos a você. Envie a arte quando estiver pronta.'
+            : 'Fluxo: briefing → quem faz → produção → prévia → cliente → pagamento → arquivos finais.'}
         </p>
-        {isGestao && (
+        {isOperacao && (
           <div className="flex flex-wrap gap-2">
             <AppButton
               type="button"
@@ -146,10 +147,12 @@ export default function Producao() {
               <Link2 className="h-4 w-4" />
               Link do briefing
             </AppButton>
-            <AppButton onClick={() => setModal(true)}>
-              <Plus className="h-4 w-4" />
-              Novo job
-            </AppButton>
+            {isGestao && (
+              <AppButton onClick={() => setModal(true)}>
+                <Plus className="h-4 w-4" />
+                Novo job
+              </AppButton>
+            )}
           </div>
         )}
       </div>
@@ -186,7 +189,7 @@ export default function Producao() {
         <div className="rounded-2xl border border-brand-beige bg-white p-8 text-center shadow-card">
           <Palette className="mx-auto mb-2 h-8 w-8 text-brand-gold" />
           <p className="text-sm text-brand-olive">
-            {isGestao ? 'Nenhum job nesta fila.' : 'Quando a gestão atribuir um job a você, ele aparece aqui.'}
+            {user?.perfil === 'freelancer' ? 'Quando a gestão atribuir um job a você, ele aparece aqui.' : 'Nenhum job nesta fila.'}
           </p>
         </div>
       ) : isMobile || colunaAtiva ? (

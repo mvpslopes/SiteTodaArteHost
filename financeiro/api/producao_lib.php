@@ -215,7 +215,12 @@ function producaoIsStaff(array $user): bool
 
 function producaoIsFilaPropria(array $user): bool
 {
-    return in_array($user['perfil'] ?? '', ['usuario', 'freelancer'], true);
+    return ($user['perfil'] ?? '') === 'freelancer';
+}
+
+function producaoPodeOperar(array $user): bool
+{
+    return in_array($user['perfil'] ?? '', ['root', 'administrador', 'usuario'], true);
 }
 
 function producaoEnsureExecutanteParaUsuario(PDO $pdo, int $usuarioId, string $nome, string $email, string $tipo = 'freelancer'): void
@@ -320,7 +325,7 @@ function producaoGetJobByToken(PDO $pdo, string $token): ?array
 function producaoPodeVerJob(array $user, array $job, PDO $pdo): bool
 {
     $perfil = $user['perfil'] ?? '';
-    if (in_array($perfil, ['root', 'administrador'], true)) return true;
+    if (in_array($perfil, ['root', 'administrador', 'usuario'], true)) return true;
     $uid = (int)$user['id'];
     if ((int)$job['executor_id'] === $uid
         || (int)$job['atendente_id'] === $uid

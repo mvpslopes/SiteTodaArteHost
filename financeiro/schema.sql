@@ -49,6 +49,21 @@ CREATE TABLE IF NOT EXISTS clientes (
   INDEX idx_clientes_nome (nome)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
+-- Acessos de redes/e-mail dos clientes (consulta admin e operador)
+CREATE TABLE IF NOT EXISTS cliente_acessos (
+  id INT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
+  cliente_id INT UNSIGNED NOT NULL,
+  plataforma VARCHAR(80) NOT NULL,
+  rotulo VARCHAR(80) DEFAULT NULL,
+  login VARCHAR(255) NOT NULL DEFAULT '',
+  senha_enc TEXT DEFAULT NULL,
+  observacao VARCHAR(500) DEFAULT NULL,
+  created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+  updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+  UNIQUE KEY uniq_cliente_plataforma (cliente_id, plataforma),
+  INDEX idx_cliente_acesso_cliente (cliente_id)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
 -- Transações (entradas e saídas)
 CREATE TABLE IF NOT EXISTS transacoes (
   id INT UNSIGNED AUTO_INCREMENT PRIMARY KEY,

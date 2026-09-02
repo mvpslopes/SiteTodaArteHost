@@ -11,6 +11,7 @@ export default function JobDetalhe() {
   const { user } = useAuth();
   const toast = useToast();
   const isGestao = user?.perfil === 'root' || user?.perfil === 'administrador';
+  const isOperacao = isGestao || user?.perfil === 'usuario';
   const [job, setJob] = useState<ProducaoJob | null>(null);
   const [loading, setLoading] = useState(true);
   const [equipe, setEquipe] = useState<Array<{ id: number; nome: string }>>([]);
@@ -43,7 +44,7 @@ export default function JobDetalhe() {
 
   useEffect(() => {
     load();
-    if (isGestao) {
+    if (isOperacao) {
       Promise.all([api.producao.equipe(), api.producao.executantes()])
         .then(([eq, ex]) => {
           setEquipe(eq.equipe);
@@ -62,9 +63,9 @@ export default function JobDetalhe() {
   const uid = user?.id;
   const souExecutor = uid === Number(job.executor_id) || uid === Number(job.executante_usuario_id);
   const souAtendente = uid === Number(job.atendente_id);
-  const podeSubir = souExecutor || isGestao;
-  const podeEntregar = (isGestao || souAtendente) && job.status === 'aguardando_entrega';
-  const podeRetrabalho = (isGestao || souAtendente) && job.status === 'aguardando_aprovacao';
+  const podeSubir = souExecutor || isOperacao;
+  const podeEntregar = (isOperacao || souAtendente) && job.status === 'aguardando_entrega';
+  const podeRetrabalho = (isOperacao || souAtendente) && job.status === 'aguardando_aprovacao';
   const podeConfirmarPagamento =
     isGestao && (job.status === 'aguardando_pagamento' || job.status === 'pagamento_informado');
 
@@ -104,7 +105,7 @@ export default function JobDetalhe() {
             {job.status_label}
           </span>
         </div>
-        {(isGestao || souAtendente) && (
+        {(isOperacao || souAtendente) && (
           <>
             <div className="mt-4 flex flex-wrap items-center gap-2">
               <input readOnly value={url} className="min-w-0 flex-1 rounded-xl border border-brand-beige bg-brand-off-white px-3 py-2 text-xs" />
@@ -153,7 +154,7 @@ export default function JobDetalhe() {
         </div>
       )}
 
-      {isGestao && (job.status === 'aguardando_atribuicao' || job.status === 'aguardando_pagamento' || job.status === 'pagamento_informado' || job.status === 'em_producao' || job.status === 'retrabalho') && (
+      {isOperacao && (job.status === 'aguardando_atribuicao' || job.status === 'aguardando_pagamento' || job.status === 'pagamento_informado' || job.status === 'em_producao' || job.status === 'retrabalho') && (
         <div className="rounded-2xl border border-brand-beige bg-white p-5 shadow-card space-y-3">
           <h3 className="font-semibold text-brand-dark-brown">Quem faz / quem entrega</h3>
           <div className="grid gap-3 sm:grid-cols-2">
@@ -169,7 +170,13 @@ export default function JobDetalhe() {
               </select>
               {executantes.length === 0 && (
                 <p className="mt-1 text-xs text-brand-olive">
-                  <Link to="/executantes" className="underline">Cadastre executantes</Link> para atribuir.
+                  {isGestao ? (
+                    <>
+                      <Link to="/executantes" className="underline">Cadastre executantes</Link> para atribuir.
+                    </>
+                  ) : (
+                    'Nenhum executante cadastrado. Peça à gestão para incluir quem faz as artes.'
+                  )}
                 </p>
               )}
             </div>

@@ -219,6 +219,16 @@ export interface Cliente {
   updated_at: string;
 }
 
+export type ClientePlataformaFixa = 'instagram' | 'youtube' | 'email' | 'facebook';
+
+export interface ClienteAcesso {
+  plataforma: string;
+  rotulo?: string;
+  login: string;
+  senha: string;
+  observacao?: string;
+}
+
 export interface Demanda {
   id: number;
   tipo_cliente: TipoClienteDemanda;
@@ -352,6 +362,15 @@ export const api = {
       request<Cliente>('/api/clientes.php', { method: 'PUT', body: JSON.stringify(data) }),
     delete: (id: number) =>
       request<{ success: boolean }>(`/api/clientes.php?id=${id}`, { method: 'DELETE' }),
+    acessos: (clienteId: number) =>
+      request<{ cliente_id: number; cliente_nome: string; acessos: ClienteAcesso[] }>(
+        `/api/cliente-acessos.php?cliente_id=${clienteId}`,
+      ),
+    salvarAcessos: (clienteId: number, acessos: ClienteAcesso[]) =>
+      request<{ cliente_id: number; cliente_nome: string; acessos: ClienteAcesso[] }>('/api/cliente-acessos.php', {
+        method: 'PUT',
+        body: JSON.stringify({ cliente_id: clienteId, acessos }),
+      }),
   },
   demandas: {
     list: (params?: { tipo_cliente?: TipoClienteDemanda; cliente_id?: number; status?: Demanda['status'] }) => {

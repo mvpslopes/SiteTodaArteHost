@@ -5,7 +5,7 @@ const PAGES: { match: string | RegExp; meta: PageMeta }[] = [
   { match: '/transacoes', meta: { title: 'Transações', subtitle: 'Entradas, saídas e conciliação' } },
   { match: '/destinos', meta: { title: 'Destinos', subtitle: 'Para quem o dinheiro vai ou sai' } },
   { match: '/gastos-fixos', meta: { title: 'Gastos fixos', subtitle: 'Contas recorrentes do mês' } },
-  { match: '/clientes', meta: { title: 'Clientes', subtitle: 'Cadastro para vincular nas entradas' } },
+  { match: '/clientes', meta: { title: 'Clientes', subtitle: 'Cadastro e senhas de acesso (Instagram, YouTube, e-mail, Facebook e outros)' } },
   { match: '/relatorios-cliente', meta: { title: 'Relatórios', subtitle: 'Movimentação por cliente' } },
   { match: '/auditoria', meta: { title: 'Auditoria', subtitle: 'Sessões e ações dos usuários' } },
   { match: '/usuarios', meta: { title: 'Usuários', subtitle: 'Acessos: gestão, operador, freelancer e cliente' } },

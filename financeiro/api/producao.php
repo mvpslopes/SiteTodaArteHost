@@ -150,7 +150,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && $action === 'confirmar_pagamento') 
 }
 
 if ($_SERVER['REQUEST_METHOD'] === 'POST' && $action === 'atribuir') {
-    if (!in_array($user['perfil'], ['root', 'administrador'], true)) jsonFail('Acesso negado', 403);
+    if (!producaoPodeOperar($user)) jsonFail('Acesso negado', 403);
     $job = producaoGetJob($pdo, (int)($input['id'] ?? 0));
     if (!$job) jsonFail('Job não encontrado', 404);
     $executanteId = (int)($input['executante_id'] ?? 0);

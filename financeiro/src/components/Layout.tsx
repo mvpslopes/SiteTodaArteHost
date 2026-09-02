@@ -70,7 +70,7 @@ const navGroups: NavGroup[] = [
   {
     title: 'Clientes',
     items: [
-      { to: '/clientes', label: 'Clientes', Icon: UserPlus, roles: ['root', 'administrador', 'cliente'] },
+      { to: '/clientes', label: 'Clientes', Icon: UserPlus, roles: ['root', 'administrador', 'usuario', 'cliente'] },
       { to: '/relatorios-cliente', label: 'Relatórios', Icon: BarChart2, roles: ['root', 'administrador'] },
     ],
   },
@@ -88,8 +88,10 @@ function isPortalProducao(perfil?: string) {
   return perfil === 'usuario' || perfil === 'freelancer';
 }
 
-function usuarioPodeAcessar(pathname: string) {
-  return pathname === '/configuracoes' || pathname === '/producao' || pathname.startsWith('/producao/');
+function equipePodeAcessar(perfil: string | undefined, pathname: string) {
+  if (pathname === '/configuracoes' || pathname === '/producao' || pathname.startsWith('/producao/')) return true;
+  if (perfil === 'usuario' && pathname === '/clientes') return true;
+  return false;
 }
 
 export default function Layout() {
@@ -132,7 +134,7 @@ export default function Layout() {
     };
   }, [moreOpen, sidebarOpen]);
 
-  if (isPortalProducao(user?.perfil) && !usuarioPodeAcessar(location.pathname)) {
+  if (isPortalProducao(user?.perfil) && !equipePodeAcessar(user?.perfil, location.pathname)) {
     return <Navigate to="/producao" replace />;
   }
 
@@ -151,9 +153,11 @@ export default function Layout() {
 
   const allItems = visibleGroups.flatMap((g) => g.items);
   const bottomPrimary =
-    isPortalProducao(user?.perfil)
+    user?.perfil === 'freelancer'
       ? ['/producao', '/configuracoes']
-      : user?.perfil === 'cliente'
+      : user?.perfil === 'usuario'
+        ? ['/producao', '/clientes', '/configuracoes']
+        : user?.perfil === 'cliente'
         ? ['/dashboard', '/transacoes', '/clientes']
         : ['/dashboard', '/producao', '/transacoes', '/gastos-fixos'];
   const moreItems = allItems.filter((item) => !bottomPrimary.includes(item.to));
