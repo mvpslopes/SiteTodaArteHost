@@ -162,12 +162,12 @@ function parseApiError(res: Response, text: string): never {
 
 export const FLUXO_PRODUCAO: { key: string; n: number; title: string; hint: string; statuses: ProducaoStatus[] }[] = [
   { key: 'briefing', n: 1, title: 'Briefing', hint: 'Chegou ou ainda falta preencher', statuses: ['aguardando_briefing'] },
-  { key: 'atribuir', n: 2, title: 'Atribuir', hint: 'Escolher quem faz', statuses: ['aguardando_atribuicao'] },
-  { key: 'producao', n: 3, title: 'Produção', hint: 'Arte em execução', statuses: ['em_producao'] },
-  { key: 'entregar', n: 4, title: 'Prévia', hint: 'Pronta para a Ana enviar ao cliente', statuses: ['aguardando_entrega'] },
-  { key: 'cliente', n: 5, title: 'Com cliente', hint: 'Aprovar ou pedir alteração', statuses: ['aguardando_aprovacao'] },
-  { key: 'alteracao', n: 6, title: 'Alteração', hint: 'Refazer o que pediram', statuses: ['retrabalho'] },
-  { key: 'pagamento', n: 7, title: 'Pagamento', hint: 'Cobrar antes do arquivo final', statuses: ['aguardando_pagamento', 'pagamento_informado'] },
+  { key: 'pagamento', n: 2, title: 'Pagamento', hint: 'Cobrar antes do arquivo final', statuses: ['aguardando_pagamento', 'pagamento_informado'] },
+  { key: 'atribuir', n: 3, title: 'Atribuir', hint: 'Escolher quem faz', statuses: ['aguardando_atribuicao'] },
+  { key: 'producao', n: 4, title: 'Produção', hint: 'Arte em execução', statuses: ['em_producao'] },
+  { key: 'entregar', n: 5, title: 'Prévia', hint: 'Pronta para a Ana enviar ao cliente', statuses: ['aguardando_entrega'] },
+  { key: 'cliente', n: 6, title: 'Com cliente', hint: 'Aprovar ou pedir alteração', statuses: ['aguardando_aprovacao'] },
+  { key: 'alteracao', n: 7, title: 'Alteração', hint: 'Refazer o que pediram', statuses: ['retrabalho'] },
   { key: 'finalizado', n: 8, title: 'Entregue', hint: 'Pago e arquivos liberados', statuses: ['finalizado'] },
 ];
 

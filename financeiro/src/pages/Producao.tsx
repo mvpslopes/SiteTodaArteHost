@@ -127,7 +127,7 @@ export default function Producao() {
         <p className="text-sm text-brand-olive">
           {user?.perfil === 'freelancer'
             ? 'Jobs atribuídos a você. Envie a arte quando estiver pronta.'
-            : 'Fluxo: briefing → quem faz → produção → prévia → cliente → pagamento → arquivos finais.'}
+            : 'Quadro: briefing → pagamento → quem faz → produção → prévia → cliente → alteração → entregue.'}
         </p>
         {isOperacao && (
           <div className="flex flex-wrap gap-2">

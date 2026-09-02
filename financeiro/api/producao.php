@@ -69,7 +69,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'GET' && $action === '') {
         $params[] = $uid;
         $params[] = $uid;
     }
-    $sql .= ' ORDER BY FIELD(j.status, "retrabalho","aguardando_entrega","em_producao","aguardando_atribuicao","aguardando_aprovacao","aguardando_pagamento","pagamento_informado","aguardando_briefing","finalizado","cancelado"), j.id DESC';
+    $sql .= ' ORDER BY FIELD(j.status, "aguardando_briefing","aguardando_pagamento","pagamento_informado","retrabalho","aguardando_entrega","em_producao","aguardando_atribuicao","aguardando_aprovacao","finalizado","cancelado"), j.id DESC';
     $stmt = $pdo->prepare($sql);
     $stmt->execute($params);
     $list = $stmt->fetchAll();
