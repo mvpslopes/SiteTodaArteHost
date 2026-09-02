@@ -2,30 +2,25 @@ import { jsPDF } from 'jspdf';
 import autoTable from 'jspdf-autotable';
 import type { Orcamento } from '../api';
 
-const BRAND: [number, number, number] = [172, 136, 105];
-const BROWN: [number, number, number] = [79, 62, 50];
-const OLIVE: [number, number, number] = [160, 137, 106];
-const CREAM: [number, number, number] = [248, 247, 244];
-const BEIGE: [number, number, number] = [230, 216, 195];
-const INK: [number, number, number] = [61, 47, 38];
+const BROWN: [number, number, number] = [92, 64, 51];
+const ACCENT: [number, number, number] = [166, 130, 94];
+const LINE: [number, number, number] = [180, 180, 180];
+const INK: [number, number, number] = [40, 40, 40];
 
-const STATUS_LABEL: Record<string, string> = {
-  rascunho: 'Rascunho',
-  enviado: 'Enviado',
-  aprovado: 'Aprovado',
-  recusado: 'Recusado',
-};
+const MESES = [
+  'Janeiro', 'Fevereiro', 'Março', 'Abril', 'Maio', 'Junho',
+  'Julho', 'Agosto', 'Setembro', 'Outubro', 'Novembro', 'Dezembro',
+];
+
+const CNPJ = '39.539.187/0001-31';
+const CIDADE = 'Conselheiro Lafaiete';
 
 function formatMoney(n: number) {
   return new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(Number(n) || 0);
 }
 
-function formatDateBr(iso?: string | null) {
-  if (!iso) return '';
-  const d = iso.slice(0, 10);
-  const [y, m, day] = d.split('-');
-  if (!y || !m || !day) return iso;
-  return `${day}/${m}/${y}`;
+function dataExtenso(d = new Date()) {
+  return `${CIDADE}, ${String(d.getDate()).padStart(2, '0')} de ${MESES[d.getMonth()]} de ${d.getFullYear()}`;
 }
 
 async function loadLogoDataUrl(src: string): Promise<string | null> {
@@ -44,11 +39,9 @@ async function loadLogoDataUrl(src: string): Promise<string | null> {
   }
 }
 
-/** Compõe a logo vazada sobre o marrom do cabeçalho (jsPDF não respeita transparência PNG). */
-async function logoParaCabecalho(): Promise<string | null> {
-  const src =
-    (await loadLogoDataUrl('/logo-todaarte.png')) ||
-    (await loadLogoDataUrl('/logo-todaarte-branco.png'));
+/** Logo vazada sobre fundo branco (modelo do relatório). */
+async function logoParaDocumento(): Promise<string | null> {
+  const src = await loadLogoDataUrl('/logo-todaarte.png');
   if (!src) return null;
 
   return new Promise((resolve) => {
@@ -69,19 +62,16 @@ async function logoParaCabecalho(): Promise<string | null> {
           resolve(null);
           return;
         }
-        // Fundo marrom do cabeçalho (#4F3E32) — evita o quadro branco da transparência
-        ctx.fillStyle = '#4F3E32';
+        ctx.fillStyle = '#FFFFFF';
         ctx.fillRect(0, 0, w, h);
         ctx.drawImage(img, 0, 0, w, h);
-
-        // Se a arte ainda tiver pixels pretos sólidos, vira marrom
         const imageData = ctx.getImageData(0, 0, w, h);
         const d = imageData.data;
         for (let i = 0; i < d.length; i += 4) {
           if (d[i] < 40 && d[i + 1] < 40 && d[i + 2] < 40) {
-            d[i] = 79;
-            d[i + 1] = 62;
-            d[i + 2] = 50;
+            d[i] = 255;
+            d[i + 1] = 255;
+            d[i + 2] = 255;
             d[i + 3] = 255;
           }
         }
@@ -101,174 +91,158 @@ export async function gerarOrcamentoPdf(orcamento: Orcamento): Promise<void> {
   const doc = new jsPDF({ orientation: 'portrait', unit: 'mm', format: 'a4' });
   const pageW = doc.internal.pageSize.getWidth();
   const pageH = doc.internal.pageSize.getHeight();
-  const left = 16;
-  const right = pageW - 16;
-  const contentW = right - left;
+  const left = 18;
+  const right = pageW - 18;
 
-  // Fundo da página (creme suave)
-  doc.setFillColor(...CREAM);
+  // Fundo branco
+  doc.setFillColor(255, 255, 255);
   doc.rect(0, 0, pageW, pageH, 'F');
 
-  // Faixa superior da marca
+  // Faixa superior — título
   doc.setFillColor(...BROWN);
-  doc.rect(0, 0, pageW, 32, 'F');
-  doc.setFillColor(...BRAND);
-  doc.rect(0, 32, pageW, 1.2, 'F');
+  doc.rect(0, 0, pageW, 14, 'F');
+  doc.setTextColor(255, 255, 255);
+  doc.setFont('helvetica', 'bold');
+  doc.setFontSize(13);
+  doc.text('ORÇAMENTO', left, 9.5);
 
-  const logo = await logoParaCabecalho();
+  // Logo à direita (abaixo da faixa)
+  const logo = await logoParaDocumento();
   if (logo) {
     try {
-      // Proporção ~ quadrada da arte; altura encaixa na faixa
-      doc.addImage(logo, 'PNG', left, 3.5, 24, 24);
+      doc.addImage(logo, 'PNG', right - 28, 18, 28, 28);
     } catch {
-      /* tipografia de fallback */
-      doc.setTextColor(255, 255, 255);
-      doc.setFont('helvetica', 'bold');
-      doc.setFontSize(12);
-      doc.text('TodaArte Marketing', left, 14);
+      /* segue sem logo */
     }
-  } else {
-    doc.setTextColor(255, 255, 255);
-    doc.setFont('helvetica', 'bold');
-    doc.setFontSize(12);
-    doc.text('TodaArte Marketing', left, 14);
-    doc.setFont('helvetica', 'normal');
-    doc.setFontSize(8);
-    doc.setTextColor(...BEIGE);
-    doc.text('Identidade · Conteúdo · Experiência', left, 20);
   }
 
-  doc.setFont('helvetica', 'bold');
-  doc.setFontSize(14);
-  doc.setTextColor(255, 255, 255);
-  doc.text(`ORÇAMENTO Nº ${orcamento.numero}`, right, 14, { align: 'right' });
-  doc.setFont('helvetica', 'normal');
-  doc.setFontSize(8);
-  doc.setTextColor(...BEIGE);
-  const geradoEm = new Date().toLocaleDateString('pt-BR');
-  doc.text(`Gerado em ${geradoEm}`, right, 21, { align: 'right' });
-
-  let y = 44;
-
-  // Cartão do cliente
-  doc.setFillColor(255, 255, 255);
-  doc.setDrawColor(...BEIGE);
-  doc.setLineWidth(0.3);
-  doc.roundedRect(left, y, contentW, 28, 2, 2, 'FD');
-
-  doc.setTextColor(...BROWN);
-  doc.setFont('helvetica', 'bold');
-  doc.setFontSize(12);
-  doc.text(orcamento.titulo || 'Proposta comercial', left + 4, y + 8);
-
+  // Cidade e data
+  doc.setFillColor(...ACCENT);
+  doc.rect(left, 20, 2.2, 8, 'F');
+  doc.setTextColor(...INK);
   doc.setFont('helvetica', 'normal');
   doc.setFontSize(9);
+  doc.text(dataExtenso(), left + 5, 25.5);
+
+  // Linha divisória
+  let y = 50;
+  doc.setDrawColor(...LINE);
+  doc.setLineWidth(0.35);
+  doc.line(left, y, right, y);
+  y += 10;
+
+  // Cliente / título
+  doc.setFont('helvetica', 'bold');
+  doc.setFontSize(14);
   doc.setTextColor(...INK);
-  doc.text(`Cliente: ${orcamento.cliente_nome || '—'}`, left + 4, y + 15);
+  const cliente = (orcamento.cliente_nome || 'Cliente').toUpperCase();
+  doc.text(cliente, left, y);
+  y += 7;
 
-  const meta: string[] = [];
-  if (orcamento.status && orcamento.status !== 'rascunho') {
-    meta.push(`Status: ${STATUS_LABEL[orcamento.status] || orcamento.status}`);
+  doc.setFont('helvetica', 'normal');
+  doc.setFontSize(10);
+  const intro =
+    orcamento.observacoes?.trim() ||
+    orcamento.titulo?.trim() ||
+    `Orçamento nº ${orcamento.numero} referente aos serviços solicitados.`;
+  const introLines = doc.splitTextToSize(intro, right - left - (logo ? 32 : 0));
+  doc.text(introLines, left, y);
+  y += introLines.length * 5 + 6;
+
+  if (orcamento.validade_ate) {
+    const [yy, mm, dd] = orcamento.validade_ate.slice(0, 10).split('-');
+    if (yy && mm && dd) {
+      doc.setFontSize(9);
+      doc.setTextColor(100, 100, 100);
+      doc.text(`Validade da proposta: ${dd}/${mm}/${yy}`, left, y);
+      y += 6;
+      doc.setTextColor(...INK);
+    }
   }
-  if (orcamento.validade_ate) meta.push(`Validade: ${formatDateBr(orcamento.validade_ate)}`);
-  if (orcamento.prazo) meta.push(`Prazo: ${orcamento.prazo}`);
-  if (meta.length) {
-    doc.setTextColor(...OLIVE);
-    doc.text(meta.join('  ·  '), left + 4, y + 22);
-  }
 
-  y += 36;
+  doc.setDrawColor(...LINE);
+  doc.setLineWidth(0.35);
+  doc.line(left, y, right, y);
+  y += 4;
 
+  // Tabela: descrição + quantidade (sem prazo e sem valores por item)
   const itens = orcamento.itens || [];
   const body = itens.map((item) => {
     const qtd = Number(item.quantidade) || 0;
-    const vu = Number(item.valor_unitario) || 0;
-    const vt = item.valor_total != null ? Number(item.valor_total) : qtd * vu;
     const desc = item.detalhes
       ? `${item.descricao || '—'}\n${item.detalhes}`
       : item.descricao || '—';
-    return [
-      desc,
-      String(qtd).replace('.', ','),
-      formatMoney(vu),
-      formatMoney(vt),
-      item.prazo || '—',
-    ];
+    return [desc, String(qtd).replace('.', ',')];
   });
 
+  const tableLeft = left + 5;
+  const tableStartY = y;
   autoTable(doc, {
     startY: y,
-    head: [['Serviço', 'Qtd', 'Valor unit.', 'Total', 'Prazo']],
-    body: body.length ? body : [['Nenhum item neste orçamento', '—', '—', '—', '—']],
-    theme: 'grid',
+    head: [['DESCRIÇÃO', 'QTD']],
+    body: body.length ? body : [['Nenhum serviço neste orçamento', '—']],
+    theme: 'plain',
     headStyles: {
-      fillColor: BROWN,
-      textColor: [255, 255, 255],
+      fillColor: [255, 255, 255],
+      textColor: INK,
       fontStyle: 'bold',
       fontSize: 9,
-      cellPadding: 3,
+      cellPadding: { top: 3, bottom: 3, left: 2, right: 2 },
     },
     bodyStyles: {
       textColor: INK,
-      fontSize: 9,
-      cellPadding: 3,
+      fontSize: 10,
+      cellPadding: { top: 3.5, bottom: 3.5, left: 2, right: 2 },
       valign: 'top',
     },
-    alternateRowStyles: { fillColor: [255, 255, 255] },
     styles: {
-      lineColor: BEIGE,
-      lineWidth: 0.2,
+      lineWidth: 0,
       overflow: 'linebreak',
     },
     columnStyles: {
-      0: { cellWidth: 78 },
-      1: { cellWidth: 14, halign: 'center' },
-      2: { cellWidth: 28, halign: 'right' },
-      3: { cellWidth: 28, halign: 'right' },
-      4: { cellWidth: 28, halign: 'left' },
+      0: { cellWidth: right - tableLeft - 22 },
+      1: { cellWidth: 20, halign: 'center' },
     },
-    margin: { left, right: 16 },
+    margin: { left: tableLeft, right: 18 },
   });
 
-  y = (doc as jsPDF & { lastAutoTable: { finalY: number } }).lastAutoTable.finalY + 8;
+  y = (doc as jsPDF & { lastAutoTable: { finalY: number } }).lastAutoTable.finalY + 2;
 
-  // Total em destaque
-  const totalBoxW = 62;
-  const totalBoxH = 12;
-  doc.setFillColor(...BRAND);
-  doc.roundedRect(right - totalBoxW, y, totalBoxW, totalBoxH, 1.5, 1.5, 'F');
-  doc.setTextColor(255, 255, 255);
-  doc.setFont('helvetica', 'bold');
-  doc.setFontSize(11);
-  doc.text(`Total  ${formatMoney(Number(orcamento.total) || 0)}`, right - totalBoxW / 2, y + 8, { align: 'center' });
-  y += totalBoxH + 10;
-
-  if (orcamento.observacoes) {
-    doc.setFillColor(255, 255, 255);
-    doc.setDrawColor(...BEIGE);
-    const obsLines = doc.splitTextToSize(orcamento.observacoes, contentW - 8);
-    const obsH = 10 + obsLines.length * 4.5;
-    doc.roundedRect(left, y, contentW, obsH, 2, 2, 'FD');
-    doc.setTextColor(...BROWN);
-    doc.setFont('helvetica', 'bold');
-    doc.setFontSize(9);
-    doc.text('Observações', left + 4, y + 6);
-    doc.setFont('helvetica', 'normal');
-    doc.setTextColor(...INK);
-    doc.setFontSize(9);
-    doc.text(obsLines, left + 4, y + 12);
-    y += obsH + 8;
+  // Barra vertical à esquerda da tabela (modelo do relatório)
+  if (y > tableStartY) {
+    doc.setFillColor(...ACCENT);
+    doc.rect(left, tableStartY, 2.2, y - tableStartY - 2, 'F');
   }
 
-  // Rodapé
-  doc.setDrawColor(...BEIGE);
-  doc.setLineWidth(0.4);
-  doc.line(left, pageH - 16, right, pageH - 16);
-  doc.setFontSize(8);
-  doc.setTextColor(...OLIVE);
+  // Linha + valor total
+  doc.setDrawColor(...LINE);
+  doc.setLineWidth(0.35);
+  doc.line(left, y, right, y);
+  y += 8;
+
+  doc.setFont('helvetica', 'bold');
+  doc.setFontSize(11);
+  doc.setTextColor(...INK);
+  doc.text('VALOR TOTAL:', left, y);
+  doc.text(formatMoney(Number(orcamento.total) || 0), right, y, { align: 'right' });
+  y += 5;
+
+  doc.setDrawColor(...LINE);
+  doc.line(left, y, right, y);
+  y += 10;
+
+  // Rodapé empresa
+  doc.setFont('helvetica', 'bold');
+  doc.setFontSize(10);
+  doc.text('Toda Arte Marketing', left, y);
+  y += 5;
   doc.setFont('helvetica', 'normal');
-  doc.text('TodaArte Marketing — este documento é uma proposta comercial.', left, pageH - 10);
-  doc.text(`Nº ${orcamento.numero}`, right, pageH - 10, { align: 'right' });
+  doc.setFontSize(9);
+  doc.text(`CNPJ: ${CNPJ}`, left, y);
+
+  doc.setFontSize(8);
+  doc.setTextColor(130, 130, 130);
+  doc.text(`Orçamento nº ${orcamento.numero}`, right, pageH - 12, { align: 'right' });
 
   doc.save(`orcamento-${orcamento.numero}.pdf`);
 }
