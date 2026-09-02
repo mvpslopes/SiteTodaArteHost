@@ -77,6 +77,7 @@ export interface ProducaoEntrega {
   uploaded_by: number | null;
   created_at: string;
   url?: string;
+  preview?: number | boolean;
 }
 
 export interface ProducaoJob {
@@ -161,12 +162,13 @@ function parseApiError(res: Response, text: string): never {
 
 export const FLUXO_PRODUCAO: { key: string; n: number; title: string; hint: string; statuses: ProducaoStatus[] }[] = [
   { key: 'briefing', n: 1, title: 'Briefing', hint: 'Chegou ou ainda falta preencher', statuses: ['aguardando_briefing'] },
-  { key: 'atribuir', n: 2, title: 'Atribuir', hint: 'Escolher quem faz', statuses: ['aguardando_atribuicao', 'aguardando_pagamento', 'pagamento_informado'] },
+  { key: 'atribuir', n: 2, title: 'Atribuir', hint: 'Escolher quem faz', statuses: ['aguardando_atribuicao'] },
   { key: 'producao', n: 3, title: 'Produção', hint: 'Arte em execução', statuses: ['em_producao'] },
-  { key: 'entregar', n: 4, title: 'Entregar', hint: 'Pronta para a Ana enviar', statuses: ['aguardando_entrega'] },
-  { key: 'cliente', n: 5, title: 'Com cliente', hint: 'Aguardando aprovação', statuses: ['aguardando_aprovacao'] },
+  { key: 'entregar', n: 4, title: 'Prévia', hint: 'Pronta para a Ana enviar ao cliente', statuses: ['aguardando_entrega'] },
+  { key: 'cliente', n: 5, title: 'Com cliente', hint: 'Aprovar ou pedir alteração', statuses: ['aguardando_aprovacao'] },
   { key: 'alteracao', n: 6, title: 'Alteração', hint: 'Refazer o que pediram', statuses: ['retrabalho'] },
-  { key: 'finalizado', n: 7, title: 'Finalizado', hint: 'Aprovado', statuses: ['finalizado'] },
+  { key: 'pagamento', n: 7, title: 'Pagamento', hint: 'Cobrar antes do arquivo final', statuses: ['aguardando_pagamento', 'pagamento_informado'] },
+  { key: 'finalizado', n: 8, title: 'Entregue', hint: 'Pago e arquivos liberados', statuses: ['finalizado'] },
 ];
 
 export const STATUS_PRODUCAO: { value: ProducaoStatus | ''; label: string }[] = [
@@ -485,12 +487,19 @@ export const api = {
       prazo?: string;
       tipo?: 'avulso' | 'recorrente';
     }) => request<ProducaoJob>('/api/producao.php?action=criar', { method: 'POST', body: JSON.stringify({ action: 'criar', ...data }) }),
-    confirmarPagamento: (id: number) =>
+    confirmarPagamento: (id: number, valor?: number | string) =>
       request<ProducaoJob>('/api/producao.php?action=confirmar_pagamento', {
         method: 'POST',
-        body: JSON.stringify({ action: 'confirmar_pagamento', id }),
+        body: JSON.stringify({ action: 'confirmar_pagamento', id, valor }),
       }),
-    atribuir: (data: { id: number; executante_id: number; atendente_id?: number; complemento_briefing?: string; valor_executor?: number | string }) =>
+    atribuir: (data: {
+      id: number;
+      executante_id: number;
+      atendente_id?: number;
+      complemento_briefing?: string;
+      valor?: number | string;
+      valor_executor?: number | string;
+    }) =>
       request<ProducaoJob>('/api/producao.php?action=atribuir', {
         method: 'POST',
         body: JSON.stringify({ action: 'atribuir', ...data }),

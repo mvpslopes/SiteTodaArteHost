@@ -125,7 +125,7 @@ export default function Producao() {
       <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
         <p className="text-sm text-brand-olive">
           {isGestao
-            ? 'Fluxo da arte: briefing → quem faz → produção → entrega → cliente → pronto.'
+            ? 'Fluxo: briefing → quem faz → produção → prévia → cliente → pagamento → arquivos finais.'
             : 'Jobs atribuídos a você. Envie a arte quando estiver pronta.'}
         </p>
         {isGestao && (
@@ -271,7 +271,9 @@ export default function Producao() {
                   onChange={(e) => setForm({ ...form, servico_slug: e.target.value })}
                   className="w-full rounded-xl border border-brand-beige px-3 py-2 text-sm"
                 >
-                  {servicos.map((s) => (
+                  {servicos
+                    .filter((s) => s.slug === 'arte_avulsa')
+                    .map((s) => (
                     <option key={s.slug} value={s.slug}>
                       {s.nome}
                     </option>

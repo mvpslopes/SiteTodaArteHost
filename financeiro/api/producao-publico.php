@@ -17,7 +17,7 @@ function pubFail(string $msg, int $code = 400) {
 }
 
 if ($_SERVER['REQUEST_METHOD'] === 'GET' && $action === 'catalogo') {
-    $servicos = producaoServicosAvulsos();
+    $servicos = producaoServicosBriefingPublico();
     $campos = [];
     foreach ($servicos as $s) {
         $campos[$s['slug']] = producaoBriefingCampos($s['slug']);
@@ -31,8 +31,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && $action === 'pedido') {
         echo json_encode(['ok' => true, 'public_token' => bin2hex(random_bytes(8))]);
         exit;
     }
-    $servico = producaoServicoPorSlug(trim((string)($input['servico_slug'] ?? '')));
-    if (!$servico || $servico['tipo'] !== 'avulso') pubFail('Escolha um serviço');
+    $servico = producaoServicoPorSlug(trim((string)($input['servico_slug'] ?? 'arte_avulsa')));
+    if (!$servico || $servico['slug'] !== 'arte_avulsa') pubFail('Por enquanto o briefing público é só de arte avulsa');
     $nome = trim((string)($input['nome_cliente'] ?? ''));
     if (strlen($nome) < 2) pubFail('Informe seu nome');
     $whatsapp = preg_replace('/\D+/', '', (string)($input['whatsapp'] ?? '')) ?? '';
@@ -87,8 +87,12 @@ $publico = [
     'entregas' => [],
 ];
 
-if (in_array($job['status'], ['aguardando_aprovacao', 'retrabalho', 'finalizado'], true)) {
-    $publico['entregas'] = array_map(static function ($e) {
+$pago = ($job['pagamento_cliente'] ?? '') === 'confirmado' || $job['status'] === 'finalizado';
+$mostrarPrevia = in_array($job['status'], ['aguardando_aprovacao', 'retrabalho'], true);
+$mostrarFinais = $pago && $job['status'] === 'finalizado';
+
+if ($mostrarPrevia || $mostrarFinais) {
+    $publico['entregas'] = array_map(static function ($e) use ($mostrarFinais) {
         return [
             'id' => $e['id'],
             'versao' => $e['versao'],
@@ -96,6 +100,7 @@ if (in_array($job['status'], ['aguardando_aprovacao', 'retrabalho', 'finalizado'
             'nome_original' => $e['nome_original'],
             'nota' => $e['nota'],
             'created_at' => $e['created_at'],
+            'preview' => $mostrarFinais ? 0 : 1,
             'url' => '/api/uploads/producao/' . $e['arquivo'],
         ];
     }, $job['entregas']);
@@ -155,6 +160,8 @@ if ($action === 'pagar') {
         ->execute([$job['id']]);
     if (!empty($job['atendente_id'])) {
         producaoNotificar($pdo, (int)$job['atendente_id'], (int)$job['id'], 'Cliente informou Pix', $job['titulo']);
+    } else {
+        producaoNotificarGestao($pdo, (int)$job['id'], 'Cliente informou Pix', $job['titulo']);
     }
     echo json_encode(['ok' => true, 'status' => 'pagamento_informado', 'status_label' => producaoStatusLabel('pagamento_informado')]);
     exit;
@@ -162,15 +169,14 @@ if ($action === 'pagar') {
 
 if ($action === 'aprovar') {
     if ($job['status'] !== 'aguardando_aprovacao') pubFail('Não há arte aguardando aprovação');
-    $pdo->prepare('UPDATE producao_jobs SET status = "finalizado", pagamento_executor = "liberado" WHERE id = ?')
+    $pdo->prepare('UPDATE producao_jobs SET status = "aguardando_pagamento" WHERE id = ?')
         ->execute([$job['id']]);
     if (!empty($job['atendente_id'])) {
-        producaoNotificar($pdo, (int)$job['atendente_id'], (int)$job['id'], 'Cliente aprovou', $job['titulo']);
+        producaoNotificar($pdo, (int)$job['atendente_id'], (int)$job['id'], 'Prévia aprovada — cobrar', $job['titulo']);
+    } else {
+        producaoNotificarGestao($pdo, (int)$job['id'], 'Prévia aprovada — cobrar', $job['titulo']);
     }
-    if (!empty($job['executor_id'])) {
-        producaoNotificar($pdo, (int)$job['executor_id'], (int)$job['id'], 'Job finalizado — valor liberado', $job['titulo']);
-    }
-    echo json_encode(['ok' => true, 'status' => 'finalizado']);
+    echo json_encode(['ok' => true, 'status' => 'aguardando_pagamento', 'status_label' => producaoStatusLabel('aguardando_pagamento')]);
     exit;
 }
 

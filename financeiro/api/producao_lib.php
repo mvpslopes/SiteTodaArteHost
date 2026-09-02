@@ -31,6 +31,12 @@ function producaoServicosAvulsos(): array
     return array_values(array_filter(producaoServicos(), static fn($s) => $s['tipo'] === 'avulso'));
 }
 
+/** Coleta pública de briefing: só arte avulsa, por enquanto. */
+function producaoServicosBriefingPublico(): array
+{
+    return array_values(array_filter(producaoServicos(), static fn($s) => $s['slug'] === 'arte_avulsa'));
+}
+
 function producaoBriefingCampos(string $slug): array
 {
     $comum = [
@@ -69,14 +75,14 @@ function producaoStatusLabel(string $status): string
 {
     $map = [
         'aguardando_briefing' => 'Briefing pendente',
-        'aguardando_pagamento' => 'Aguardando atribuição',
-        'pagamento_informado' => 'Aguardando atribuição',
+        'aguardando_pagamento' => 'Aguardando pagamento',
+        'pagamento_informado' => 'Pagamento informado',
         'aguardando_atribuicao' => 'Aguardando atribuição',
         'em_producao' => 'Em produção',
-        'aguardando_entrega' => 'Arte pronta — entregar',
-        'aguardando_aprovacao' => 'Com o cliente',
+        'aguardando_entrega' => 'Prévia pronta — enviar',
+        'aguardando_aprovacao' => 'Prévia com o cliente',
         'retrabalho' => 'Alteração pedida',
-        'finalizado' => 'Finalizado',
+        'finalizado' => 'Pago e entregue',
         'cancelado' => 'Cancelado',
     ];
     return $map[$status] ?? $status;
@@ -200,11 +206,6 @@ function producaoEnsureSchema(PDO $pdo): void
     ensureUsuarioPerfilFreelancer($pdo);
 
     $done = true;
-
-    try {
-        $pdo->exec("UPDATE producao_jobs SET status = 'aguardando_atribuicao' WHERE status IN ('aguardando_pagamento','pagamento_informado')");
-    } catch (Throwable $e) {
-    }
 }
 
 function producaoIsStaff(array $user): bool

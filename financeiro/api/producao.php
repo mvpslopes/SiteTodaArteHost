@@ -69,7 +69,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'GET' && $action === '') {
         $params[] = $uid;
         $params[] = $uid;
     }
-    $sql .= ' ORDER BY FIELD(j.status, "retrabalho","aguardando_entrega","em_producao","aguardando_atribuicao","pagamento_informado","aguardando_pagamento","aguardando_aprovacao","aguardando_briefing","finalizado","cancelado"), j.id DESC';
+    $sql .= ' ORDER BY FIELD(j.status, "retrabalho","aguardando_entrega","em_producao","aguardando_atribuicao","aguardando_aprovacao","aguardando_pagamento","pagamento_informado","aguardando_briefing","finalizado","cancelado"), j.id DESC';
     $stmt = $pdo->prepare($sql);
     $stmt->execute($params);
     $list = $stmt->fetchAll();
@@ -135,8 +135,17 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && $action === 'confirmar_pagamento') 
     $job = producaoGetJob($pdo, (int)($input['id'] ?? 0));
     if (!$job) jsonFail('Job não encontrado', 404);
     if ($job['tipo'] === 'recorrente') jsonFail('Cliente fixo não confirma Pix por job');
-    $pdo->prepare('UPDATE producao_jobs SET pagamento_cliente = "confirmado", status = "aguardando_atribuicao" WHERE id = ?')
+    if (!in_array($job['status'], ['aguardando_pagamento', 'pagamento_informado'], true)) {
+        jsonFail('Este job ainda não está na etapa de pagamento');
+    }
+    if (isset($input['valor']) && $input['valor'] !== '') {
+        $pdo->prepare('UPDATE producao_jobs SET valor = ? WHERE id = ?')->execute([(float)$input['valor'], $job['id']]);
+    }
+    $pdo->prepare('UPDATE producao_jobs SET pagamento_cliente = "confirmado", pagamento_executor = "liberado", status = "finalizado" WHERE id = ?')
         ->execute([$job['id']]);
+    if (!empty($job['executor_id'])) {
+        producaoNotificar($pdo, (int)$job['executor_id'], (int)$job['id'], 'Pagamento confirmado — valor liberado', $job['titulo']);
+    }
     jsonOk(producaoGetJob($pdo, (int)$job['id']));
 }
 
@@ -151,13 +160,14 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && $action === 'atribuir') {
     $usuarioExecutor = !empty($executante['usuario_id']) ? (int)$executante['usuario_id'] : null;
     $complemento = trim($input['complemento_briefing'] ?? '');
     $valorExec = isset($input['valor_executor']) && $input['valor_executor'] !== '' ? (float)$input['valor_executor'] : null;
+    $valorCliente = isset($input['valor']) && $input['valor'] !== '' ? (float)$input['valor'] : $job['valor'];
     $atendenteId = isset($input['atendente_id']) ? (int)$input['atendente_id'] : (int)$job['atendente_id'];
     if ($atendenteId < 1) $atendenteId = (int)$user['id'];
     $pdo->prepare('
         UPDATE producao_jobs
-        SET executante_id = ?, executor_id = ?, atendente_id = ?, complemento_briefing = ?, valor_executor = ?, status = "em_producao", recado_retrabalho = NULL
+        SET executante_id = ?, executor_id = ?, atendente_id = ?, complemento_briefing = ?, valor = ?, valor_executor = ?, status = "em_producao", recado_retrabalho = NULL
         WHERE id = ?
-    ')->execute([$executanteId, $usuarioExecutor, $atendenteId, $complemento !== '' ? $complemento : $job['complemento_briefing'], $valorExec, $job['id']]);
+    ')->execute([$executanteId, $usuarioExecutor, $atendenteId, $complemento !== '' ? $complemento : $job['complemento_briefing'], $valorCliente, $valorExec, $job['id']]);
     if ($usuarioExecutor) {
         producaoNotificar(
             $pdo,

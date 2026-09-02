@@ -1,41 +1,7 @@
 import { useEffect, useRef, useState, type ReactNode } from 'react';
-import {
-  ArrowLeft,
-  Camera,
-  CheckCircle2,
-  Compass,
-  FileText,
-  Globe,
-  Image,
-  Palette,
-  PenTool,
-  Sparkles,
-  TrendingUp,
-} from 'lucide-react';
+import { CheckCircle2 } from 'lucide-react';
 import { api, type ProducaoCampoBriefing, type ProducaoServico } from '../api';
 import AppButton from '../components/AppButton';
-
-const ICONS: Record<string, typeof Palette> = {
-  logo: PenTool,
-  identidade: Palette,
-  arte_avulsa: Image,
-  conteudo: FileText,
-  estrategia: Compass,
-  producao_visual: Camera,
-  performance: TrendingUp,
-  sites: Globe,
-};
-
-const RESUMO: Record<string, string> = {
-  logo: 'Marca nova ou redesenho do símbolo',
-  identidade: 'Cores, fontes e aplicações da marca',
-  arte_avulsa: 'Post, stories, banner ou impresso',
-  conteudo: 'Textos e peças para redes',
-  estrategia: 'Direção e planejamento',
-  producao_visual: 'Ensaio, foto ou peça visual',
-  performance: 'Campanha pensada para vender',
-  sites: 'Página, loja ou site completo',
-};
 
 const PLACEHOLDERS: Record<string, string> = {
   objetivo: 'Ex: divulgar a promoção do mês, apresentar a marca…',
@@ -92,8 +58,7 @@ function Field({
 export default function Pedido() {
   const [servicos, setServicos] = useState<ProducaoServico[]>([]);
   const [camposPorServico, setCamposPorServico] = useState<Record<string, ProducaoCampoBriefing[]>>({});
-  const [slug, setSlug] = useState('');
-  const [passo, setPasso] = useState<1 | 2>(1);
+  const [slug, setSlug] = useState('arte_avulsa');
   const [nome, setNome] = useState('');
   const [whatsapp, setWhatsapp] = useState('');
   const [respostas, setRespostas] = useState<Record<string, string>>({});
@@ -108,40 +73,29 @@ export default function Pedido() {
     api.producao
       .catalogoPublico()
       .then((r) => {
-        setServicos(r.servicos);
+        const lista = r.servicos.filter((s) => s.slug === 'arte_avulsa');
+        setServicos(lista.length ? lista : r.servicos);
         setCamposPorServico(r.campos);
+        const unico = (lista.length ? lista : r.servicos)[0];
+        if (unico) {
+          setSlug(unico.slug);
+        }
       })
       .catch((e) => setErro(e.message))
       .finally(() => setLoading(false));
   }, []);
 
-  const campos = slug ? camposPorServico[slug] || [] : [];
+  const campos = camposPorServico[slug] || camposPorServico.arte_avulsa || [];
   const servico = servicos.find((s) => s.slug === slug);
-
-  const irPara = (next: 1 | 2) => {
-    setPasso(next);
-    setErro(null);
-    requestAnimationFrame(() => topoRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' }));
-  };
-
-  const escolher = (next: string) => {
-    setSlug(next);
-    setRespostas({});
-    irPara(2);
-  };
 
   const enviar = async (e: React.FormEvent) => {
     e.preventDefault();
     setErro(null);
-    if (!slug) {
-      setErro('Escolha o serviço.');
-      irPara(1);
-      return;
-    }
+    const servicoSlug = slug || 'arte_avulsa';
     setSaving(true);
     try {
       await api.producao.criarPedido({
-        servico_slug: slug,
+        servico_slug: servicoSlug,
         nome_cliente: nome,
         whatsapp,
         respostas,
@@ -168,9 +122,9 @@ export default function Pedido() {
               (e.target as HTMLImageElement).style.display = 'none';
             }}
           />
-          <p className="mt-4 text-[11px] font-semibold uppercase tracking-[0.18em] text-brand-gold">Briefing</p>
+          <p className="mt-4 text-[11px] font-semibold uppercase tracking-[0.18em] text-brand-gold">Arte avulsa</p>
           <h1 className="mt-1 text-2xl font-semibold text-white">Conte o que você precisa</h1>
-          <p className="mt-2 text-sm text-brand-beige/70">Leva poucos minutos. A Ana retorna em seguida.</p>
+          <p className="mt-2 text-sm text-brand-beige/70">Briefing da peça. A Ana retorna em seguida no WhatsApp.</p>
         </div>
       </div>
 
@@ -191,61 +145,13 @@ export default function Pedido() {
           ) : loading ? (
             <div className="space-y-3 rounded-2xl border border-brand-beige bg-white p-5 shadow-card">
               <div className="h-4 w-32 animate-pulse rounded bg-brand-beige/70" />
-              <div className="grid grid-cols-2 gap-2">
-                {Array.from({ length: 6 }).map((_, i) => (
-                  <div key={i} className="h-20 animate-pulse rounded-xl bg-brand-off-white" />
-                ))}
-              </div>
-            </div>
-          ) : passo === 1 ? (
-            <div className="rounded-2xl border border-brand-beige bg-white p-5 shadow-card sm:p-6">
-              <div className="mb-4 flex items-center justify-between">
-                <div>
-                  <p className="text-[11px] font-semibold uppercase tracking-wide text-brand-gold">Passo 1 de 2</p>
-                  <h2 className="mt-0.5 text-lg font-semibold">Qual serviço?</h2>
-                </div>
-                <Sparkles className="h-5 w-5 text-brand-gold/80" />
-              </div>
-              <div className="grid grid-cols-1 gap-2.5 sm:grid-cols-2">
-                {servicos.map((s) => {
-                  const Icon = ICONS[s.slug] || Palette;
-                  return (
-                    <button
-                      key={s.slug}
-                      type="button"
-                      onClick={() => escolher(s.slug)}
-                      className="group flex items-start gap-3 rounded-2xl border border-brand-beige bg-brand-off-white/50 px-3.5 py-3.5 text-left transition hover:-translate-y-0.5 hover:border-brand-gold/50 hover:bg-white hover:shadow-card"
-                    >
-                      <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-brand-gold/15 text-brand-brown transition group-hover:bg-brand-gold/25">
-                        <Icon className="h-5 w-5" strokeWidth={1.75} />
-                      </span>
-                      <span className="min-w-0">
-                        <span className="block text-sm font-semibold text-brand-dark-brown">{s.nome}</span>
-                        <span className="mt-0.5 block text-xs leading-snug text-brand-olive">{RESUMO[s.slug] || 'Peça avulsa'}</span>
-                      </span>
-                    </button>
-                  );
-                })}
-              </div>
+              <div className="h-24 animate-pulse rounded-xl bg-brand-off-white" />
             </div>
           ) : (
             <form onSubmit={enviar} className="overflow-hidden rounded-2xl border border-brand-beige bg-white shadow-card">
-              <div className="flex items-center gap-3 border-b border-brand-beige bg-brand-off-white/70 px-4 py-3 sm:px-5">
-                <button
-                  type="button"
-                  onClick={() => irPara(1)}
-                  className="inline-flex h-9 w-9 items-center justify-center rounded-xl text-brand-olive hover:bg-white hover:text-brand-dark-brown"
-                  aria-label="Trocar serviço"
-                >
-                  <ArrowLeft className="h-4 w-4" />
-                </button>
-                <div className="min-w-0 flex-1">
-                  <p className="text-[11px] font-semibold uppercase tracking-wide text-brand-gold">Passo 2 de 2</p>
-                  <p className="truncate text-sm font-semibold text-brand-dark-brown">{servico?.nome}</p>
-                </div>
-                <button type="button" onClick={() => irPara(1)} className="text-xs font-medium text-brand-brown underline-offset-2 hover:underline">
-                  Trocar
-                </button>
+              <div className="border-b border-brand-beige bg-brand-off-white/70 px-4 py-3 sm:px-5">
+                <p className="text-[11px] font-semibold uppercase tracking-wide text-brand-gold">Briefing</p>
+                <p className="truncate text-sm font-semibold text-brand-dark-brown">{servico?.nome || 'Arte avulsa'}</p>
               </div>
 
               <div className="space-y-5 p-5 sm:p-6">
@@ -307,7 +213,9 @@ export default function Pedido() {
                 <AppButton type="submit" className="h-12 w-full text-base" loading={saving}>
                   Enviar briefing
                 </AppButton>
-                <p className="text-center text-xs text-brand-olive">O pagamento é combinado depois, com a Ana.</p>
+                <p className="text-center text-xs text-brand-olive">
+                  Você aprova a prévia; os arquivos finais saem depois do pagamento.
+                </p>
               </div>
             </form>
           )}

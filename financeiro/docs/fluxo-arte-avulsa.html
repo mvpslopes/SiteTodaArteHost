@@ -1,0 +1,400 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8" />
+  <title>TodaArte — Mapa operacional: Arte avulsa</title>
+  <style>
+    @page { size: A3 landscape; margin: 10mm; }
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    html, body {
+      background: #F8F7F4;
+      color: #4F3E32;
+      font-family: "Segoe UI", Calibri, Arial, sans-serif;
+    }
+    body { padding: 8px 12px 6px; }
+    .sheet { page-break-after: always; }
+    .sheet:last-child { page-break-after: auto; }
+    header {
+      display: flex;
+      align-items: baseline;
+      justify-content: space-between;
+      border-bottom: 2px solid #AC8869;
+      padding-bottom: 8px;
+      margin-bottom: 10px;
+    }
+    header .brand {
+      font-size: 13px;
+      letter-spacing: 0.18em;
+      text-transform: uppercase;
+      color: #AC8869;
+      font-weight: 700;
+    }
+    header h1 {
+      font-size: 22px;
+      font-weight: 700;
+      color: #4F3E32;
+      letter-spacing: -0.02em;
+    }
+    header p {
+      font-size: 12px;
+      color: #81705F;
+    }
+    svg { display: block; width: 100%; height: auto; }
+    .caption {
+      margin-top: 8px;
+      font-size: 11px;
+      color: #81705F;
+      display: flex;
+      gap: 22px;
+      flex-wrap: wrap;
+    }
+    .caption span { display: flex; align-items: center; gap: 6px; }
+    .dot { width: 10px; height: 10px; border-radius: 50%; }
+    h2 {
+      font-size: 18px;
+      margin: 4px 0 12px;
+      color: #4F3E32;
+    }
+    .grid {
+      display: grid;
+      grid-template-columns: 1.15fr 0.85fr;
+      gap: 16px;
+    }
+    ol.steps {
+      list-style: none;
+      counter-reset: passo;
+    }
+    ol.steps li {
+      counter-increment: passo;
+      display: grid;
+      grid-template-columns: 36px 1fr;
+      gap: 10px;
+      margin-bottom: 8px;
+      align-items: start;
+    }
+    ol.steps li::before {
+      content: counter(passo);
+      width: 28px;
+      height: 28px;
+      border-radius: 50%;
+      background: #4F3E32;
+      color: #F8F7F4;
+      font-size: 13px;
+      font-weight: 700;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+    ol.steps strong { display: block; font-size: 13.5px; color: #4F3E32; }
+    ol.steps em { font-style: normal; color: #AC8869; font-size: 11px; font-weight: 600; }
+    ol.steps p { font-size: 12.5px; color: #81705F; line-height: 1.35; margin-top: 2px; }
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      font-size: 12.5px;
+    }
+    th {
+      text-align: left;
+      background: #4F3E32;
+      color: #F8F7F4;
+      padding: 8px 10px;
+      font-weight: 600;
+    }
+    td {
+      padding: 8px 10px;
+      border-bottom: 1px solid #E6D8C3;
+      vertical-align: top;
+      color: #4F3E32;
+    }
+    tr:nth-child(even) td { background: #F3EEE6; }
+    .note {
+      margin-top: 12px;
+      padding: 10px 12px;
+      border-left: 4px solid #AC8869;
+      background: #F3EEE6;
+      font-size: 12px;
+      color: #4F3E32;
+      line-height: 1.4;
+    }
+    .lock {
+      margin-top: 10px;
+      padding: 10px 12px;
+      background: #4F3E32;
+      color: #F8F7F4;
+      font-size: 12.5px;
+      line-height: 1.4;
+      border-radius: 8px;
+    }
+    .lock strong { color: #D4B896; }
+  </style>
+</head>
+<body>
+  <section class="sheet">
+    <header>
+      <div>
+        <div class="brand">TodaArte · Gestão</div>
+        <h1>Mapa operacional — Arte avulsa</h1>
+      </div>
+      <p>Paga antes da entrega final · Thaty não entrega sem receber</p>
+    </header>
+
+    <svg viewBox="0 0 1480 860" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="Mapa mental do fluxo de arte avulsa">
+      <defs>
+        <filter id="soft" x="-8%" y="-8%" width="116%" height="116%">
+          <feDropShadow dx="0" dy="1.5" stdDeviation="2.2" flood-color="#4F3E32" flood-opacity="0.12"/>
+        </filter>
+        <marker id="arrow" markerWidth="8" markerHeight="8" refX="6" refY="4" orient="auto">
+          <path d="M0,0 L8,4 L0,8 Z" fill="#81705F"/>
+        </marker>
+        <marker id="arrowDash" markerWidth="8" markerHeight="8" refX="6" refY="4" orient="auto">
+          <path d="M0,0 L8,4 L0,8 Z" fill="#A0896A"/>
+        </marker>
+        <marker id="arrowGold" markerWidth="8" markerHeight="8" refX="6" refY="4" orient="auto">
+          <path d="M0,0 L8,4 L0,8 Z" fill="#AC8869"/>
+        </marker>
+      </defs>
+
+      <rect x="0" y="0" width="1480" height="860" fill="#F8F7F4"/>
+
+      <path d="M740,390 C740,250 740,180 740,128" stroke="#C4B09A" stroke-width="2.2" fill="none" marker-end="url(#arrow)"/>
+      <path d="M700,400 C480,400 360,280 318,230" stroke="#C4B09A" stroke-width="2.2" fill="none" marker-end="url(#arrow)"/>
+      <path d="M680,430 C420,430 280,430 228,430" stroke="#C4B09A" stroke-width="2.2" fill="none" marker-end="url(#arrow)"/>
+      <path d="M700,470 C480,520 380,620 330,678" stroke="#C4B09A" stroke-width="2.2" fill="none" marker-end="url(#arrow)"/>
+      <path d="M740,500 C740,600 740,680 740,728" stroke="#C4B09A" stroke-width="2.2" fill="none" marker-end="url(#arrow)"/>
+      <path d="M780,470 C980,540 1080,620 1140,658" stroke="#C4B09A" stroke-width="2.2" fill="none" marker-end="url(#arrow)"/>
+      <path d="M800,390 C1020,300 1180,200 1238,168" stroke="#C4B09A" stroke-width="2.2" fill="none" marker-end="url(#arrow)"/>
+      <path d="M800,410 C1060,410 1180,410 1238,410" stroke="#C4B09A" stroke-width="2.2" fill="none" marker-end="url(#arrow)"/>
+
+      <!-- Alteração volta para produção -->
+      <path d="M1288,780 C1288,828 980,848 860,790" stroke="#A0896A" stroke-width="2" fill="none" stroke-dasharray="7 5" marker-end="url(#arrowDash)"/>
+      <text x="1060" y="846" text-anchor="middle" font-size="12" fill="#A0896A" font-weight="700">Cliente pediu alteração · volta à produção</text>
+
+      <!-- Pagamento libera entrega -->
+      <path d="M1270,268 C1400,268 1400,360 1390,392" stroke="#AC8869" stroke-width="2.4" fill="none" marker-end="url(#arrowGold)"/>
+      <text x="1418" y="338" font-size="11" fill="#AC8869" font-weight="700" transform="rotate(90 1418,338)">pago</text>
+
+      <ellipse cx="740" cy="430" rx="124" ry="82" fill="#4F3E32" filter="url(#soft)"/>
+      <text x="740" y="412" text-anchor="middle" fill="#F8F7F4" font-size="12" letter-spacing="2.4">TODAARTE</text>
+      <text x="740" y="438" text-anchor="middle" fill="#D4B896" font-size="20" font-weight="700">Arte avulsa</text>
+      <text x="740" y="460" text-anchor="middle" fill="#E6D8C3" font-size="11">paga antes da entrega final</text>
+
+      <!-- 1 -->
+      <g filter="url(#soft)">
+        <rect x="612" y="22" width="256" height="96" rx="16" fill="#FFFFFF" stroke="#E6D8C3" stroke-width="1.5"/>
+        <rect x="612" y="22" width="8" height="96" rx="4" fill="#AC8869"/>
+        <text x="636" y="48" fill="#AC8869" font-size="11" font-weight="700">1 · SOLICITAÇÃO</text>
+        <text x="636" y="72" fill="#4F3E32" font-size="14" font-weight="700">Cliente pede a arte</text>
+        <text x="636" y="92" fill="#81705F" font-size="12">WhatsApp, indicação ou link</text>
+      </g>
+
+      <!-- 2 -->
+      <g filter="url(#soft)">
+        <rect x="28" y="148" width="290" height="128" rx="16" fill="#FFFFFF" stroke="#E6D8C3" stroke-width="1.5"/>
+        <rect x="28" y="148" width="8" height="128" rx="4" fill="#81705F"/>
+        <text x="52" y="174" fill="#AC8869" font-size="11" font-weight="700">2 · BRIEFING</text>
+        <text x="52" y="198" fill="#4F3E32" font-size="14" font-weight="700">Duas formas de entrar</text>
+        <text x="52" y="222" fill="#81705F" font-size="12">· Cliente preenche o link</text>
+        <text x="52" y="242" fill="#81705F" font-size="12">· Equipe TodaArte registra no sistema</text>
+      </g>
+
+      <!-- 3 -->
+      <g filter="url(#soft)">
+        <rect x="28" y="372" width="290" height="116" rx="16" fill="#FFFFFF" stroke="#E6D8C3" stroke-width="1.5"/>
+        <rect x="28" y="372" width="8" height="116" rx="4" fill="#81705F"/>
+        <text x="52" y="398" fill="#AC8869" font-size="11" font-weight="700">3 · SISTEMA</text>
+        <text x="52" y="422" fill="#4F3E32" font-size="14" font-weight="700">Pedido chega em Produção</text>
+        <text x="52" y="444" fill="#81705F" font-size="12">Aguardando a Ana atribuir</text>
+        <text x="52" y="464" fill="#81705F" font-size="12">quem faz e a data de entrega</text>
+      </g>
+
+      <!-- 4 -->
+      <g filter="url(#soft)">
+        <rect x="28" y="628" width="360" height="196" rx="16" fill="#FFFFFF" stroke="#E6D8C3" stroke-width="1.5"/>
+        <rect x="28" y="628" width="8" height="196" rx="4" fill="#4F3E32"/>
+        <text x="52" y="654" fill="#AC8869" font-size="11" font-weight="700">4 · ATRIBUIÇÃO · ANA</text>
+        <text x="52" y="678" fill="#4F3E32" font-size="14" font-weight="700">Escolhe o executante e o prazo</text>
+        <text x="52" y="704" fill="#81705F" font-size="12">Executantes da operação:</text>
+        <text x="52" y="728" fill="#4F3E32" font-size="13" font-weight="600">Thaty  ·  Lara  ·  Marcus  ·  Victor</text>
+        <text x="52" y="754" fill="#81705F" font-size="12">Define a data de entrega da arte</text>
+        <text x="52" y="776" fill="#81705F" font-size="12">O executante é notificado no sistema</text>
+        <text x="52" y="798" fill="#81705F" font-size="12">Freelancer também entra neste passo</text>
+      </g>
+
+      <!-- 5 -->
+      <g filter="url(#soft)">
+        <rect x="560" y="738" width="360" height="108" rx="16" fill="#FFFFFF" stroke="#E6D8C3" stroke-width="1.5"/>
+        <rect x="560" y="738" width="8" height="108" rx="4" fill="#AC8869"/>
+        <text x="584" y="764" fill="#AC8869" font-size="11" font-weight="700">5 · PRODUÇÃO · EXECUTANTE</text>
+        <text x="584" y="788" fill="#4F3E32" font-size="14" font-weight="700">Recebe · cria a arte · envia no sistema</text>
+        <text x="584" y="812" fill="#81705F" font-size="12">Ainda não é a entrega final ao cliente</text>
+      </g>
+
+      <!-- 6 Revisão -->
+      <g filter="url(#soft)">
+        <rect x="1088" y="548" width="364" height="220" rx="16" fill="#FFFFFF" stroke="#E6D8C3" stroke-width="1.5"/>
+        <rect x="1088" y="548" width="8" height="220" rx="4" fill="#4F3E32"/>
+        <text x="1112" y="574" fill="#AC8869" font-size="11" font-weight="700">6 · REVISÃO · PRÉVIA</text>
+        <text x="1112" y="598" fill="#4F3E32" font-size="14" font-weight="700">Cliente vê e pode alterar</text>
+        <text x="1112" y="622" fill="#81705F" font-size="12">Ana mostra a prévia (link ou WhatsApp)</text>
+        <text x="1112" y="642" fill="#81705F" font-size="12">sem arquivos finais em alta</text>
+        <text x="1112" y="670" fill="#4F3E32" font-size="13" font-weight="700">Pediu alteração</text>
+        <text x="1112" y="690" fill="#81705F" font-size="12">Ana registra o recado · executante refaz</text>
+        <text x="1112" y="718" fill="#4F3E32" font-size="13" font-weight="700">Aprovou a prévia</text>
+        <text x="1112" y="738" fill="#81705F" font-size="12">Vai para pagamento — ainda não entrega</text>
+      </g>
+
+      <!-- 7 Pagamento -->
+      <g filter="url(#soft)">
+        <rect x="1090" y="22" width="362" height="246" rx="16" fill="#FFFFFF" stroke="#AC8869" stroke-width="2"/>
+        <rect x="1090" y="22" width="8" height="246" rx="4" fill="#AC8869"/>
+        <text x="1114" y="48" fill="#AC8869" font-size="11" font-weight="700">7 · PAGAMENTO · TRAVA</text>
+        <text x="1114" y="72" fill="#4F3E32" font-size="14" font-weight="700">Antes da entrega final</text>
+        <text x="1114" y="98" fill="#81705F" font-size="12">Ana envia os dados (Pix / combinado)</text>
+        <text x="1114" y="118" fill="#81705F" font-size="12">Cliente paga e manda o comprovante</text>
+        <text x="1114" y="138" fill="#81705F" font-size="12">Ana anexa o comprovante no pedido</text>
+        <text x="1114" y="166" fill="#4F3E32" font-size="13" font-weight="700">Lara dá baixa</text>
+        <text x="1114" y="186" fill="#81705F" font-size="12">Pago na lista, vinculado ao cliente</text>
+        <text x="1114" y="214" fill="#4F3E32" font-size="13" font-weight="700">Só então libera a entrega</text>
+        <text x="1114" y="236" fill="#81705F" font-size="12">Protege Thaty e a equipe de produzir sem receber</text>
+      </g>
+
+      <!-- 8 Entrega final -->
+      <g filter="url(#soft)">
+        <rect x="1090" y="300" width="362" height="168" rx="16" fill="#4F3E32"/>
+        <text x="1114" y="328" fill="#D4B896" font-size="11" font-weight="700">8 · ENTREGA FINAL</text>
+        <text x="1114" y="354" fill="#F8F7F4" font-size="14" font-weight="700">Só com pagamento baixado</text>
+        <text x="1114" y="380" fill="#E6D8C3" font-size="12">Ana envia os arquivos finais ao cliente</text>
+        <text x="1114" y="400" fill="#E6D8C3" font-size="12">ou libera no link do pedido</text>
+        <text x="1114" y="428" fill="#D4B896" font-size="12" font-weight="700">Sem baixa da Lara = sem arquivo final</text>
+        <text x="1114" y="448" fill="#E6D8C3" font-size="12">Nem por WhatsApp, nem pelo sistema</text>
+      </g>
+    </svg>
+
+    <div class="caption">
+      <span><i class="dot" style="background:#4F3E32"></i> Centro do fluxo</span>
+      <span><i class="dot" style="background:#AC8869"></i> Trava de pagamento</span>
+      <span><i class="dot" style="background:#A0896A"></i> Tracejado = cliente pediu alteração</span>
+    </div>
+  </section>
+
+  <section class="sheet">
+    <header>
+      <div>
+        <div class="brand">TodaArte · Gestão</div>
+        <h1>Passo a passo e papéis</h1>
+      </div>
+      <p>Arte avulsa · prévia livre · entrega final só após o pagamento</p>
+    </header>
+
+    <div class="grid">
+      <div>
+        <h2>Sequência</h2>
+        <ol class="steps">
+          <li>
+            <div>
+              <em>Cliente</em>
+              <strong>Solicita a arte</strong>
+              <p>Pede pelo WhatsApp, indicação ou link de briefing.</p>
+            </div>
+          </li>
+          <li>
+            <div>
+              <em>Cliente ou equipe</em>
+              <strong>Preenche o briefing</strong>
+              <p>O cliente completa o link ou alguém da TodaArte registra as informações no sistema.</p>
+            </div>
+          </li>
+          <li>
+            <div>
+              <em>Sistema</em>
+              <strong>Pedido chega em Produção</strong>
+              <p>Fica aguardando a Ana atribuir quem faz e a data de entrega.</p>
+            </div>
+          </li>
+          <li>
+            <div>
+              <em>Ana</em>
+              <strong>Atribui e define o prazo</strong>
+              <p>Escolhe Thaty, Lara, Marcus, Victor ou freelancer. O executante é notificado.</p>
+            </div>
+          </li>
+          <li>
+            <div>
+              <em>Executante</em>
+              <strong>Cria e envia no sistema</strong>
+              <p>Produz a arte e sobe o arquivo para a Ana. Isso ainda não é entrega ao cliente.</p>
+            </div>
+          </li>
+          <li>
+            <div>
+              <em>Ana e cliente</em>
+              <strong>Revisão da prévia</strong>
+              <p>O cliente vê a arte (link ou WhatsApp, só prévia). Se pedir alteração, Ana registra o recado e o executante refaz até aprovar. Aprovou a prévia → pagamento.</p>
+            </div>
+          </li>
+          <li>
+            <div>
+              <em>Ana, cliente e Lara</em>
+              <strong>Pagamento (trava)</strong>
+              <p>Ana envia os dados, recebe o comprovante e anexa. Lara dá baixa: pago na lista, vinculado ao cliente. Sem essa baixa, a entrega final não abre.</p>
+            </div>
+          </li>
+          <li>
+            <div>
+              <em>Ana</em>
+              <strong>Entrega final</strong>
+              <p>Só então Ana envia os arquivos finais (alta, aberto, PDF) ou libera no link. Sem pagamento, nem WhatsApp com arquivo final.</p>
+            </div>
+          </li>
+        </ol>
+      </div>
+
+      <div>
+        <h2>Quem faz o quê</h2>
+        <table>
+          <thead>
+            <tr>
+              <th>Pessoa</th>
+              <th>No fluxo</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td><strong>Cliente</strong></td>
+              <td>Pede, briefing, vê a prévia, pede alteração ou aprova, paga e manda comprovante. Só depois recebe os finais.</td>
+            </tr>
+            <tr>
+              <td><strong>Ana</strong></td>
+              <td>Atribui, prazo, mostra a prévia, registra alteração, cobra, anexa comprovante e só entrega o final após a baixa.</td>
+            </tr>
+            <tr>
+              <td><strong>Thaty, Marcus, Victor</strong></td>
+              <td>Produzem e enviam no sistema. Não mandam arquivo final ao cliente por fora.</td>
+            </tr>
+            <tr>
+              <td><strong>Lara</strong></td>
+              <td>Também executa. No financeiro, dá a baixa que libera a entrega final.</td>
+            </tr>
+            <tr>
+              <td><strong>Freelancer</strong></td>
+              <td>Recebe o job, produz e envia no sistema. Não atribui, não cobra e não entrega o final.</td>
+            </tr>
+          </tbody>
+        </table>
+
+        <div class="lock">
+          <strong>Regra de ouro do avulso.</strong>
+          A cliente pode ver e pedir alteração à vontade na prévia.
+          Arquivo final só sai depois que a Lara der baixa no pagamento.
+          Assim a Thaty (e o restante da equipe) não entrega de graça.
+        </div>
+
+        <div class="note">
+          Na revisão o cliente usa o <strong>link do pedido</strong> ou o WhatsApp da Ana — só prévia.
+          Na baixa nasce (ou se confirma) a entrada <strong>paga</strong>, vinculada àquele cliente.
+        </div>
+      </div>
+    </div>
+  </section>
+</body>
+</html>

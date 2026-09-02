@@ -19,6 +19,7 @@ export default function JobDetalhe() {
   const [atendenteId, setAtendenteId] = useState(0);
   const [complemento, setComplemento] = useState('');
   const [valorExec, setValorExec] = useState('');
+  const [valorCliente, setValorCliente] = useState('');
   const [recado, setRecado] = useState('');
   const [nota, setNota] = useState('');
   const [saving, setSaving] = useState(false);
@@ -34,6 +35,7 @@ export default function JobDetalhe() {
         setAtendenteId(j.atendente_id || 0);
         setComplemento(j.complemento_briefing || '');
         setValorExec(j.valor_executor ? String(j.valor_executor) : '');
+        setValorCliente(j.valor ? String(j.valor) : '');
       })
       .catch((e) => toast.error(e.message))
       .finally(() => setLoading(false));
@@ -63,6 +65,8 @@ export default function JobDetalhe() {
   const podeSubir = souExecutor || isGestao;
   const podeEntregar = (isGestao || souAtendente) && job.status === 'aguardando_entrega';
   const podeRetrabalho = (isGestao || souAtendente) && job.status === 'aguardando_aprovacao';
+  const podeConfirmarPagamento =
+    isGestao && (job.status === 'aguardando_pagamento' || job.status === 'pagamento_informado');
 
   const copiar = async () => {
     try {
@@ -109,7 +113,9 @@ export default function JobDetalhe() {
                 Copiar link
               </AppButton>
             </div>
-            <p className="mt-2 text-xs text-brand-olive">O cliente usa este link para briefing e aprovação.</p>
+            <p className="mt-2 text-xs text-brand-olive">
+            O cliente usa este link para briefing, ver a prévia e, depois do pagamento, baixar os arquivos finais.
+          </p>
           </>
         )}
         {souExecutor && job.valor_executor ? (
@@ -181,9 +187,15 @@ export default function JobDetalhe() {
             <label className="mb-1 block text-xs text-brand-olive">Complemento no briefing (só a equipe vê)</label>
             <textarea value={complemento} onChange={(e) => setComplemento(e.target.value)} rows={3} className="w-full rounded-xl border border-brand-beige px-3 py-2 text-sm" />
           </div>
-          <div>
-            <label className="mb-1 block text-xs text-brand-olive">Valor para quem fizer (R$)</label>
-            <input value={valorExec} onChange={(e) => setValorExec(e.target.value)} className="w-40 rounded-xl border border-brand-beige px-3 py-2 text-sm" />
+          <div className="grid gap-3 sm:grid-cols-2">
+            <div>
+              <label className="mb-1 block text-xs text-brand-olive">Valor para o cliente (R$)</label>
+              <input value={valorCliente} onChange={(e) => setValorCliente(e.target.value)} className="w-full rounded-xl border border-brand-beige px-3 py-2 text-sm" />
+            </div>
+            <div>
+              <label className="mb-1 block text-xs text-brand-olive">Valor para quem fizer (R$)</label>
+              <input value={valorExec} onChange={(e) => setValorExec(e.target.value)} className="w-full rounded-xl border border-brand-beige px-3 py-2 text-sm" />
+            </div>
           </div>
           <AppButton
             loading={saving}
@@ -196,6 +208,7 @@ export default function JobDetalhe() {
                   executante_id: executanteId,
                   atendente_id: atendenteId || undefined,
                   complemento_briefing: complemento,
+                  valor: valorCliente || undefined,
                   valor_executor: valorExec || undefined,
                 }));
                 toast.success('Serviço atribuído.');
@@ -260,7 +273,7 @@ export default function JobDetalhe() {
             setSaving(true);
             try {
               setJob(await api.producao.entregarCliente(job.id));
-              toast.success('Cliente já pode aprovar no link.');
+              toast.success('Prévia enviada. O cliente aprova no link — o arquivo final só sai depois do pagamento.');
             } catch (e) {
               toast.error(e instanceof Error ? e.message : 'Erro');
             } finally {
@@ -268,7 +281,7 @@ export default function JobDetalhe() {
             }
           }}
         >
-          Entregar ao cliente
+          Enviar prévia ao cliente
         </AppButton>
       )}
 
@@ -297,9 +310,41 @@ export default function JobDetalhe() {
         </div>
       )}
 
+      {podeConfirmarPagamento && (
+        <div className="rounded-2xl border border-brand-gold/40 bg-white p-5 shadow-card space-y-3">
+          <h3 className="font-semibold text-brand-dark-brown">Pagamento — trava da entrega final</h3>
+          <p className="text-sm text-brand-olive">
+            A prévia foi aprovada. Confirme o pagamento (Lara/Ana) para liberar os arquivos finais. Sem baixa, o cliente não baixa o arquivo.
+          </p>
+          {job.status === 'pagamento_informado' && (
+            <p className="rounded-xl bg-amber-50 px-3 py-2 text-sm text-amber-900">O cliente avisou que já pagou. Confira o comprovante e dê baixa.</p>
+          )}
+          <div>
+            <label className="mb-1 block text-xs text-brand-olive">Valor cobrado (R$)</label>
+            <input value={valorCliente} onChange={(e) => setValorCliente(e.target.value)} className="w-40 rounded-xl border border-brand-beige px-3 py-2 text-sm" />
+          </div>
+          <AppButton
+            loading={saving}
+            onClick={async () => {
+              setSaving(true);
+              try {
+                setJob(await api.producao.confirmarPagamento(job.id, valorCliente || undefined));
+                toast.success('Pagamento confirmado. Arquivos finais liberados no link do cliente.');
+              } catch (e) {
+                toast.error(e instanceof Error ? e.message : 'Erro');
+              } finally {
+                setSaving(false);
+              }
+            }}
+          >
+            Confirmar pagamento e liberar arquivos
+          </AppButton>
+        </div>
+      )}
+
       {job.status === 'finalizado' && (
         <p className="rounded-2xl border border-emerald-200 bg-emerald-50 p-4 text-sm text-emerald-800">
-          Serviço finalizado. {job.valor_executor ? `Executor liberado para receber ${job.valor_executor}.` : 'Executor liberado para receber.'}
+          Pago e entregue. {job.valor_executor ? `Executor liberado para receber ${job.valor_executor}.` : 'Executor liberado para receber.'}
         </p>
       )}
     </div>

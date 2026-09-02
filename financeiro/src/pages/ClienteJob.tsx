@@ -53,9 +53,10 @@ export default function ClienteJob() {
 
   const briefingPreenchido = !!(data.briefing?.respostas && Object.keys(data.briefing.respostas).some((k) => k !== 'contato_whatsapp' && (data.briefing?.respostas[k] || '').trim()));
   const podeBriefing =
-    ['aguardando_briefing', 'aguardando_pagamento', 'pagamento_informado'].includes(data.status) && !briefingPreenchido;
+    ['aguardando_briefing'].includes(data.status) && !briefingPreenchido;
   const podeAprovar = data.status === 'aguardando_aprovacao';
-  const emAndamento = ['aguardando_pagamento', 'pagamento_informado', 'aguardando_atribuicao', 'em_producao', 'aguardando_entrega', 'retrabalho'].includes(data.status);
+  const podePagar = data.status === 'aguardando_pagamento' || data.status === 'pagamento_informado';
+  const emAndamento = ['aguardando_atribuicao', 'em_producao', 'aguardando_entrega', 'retrabalho'].includes(data.status);
 
   return (
     <div className="min-h-screen bg-brand-off-white px-4 py-10 text-brand-dark-brown">
@@ -129,7 +130,8 @@ export default function ClienteJob() {
 
         {podeAprovar && (
           <div className="space-y-4 rounded-2xl border border-brand-beige bg-white p-5 shadow-card">
-            <h2 className="font-semibold">Sua arte</h2>
+            <h2 className="font-semibold">Prévia da arte</h2>
+            <p className="text-xs text-brand-olive">Confira a peça. Os arquivos finais só são liberados depois do pagamento.</p>
             <ul className="space-y-2 text-sm">
               {(data.entregas || []).map((e) => (
                 <li key={e.id}>
@@ -147,7 +149,7 @@ export default function ClienteJob() {
                 setSaving(true);
                 try {
                   await api.producao.publicoAcao(token, 'aprovar');
-                  setOk('Aprovado. Obrigado!');
+                  setOk('Prévia aprovada. A Ana envia os dados de pagamento. Os arquivos finais saem depois da confirmação.');
                   load();
                 } catch (err) {
                   setErro(err instanceof Error ? err.message : 'Erro');
@@ -156,7 +158,7 @@ export default function ClienteJob() {
                 }
               }}
             >
-              Aprovar
+              Aprovar prévia
             </AppButton>
             <textarea value={recado} onChange={(e) => setRecado(e.target.value)} rows={3} placeholder="O que precisa mudar" className="w-full rounded-xl border border-brand-beige px-3 py-2 text-sm" />
             <AppButton
@@ -182,18 +184,67 @@ export default function ClienteJob() {
           </div>
         )}
 
+        {podePagar && (
+          <div className="space-y-4 rounded-2xl border border-brand-gold/40 bg-white p-5 shadow-card">
+            <h2 className="font-semibold">Pagamento</h2>
+            <p className="text-sm text-brand-olive">
+              A prévia foi aprovada. A Ana envia o Pix no WhatsApp.
+              {data.valor ? ` Valor: R$ ${data.valor}.` : ''} Os arquivos finais só são liberados depois da confirmação.
+            </p>
+            {data.status === 'pagamento_informado' ? (
+              <p className="rounded-xl bg-amber-50 px-3 py-2 text-sm text-amber-900">
+                Recebemos o aviso de pagamento. Assim que a TodaArte confirmar, os arquivos aparecem neste link.
+              </p>
+            ) : (
+              <AppButton
+                className="w-full"
+                loading={saving}
+                onClick={async () => {
+                  setSaving(true);
+                  try {
+                    await api.producao.publicoAcao(token, 'pagar');
+                    setOk('Avisamos a Ana. Quando o pagamento for confirmado, os arquivos finais aparecem aqui.');
+                    load();
+                  } catch (err) {
+                    setErro(err instanceof Error ? err.message : 'Erro');
+                  } finally {
+                    setSaving(false);
+                  }
+                }}
+              >
+                Já paguei
+              </AppButton>
+            )}
+          </div>
+        )}
+
         {emAndamento && (
           <p className="rounded-2xl border border-brand-beige bg-white p-4 text-center text-sm text-brand-olive">
             {data.status === 'retrabalho'
               ? 'Recebemos seu pedido de alteração. Estamos ajustando a arte.'
               : data.status === 'em_producao' || data.status === 'aguardando_entrega'
-                ? 'Sua arte está em produção. Você será avisado quando estiver pronta neste mesmo link.'
+                ? 'Sua arte está em produção. Você será avisado neste mesmo link quando a prévia estiver pronta.'
                 : 'Recebemos seu briefing. A Ana entra em contato em breve.'}
           </p>
         )}
 
         {data.status === 'finalizado' && (
-          <p className="rounded-2xl bg-emerald-50 p-4 text-center text-sm text-emerald-800">Serviço finalizado. Obrigado!</p>
+          <div className="space-y-3 rounded-2xl border border-emerald-200 bg-emerald-50 p-5">
+            <p className="text-center text-sm font-medium text-emerald-800">Pagamento confirmado. Arquivos finais:</p>
+            <ul className="space-y-2 text-sm">
+              {(data.entregas || []).map((e) => (
+                <li key={e.id}>
+                  <a className="text-brand-brown underline" href={e.url || `/api/uploads/producao/${e.arquivo}`} target="_blank" rel="noreferrer">
+                    Versão {e.versao}
+                    {e.nome_original ? ` — ${e.nome_original}` : ''}
+                  </a>
+                </li>
+              ))}
+            </ul>
+            {(data.entregas || []).length === 0 && (
+              <p className="text-center text-sm text-emerald-800">A Ana envia os arquivos finais no WhatsApp.</p>
+            )}
+          </div>
         )}
       </div>
     </div>

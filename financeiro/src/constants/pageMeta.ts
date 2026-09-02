@@ -9,7 +9,7 @@ const PAGES: { match: string | RegExp; meta: PageMeta }[] = [
   { match: '/relatorios-cliente', meta: { title: 'Relatórios', subtitle: 'Movimentação por cliente' } },
   { match: '/auditoria', meta: { title: 'Auditoria', subtitle: 'Sessões e ações dos usuários' } },
   { match: '/usuarios', meta: { title: 'Usuários', subtitle: 'Acessos: gestão, operador, freelancer e cliente' } },
-  { match: '/producao', meta: { title: 'Produção', subtitle: 'Do briefing à entrega, no fluxo da equipe' } },
+  { match: '/producao', meta: { title: 'Produção', subtitle: 'Arte avulsa: prévia, pagamento e depois o arquivo final' } },
   { match: '/cronograma', meta: { title: 'Cronograma', subtitle: 'Calendário semanal dos clientes fixos' } },
   { match: '/executantes', meta: { title: 'Executantes', subtitle: 'Quem faz as artes: executores e freelancers' } },
   { match: '/configuracoes', meta: { title: 'Configurações', subtitle: 'Perfil e senha da conta' } },
