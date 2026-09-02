@@ -229,20 +229,32 @@ export async function gerarOrcamentoPdf(orcamento: Orcamento): Promise<void> {
 
   doc.setDrawColor(...LINE);
   doc.line(left, y, right, y);
-  y += 10;
 
-  // Rodapé empresa
+  // Rodapé fixo no final da página
+  const footerTop = pageH - 36;
+  doc.setDrawColor(...LINE);
+  doc.setLineWidth(0.35);
+  doc.line(left, footerTop, right, footerTop);
+
+  let fy = footerTop + 6;
   doc.setFont('helvetica', 'bold');
-  doc.setFontSize(10);
-  doc.text('Toda Arte Marketing', left, y);
-  y += 5;
-  doc.setFont('helvetica', 'normal');
   doc.setFontSize(9);
-  doc.text(`CNPJ: ${CNPJ}`, left, y);
-
+  doc.setTextColor(...INK);
+  doc.text('Toda Arte Marketing', left, fy);
+  doc.setFont('helvetica', 'normal');
   doc.setFontSize(8);
-  doc.setTextColor(130, 130, 130);
-  doc.text(`Orçamento nº ${orcamento.numero}`, right, pageH - 12, { align: 'right' });
+  doc.setTextColor(90, 90, 90);
+  doc.text(`Orçamento nº ${orcamento.numero}`, right, fy, { align: 'right' });
+
+  fy += 4.5;
+  doc.setTextColor(...INK);
+  doc.text(`CNPJ: ${CNPJ}`, left, fy);
+  fy += 4;
+  doc.text('https://todaarte.com.br/  ·  (31) 98237-1886', left, fy);
+  fy += 5;
+  doc.setFont('helvetica', 'italic');
+  doc.setTextColor(90, 90, 90);
+  doc.text('Este orçamento é válido por 7 dias a partir da data de emissão.', left, fy);
 
   doc.save(`orcamento-${orcamento.numero}.pdf`);
 }
