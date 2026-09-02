@@ -20,6 +20,8 @@ import Producao from './pages/Producao';
 import JobDetalhe from './pages/JobDetalhe';
 import Cronograma from './pages/Cronograma';
 import Executantes from './pages/Executantes';
+import Servicos from './pages/Servicos';
+import Orcamentos from './pages/Orcamentos';
 import ClienteJob from './pages/ClienteJob';
 import Pedido from './pages/Pedido';
 
@@ -100,6 +102,8 @@ function AppRoutes() {
         <Route path="producao/:id" element={<JobDetalhe />} />
         <Route path="cronograma" element={<Cronograma />} />
         <Route path="executantes" element={<Executantes />} />
+        <Route path="servicos" element={<Servicos />} />
+        <Route path="orcamentos" element={<Orcamentos />} />
         <Route path="configuracoes" element={<Configuracoes />} />
         <Route path="usuarios" element={<Usuarios />} />
       </Route>

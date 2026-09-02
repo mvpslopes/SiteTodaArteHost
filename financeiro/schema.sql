@@ -222,4 +222,59 @@ INSERT INTO checklist_tarefas_fixas (titulo, descricao, periodicidade, ordem, at
 ('Organizar relatório de pagamento dos freelancers', 'Conferir entregas da semana, valores e serviços realizados e enviar relatório de pagamentos.', 'sexta', 1, 1)
 ON DUPLICATE KEY UPDATE titulo = VALUES(titulo);
 
+-- Catálogo de serviços/valores + orçamentos
+CREATE TABLE IF NOT EXISTS catalogo_servicos (
+  id INT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
+  slug VARCHAR(100) DEFAULT NULL,
+  nome VARCHAR(255) NOT NULL,
+  categoria VARCHAR(120) NOT NULL DEFAULT 'Geral',
+  descricao TEXT DEFAULT NULL,
+  detalhes TEXT DEFAULT NULL,
+  tipo_preco ENUM('fixo','unitario','personalizado') NOT NULL DEFAULT 'fixo',
+  valor DECIMAL(15,2) DEFAULT NULL,
+  unidade VARCHAR(40) DEFAULT NULL,
+  ativo TINYINT(1) NOT NULL DEFAULT 1,
+  ordem INT NOT NULL DEFAULT 0,
+  created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+  updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+  UNIQUE KEY uniq_catalogo_slug (slug),
+  INDEX idx_catalogo_categoria (categoria),
+  INDEX idx_catalogo_ativo (ativo)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+CREATE TABLE IF NOT EXISTS orcamentos (
+  id INT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
+  numero INT UNSIGNED NOT NULL,
+  cliente_id INT UNSIGNED DEFAULT NULL,
+  cliente_nome VARCHAR(255) NOT NULL DEFAULT '',
+  titulo VARCHAR(255) NOT NULL DEFAULT 'Orçamento',
+  status ENUM('rascunho','enviado','aprovado','recusado') NOT NULL DEFAULT 'rascunho',
+  prazo VARCHAR(255) DEFAULT NULL,
+  observacoes TEXT DEFAULT NULL,
+  validade_ate DATE DEFAULT NULL,
+  total DECIMAL(15,2) NOT NULL DEFAULT 0,
+  created_by INT UNSIGNED DEFAULT NULL,
+  created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+  updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+  UNIQUE KEY uniq_orcamento_numero (numero),
+  INDEX idx_orcamento_cliente (cliente_id),
+  INDEX idx_orcamento_status (status)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+CREATE TABLE IF NOT EXISTS orcamento_itens (
+  id INT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
+  orcamento_id INT UNSIGNED NOT NULL,
+  servico_id INT UNSIGNED DEFAULT NULL,
+  descricao VARCHAR(500) NOT NULL,
+  detalhes TEXT DEFAULT NULL,
+  quantidade DECIMAL(12,2) NOT NULL DEFAULT 1,
+  valor_unitario DECIMAL(15,2) NOT NULL DEFAULT 0,
+  valor_total DECIMAL(15,2) NOT NULL DEFAULT 0,
+  prazo VARCHAR(255) DEFAULT NULL,
+  observacao VARCHAR(500) DEFAULT NULL,
+  ordem INT NOT NULL DEFAULT 0,
+  INDEX idx_orcamento_item_orc (orcamento_id),
+  CONSTRAINT fk_orcamento_itens_orc FOREIGN KEY (orcamento_id) REFERENCES orcamentos(id) ON DELETE CASCADE
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
 SET FOREIGN_KEY_CHECKS = 1;

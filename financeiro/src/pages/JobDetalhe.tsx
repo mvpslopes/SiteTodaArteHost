@@ -30,13 +30,28 @@ export default function JobDetalhe() {
     setLoading(true);
     api.producao
       .get(Number(id))
-      .then((j) => {
+      .then(async (j) => {
         setJob(j);
         setExecutanteId(j.executante_id || 0);
         setAtendenteId(j.atendente_id || 0);
         setComplemento(j.complemento_briefing || '');
         setValorExec(j.valor_executor ? String(j.valor_executor) : '');
-        setValorCliente(j.valor ? String(j.valor) : '');
+        const valorAtual = j.valor ? String(j.valor) : '';
+        setValorCliente(valorAtual);
+        if (!valorAtual && j.servico_slug) {
+          try {
+            const s = await api.servicosCatalogo.getBySlug(j.servico_slug);
+            if (
+              s &&
+              (s.tipo_preco === 'fixo' || s.tipo_preco === 'unitario') &&
+              s.valor != null
+            ) {
+              setValorCliente(String(s.valor));
+            }
+          } catch {
+            /* slug inexistente — ignore */
+          }
+        }
       })
       .catch((e) => toast.error(e.message))
       .finally(() => setLoading(false));

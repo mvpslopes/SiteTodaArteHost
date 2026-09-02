@@ -1,0 +1,97 @@
+-- Catálogo de serviços/valores + orçamentos.
+-- Rode no phpMyAdmin. O PHP também cria as tabelas na 1ª chamada da API.
+
+CREATE TABLE IF NOT EXISTS catalogo_servicos (
+  id INT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
+  slug VARCHAR(100) DEFAULT NULL,
+  nome VARCHAR(255) NOT NULL,
+  categoria VARCHAR(120) NOT NULL DEFAULT 'Geral',
+  descricao TEXT DEFAULT NULL,
+  detalhes TEXT DEFAULT NULL,
+  tipo_preco ENUM('fixo','unitario','personalizado') NOT NULL DEFAULT 'fixo',
+  valor DECIMAL(15,2) DEFAULT NULL,
+  unidade VARCHAR(40) DEFAULT NULL,
+  ativo TINYINT(1) NOT NULL DEFAULT 1,
+  ordem INT NOT NULL DEFAULT 0,
+  created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+  updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+  UNIQUE KEY uniq_catalogo_slug (slug),
+  INDEX idx_catalogo_categoria (categoria),
+  INDEX idx_catalogo_ativo (ativo)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+CREATE TABLE IF NOT EXISTS orcamentos (
+  id INT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
+  numero INT UNSIGNED NOT NULL,
+  cliente_id INT UNSIGNED DEFAULT NULL,
+  cliente_nome VARCHAR(255) NOT NULL DEFAULT '',
+  titulo VARCHAR(255) NOT NULL DEFAULT 'Orçamento',
+  status ENUM('rascunho','enviado','aprovado','recusado') NOT NULL DEFAULT 'rascunho',
+  prazo VARCHAR(255) DEFAULT NULL,
+  observacoes TEXT DEFAULT NULL,
+  validade_ate DATE DEFAULT NULL,
+  total DECIMAL(15,2) NOT NULL DEFAULT 0,
+  created_by INT UNSIGNED DEFAULT NULL,
+  created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+  updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+  UNIQUE KEY uniq_orcamento_numero (numero),
+  INDEX idx_orcamento_cliente (cliente_id),
+  INDEX idx_orcamento_status (status)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+CREATE TABLE IF NOT EXISTS orcamento_itens (
+  id INT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
+  orcamento_id INT UNSIGNED NOT NULL,
+  servico_id INT UNSIGNED DEFAULT NULL,
+  descricao VARCHAR(500) NOT NULL,
+  detalhes TEXT DEFAULT NULL,
+  quantidade DECIMAL(12,2) NOT NULL DEFAULT 1,
+  valor_unitario DECIMAL(15,2) NOT NULL DEFAULT 0,
+  valor_total DECIMAL(15,2) NOT NULL DEFAULT 0,
+  prazo VARCHAR(255) DEFAULT NULL,
+  observacao VARCHAR(500) DEFAULT NULL,
+  ordem INT NOT NULL DEFAULT 0,
+  INDEX idx_orcamento_item_orc (orcamento_id),
+  CONSTRAINT fk_orcamento_itens_orc FOREIGN KEY (orcamento_id) REFERENCES orcamentos(id) ON DELETE CASCADE
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+-- Seeds (ignora se o slug já existir)
+INSERT IGNORE INTO catalogo_servicos (slug, nome, categoria, descricao, detalhes, tipo_preco, valor, unidade, ordem) VALUES
+('logo', 'Criação de logotipo', 'Identidade visual', 'Logotipo simples', NULL, 'fixo', 329.00, NULL, 10),
+('logo_variacoes', 'Logotipo e variações', 'Identidade visual', 'Logotipo com variações', NULL, 'fixo', 429.00, NULL, 20),
+('identidade', 'ID Visual completa', 'Identidade visual', 'Pacote completo de identidade visual',
+ 'Contém:\nHistória do logo\nLogo principal\nMarca d''água\nSubmarca\nVariação de Logotipo\nPosicionamento\nLembretes\nPaleta de cores\nTipografia\nCartão de Visita\nPattern\nDestaques\n3 Templates FEED\n3 Template STORIES\nAssinatura de e-mail\nLand Page (1 página)\nQR-CODE\nMockup',
+ 'fixo', 1799.00, NULL, 30),
+('gestao_redes', 'Gestão de redes sociais', 'Gestão', 'Orçamento personalizado conforme escopo do cliente', NULL, 'personalizado', NULL, NULL, 40),
+('sites', 'Desenvolvimento de sites', 'Sites', 'Orçamento personalizado conforme escopo do projeto', NULL, 'personalizado', NULL, NULL, 50),
+('ig_12_cliente', 'Pacote Instagram 12 materiais (conteúdo do cliente)', 'Pacotes Instagram', '12 materiais com conteúdo enviado pelo cliente', NULL, 'fixo', 659.00, 'pacote', 60),
+('ig_24_cliente', 'Pacote Instagram 24 materiais (conteúdo do cliente)', 'Pacotes Instagram', '24 materiais com conteúdo enviado pelo cliente', NULL, 'fixo', 1199.00, 'pacote', 70),
+('ig_12_todaarte', 'Pacote Instagram 12 materiais (criação Toda Arte)', 'Pacotes Instagram', '12 materiais com ideias, chamadas, textos e direcionamento pela Toda Arte', NULL, 'fixo', 899.00, 'pacote', 80),
+('ig_24_todaarte', 'Pacote Instagram 24 materiais (criação Toda Arte)', 'Pacotes Instagram', '24 materiais com ideias, chamadas, textos e direcionamento pela Toda Arte', NULL, 'fixo', 1699.00, 'pacote', 90),
+('catalogos', 'Produção de catálogos e apresentações', 'Catálogos e apresentações', 'Catálogos personalizados e exclusivos para apresentação comercial, cardápios, etc.', NULL, 'unitario', 69.90, 'página', 100),
+('cartao_digital', 'Cartão digital', 'Cartão digital', 'Cartão de visita digital e interativo com links direcionáveis + QR-CODE', NULL, 'fixo', 199.00, NULL, 110),
+('catalogo_leiloes', 'Catálogo completo de leilões', 'Catálogo de leilões', 'Catálogo completo', NULL, 'fixo', 1700.00, NULL, 120),
+('arte_avulsa', 'Artes digitais avulsas', 'Outros serviços', NULL, NULL, 'fixo', 59.90, 'cada', 130),
+('arte_feed_stories', 'Artes digitais avulsas (FEED + STORIES)', 'Outros serviços', NULL, NULL, 'fixo', 89.90, 'cada', 140),
+('qrcode', 'Criação de QR-CODE', 'Outros serviços', NULL, NULL, 'fixo', 59.00, NULL, 150),
+('stories_animado', 'Stories animado', 'Outros serviços', NULL, NULL, 'fixo', 79.00, NULL, 160),
+('video_30s', 'Edição de vídeo simples (até 30 segundos)', 'Outros serviços', NULL, NULL, 'fixo', 129.00, NULL, 170),
+('video_60s', 'Edição de vídeo (até 60 segundos)', 'Outros serviços', NULL, NULL, 'fixo', 219.00, NULL, 180),
+('video_3min', 'Edição de vídeo (até 3 minutos)', 'Outros serviços', NULL, NULL, 'fixo', 529.00, NULL, 190),
+('adicional_ia', 'Adicional de IA', 'Outros serviços', NULL, NULL, 'fixo', 39.90, NULL, 200),
+('adicional_estrategia', 'Adicional de criação de estratégia/conteúdo', 'Outros serviços', NULL, NULL, 'fixo', 39.90, NULL, 210),
+('adicional_pesquisa', 'Adicional de pesquisa de material', 'Outros serviços', NULL, NULL, 'fixo', 39.90, NULL, 220),
+('figurinhas', 'Figurinhas personalizadas', 'Outros serviços', NULL, NULL, 'fixo', 19.90, NULL, 230),
+('assinatura_email', 'Assinatura de e-mail', 'Outros serviços', NULL, NULL, 'fixo', 39.90, NULL, 240),
+('ensaio_fotos', 'Ensaio de fotos profissionais (15 fotos)', 'Outros serviços', NULL, NULL, 'fixo', 380.00, NULL, 250),
+('audiovisual_diaria', 'Produção audiovisual (diária)', 'Outros serviços', 'Produção audiovisual + km/rodado (R$ 2,00) + hospedagem + alimentação', NULL, 'unitario', 650.00, 'diária', 260),
+('analise_perfil', 'Análise de perfil', 'Outros serviços', NULL, NULL, 'fixo', 99.00, NULL, 270),
+('personalizacao_perfil', 'Personalização de perfil', 'Outros serviços', NULL, NULL, 'fixo', 499.00, NULL, 280),
+('plotagem_carro', 'Arte Plotagem (carro)', 'Outros serviços', NULL, NULL, 'fixo', 1500.00, NULL, 290),
+('plotagem_caminhao', 'Arte Plotagem (caminhão)', 'Outros serviços', NULL, NULL, 'fixo', 2500.00, NULL, 300),
+('mockup', 'Mockup', 'Outros serviços', NULL, NULL, 'unitario', 300.00, 'cada', 310),
+('conteudo_feed_estrategia', 'Elaboração de conteúdo feed (estratégia, organização e calendário)', 'Mídias digitais (sem gestão)', 'Artes extras', NULL, 'unitario', 39.90, 'cada', 320),
+('cronograma_stories', 'Cronograma de stories', 'Mídias digitais (sem gestão)', 'Artes extras', NULL, 'unitario', 29.90, 'dia', 330),
+('conteudo_reels', 'Elaboração de estratégia/conteúdo post de reels', 'Mídias digitais (sem gestão)', 'Artes extras', NULL, 'unitario', 59.90, 'cada', 340),
+('post_feed_estatico', 'Elaboração de post feed em arte estática', 'Mídias digitais (sem gestão)', 'Artes extras', NULL, 'unitario', 59.90, 'cada', 350),
+('post_feed_carrossel', 'Elaboração de post feed em carrossel (até 10 pag)', 'Mídias digitais (sem gestão)', 'Artes extras', NULL, 'unitario', 99.90, 'cada', 360);

@@ -16,6 +16,8 @@ import {
   Palette,
   Users,
   KeyRound,
+  Tags,
+  FileText,
   PanelLeftClose,
   PanelLeftOpen,
   type LucideIcon,
@@ -77,6 +79,13 @@ const navGroups: NavGroup[] = [
     ],
   },
   {
+    title: 'Comercial',
+    items: [
+      { to: '/servicos', label: 'Serviços', Icon: Tags, roles: ['root', 'administrador', 'usuario'] },
+      { to: '/orcamentos', label: 'Orçamentos', Icon: FileText, roles: ['root', 'administrador', 'usuario'] },
+    ],
+  },
+  {
     title: 'Sistema',
     items: [
       { to: '/auditoria', label: 'Auditoria', Icon: Clock3, roles: ['root'] },
@@ -92,7 +101,7 @@ function isPortalProducao(perfil?: string) {
 
 function equipePodeAcessar(perfil: string | undefined, pathname: string) {
   if (pathname === '/configuracoes' || pathname === '/producao' || pathname.startsWith('/producao/')) return true;
-  if (perfil === 'usuario' && (pathname === '/clientes' || pathname === '/logins')) return true;
+  if (perfil === 'usuario' && (pathname === '/clientes' || pathname === '/logins' || pathname === '/servicos' || pathname === '/orcamentos')) return true;
   return false;
 }
 

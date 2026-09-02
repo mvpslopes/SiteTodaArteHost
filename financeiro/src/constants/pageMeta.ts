@@ -13,6 +13,8 @@ const PAGES: { match: string | RegExp; meta: PageMeta }[] = [
   { match: '/producao', meta: { title: 'Produção', subtitle: 'Arte avulsa: prévia, pagamento e depois o arquivo final' } },
   { match: '/cronograma', meta: { title: 'Cronograma', subtitle: 'Calendário semanal dos clientes fixos' } },
   { match: '/executantes', meta: { title: 'Executantes', subtitle: 'Quem faz as artes: executores e freelancers' } },
+  { match: '/servicos', meta: { title: 'Serviços', subtitle: 'Catálogo de serviços e valores' } },
+  { match: '/orcamentos', meta: { title: 'Orçamentos', subtitle: 'Propostas comerciais para clientes' } },
   { match: '/configuracoes', meta: { title: 'Configurações', subtitle: 'Perfil e senha da conta' } },
 ];
 

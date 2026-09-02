@@ -233,6 +233,53 @@ export interface ClienteAcesso {
   observacao?: string;
 }
 
+export type CatalogoTipoPreco = 'fixo' | 'unitario' | 'personalizado';
+
+export interface CatalogoServico {
+  id: number;
+  slug: string | null;
+  nome: string;
+  categoria: string;
+  descricao: string | null;
+  detalhes: string | null;
+  tipo_preco: CatalogoTipoPreco;
+  valor: number | null;
+  unidade: string | null;
+  ativo: number;
+  ordem: number;
+}
+
+export type OrcamentoStatus = 'rascunho' | 'enviado' | 'aprovado' | 'recusado';
+
+export interface OrcamentoItem {
+  id?: number;
+  servico_id?: number | null;
+  descricao: string;
+  detalhes?: string | null;
+  quantidade: number;
+  valor_unitario: number;
+  valor_total?: number;
+  prazo?: string | null;
+  observacao?: string | null;
+  ordem?: number;
+}
+
+export interface Orcamento {
+  id: number;
+  numero: number;
+  cliente_id: number | null;
+  cliente_nome: string;
+  titulo: string;
+  status: OrcamentoStatus;
+  prazo: string | null;
+  observacoes: string | null;
+  validade_ate: string | null;
+  total: number;
+  created_at?: string;
+  updated_at?: string;
+  itens?: OrcamentoItem[];
+}
+
 export interface Demanda {
   id: number;
   tipo_cliente: TipoClienteDemanda;
@@ -624,6 +671,50 @@ export const api = {
         `/api/auditoria.php${query ? '?' + query : ''}`,
       );
     },
+  },
+  servicosCatalogo: {
+    list: (ativosOnly = true) =>
+      request<{ servicos: CatalogoServico[]; categorias: string[] }>(
+        `/api/servicos.php?ativos=${ativosOnly ? '1' : '0'}`,
+      ),
+    get: (id: number) => request<CatalogoServico>(`/api/servicos.php?id=${id}`),
+    getBySlug: (slug: string) => request<CatalogoServico>(`/api/servicos.php?slug=${encodeURIComponent(slug)}`),
+    create: (data: Partial<CatalogoServico> & { nome: string }) =>
+      request<CatalogoServico>('/api/servicos.php', { method: 'POST', body: JSON.stringify(data) }),
+    update: (data: Partial<CatalogoServico> & { id: number; nome: string }) =>
+      request<CatalogoServico>('/api/servicos.php', { method: 'PUT', body: JSON.stringify(data) }),
+    delete: (id: number) =>
+      request<{ success: boolean }>(`/api/servicos.php?id=${id}`, { method: 'DELETE' }),
+  },
+  orcamentos: {
+    list: (status?: OrcamentoStatus | '') => {
+      const q = status ? `?status=${status}` : '';
+      return request<{ orcamentos: Orcamento[] }>(`/api/orcamentos.php${q}`);
+    },
+    get: (id: number) => request<Orcamento>(`/api/orcamentos.php?id=${id}`),
+    create: (data: {
+      cliente_id?: number | null;
+      cliente_nome: string;
+      titulo?: string;
+      status?: OrcamentoStatus;
+      prazo?: string;
+      observacoes?: string;
+      validade_ate?: string;
+      itens: OrcamentoItem[];
+    }) => request<Orcamento>('/api/orcamentos.php', { method: 'POST', body: JSON.stringify(data) }),
+    update: (data: {
+      id: number;
+      cliente_id?: number | null;
+      cliente_nome: string;
+      titulo?: string;
+      status?: OrcamentoStatus;
+      prazo?: string;
+      observacoes?: string;
+      validade_ate?: string;
+      itens?: OrcamentoItem[];
+    }) => request<Orcamento>('/api/orcamentos.php', { method: 'PUT', body: JSON.stringify(data) }),
+    delete: (id: number) =>
+      request<{ success: boolean }>(`/api/orcamentos.php?id=${id}`, { method: 'DELETE' }),
   },
 };
 
